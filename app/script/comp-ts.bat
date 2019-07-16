@@ -1,1 +1,1 @@
-tsc -w -p ../tsconfig.json
+tsc -w -p ../../tsconfig.json
