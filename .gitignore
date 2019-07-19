@@ -3,3 +3,5 @@
 /Cargo.lock
 
 /app/compiled/**/*
+/app/config.json
+/app/feeder.db

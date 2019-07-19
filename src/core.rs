@@ -19,10 +19,20 @@ impl FeederCore {
 		inner.init(self.to_weak());
 	}
 
+
 	pub fn run_loop(&self) {
 		loop {
+			{
+				let mut inner = self.to_inner();
+				let req = inner.run_request();
+
+				if let Some(e) = req.error.as_ref() {
+					println!("Request Error: {:?}", e);
+				}
+			}
+
 			// Sleep otherwise loop will make the process use lots of cpu power.
-			std::thread::sleep(std::time::Duration::from_millis(100));
+			std::thread::sleep(std::time::Duration::from_secs(30));
 		}
 	}
 

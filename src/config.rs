@@ -26,7 +26,7 @@ impl ConfigManager {
 	pub fn load(&mut self) -> Result<(), Error>  {
 		let mut is_new_file = false;
 
-		{
+		{ // Load File if it exists.
 			let mut options = OpenOptions::new();
 
 			match options.read(true).open(&self.file_path) {
@@ -38,9 +38,7 @@ impl ConfigManager {
 					self.set_config(from_str(&contents)?);
 				}
 
-				Err(_) => {
-					is_new_file = true;
-				}
+				Err(_) => is_new_file = true
 			}
 		}
 

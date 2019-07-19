@@ -3,7 +3,7 @@ use std::sync::RwLock;
 use crate::frontend::FrontendCore;
 use crate::core::WeakFeederCore;
 use crate::database::Connection;
-use crate::request::RequestManager;
+use crate::request::{RequestManager, RequestResults};
 use crate::config::ConfigManager;
 
 
@@ -34,6 +34,15 @@ impl CoreState {
 
 		self.connection.init_sql().unwrap_or_else(|e| panic!("Loading Database Error: {}", e));
 
+		self.requester.init(self.connection.connection()).unwrap_or_else(|e| panic!("Requester Initiation Error: {}", e));
+
 		self.frontend.init(weak_core);
+	}
+
+	pub fn run_request(&mut self) -> RequestResults {
+		self.requester.run_if_idle(
+			false,
+			self.connection.connection()
+		)
 	}
 }
