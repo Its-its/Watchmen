@@ -1,10 +1,21 @@
 use serde::{Serialize, Deserialize};
 
-use crate::types::ListenerId;
+use crate::database::models::{
+	QueryId,
+	Item as FeedItem,
+	Feed,
+	NewFeed,
+	EditFeed,
+	Category,
+	FeedCategory,
+	NewCategory,
+	NewFeedCategory
+};
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Empty {}
+
 
 // Front End -> Core
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -16,20 +27,125 @@ pub enum Front2CoreNotification {
 		url: String
 	},
 
-	RemoveListener { id: ListenerId },
-
-	EditListener {
-		id: ListenerId,
-		//
+	RemoveListener {
+		id: QueryId,
+		#[serde(default)]
+		rem_stored: bool
 	},
 
-	Update {}
+	EditListener {
+		id: QueryId,
+		editing: EditFeed
+	},
+
+	//
+	CategoryList(Empty),
+
+	AddCategory {
+		name: String,
+		position: i32
+	},
+
+	RemoveCategory {
+		id: QueryId
+	},
+
+	EditCategory {
+		id: QueryId,
+		name: String,
+		position: i32
+	},
+
+	AddFeedCategory {
+		feed_id: QueryId,
+		category_id: QueryId
+	},
+
+	RemoveFeedCategory {
+		id: QueryId
+	},
+
+
+	ItemList {
+		category_id: Option<QueryId>,
+
+		#[serde(default = "default_items")]
+		items: i64,
+		#[serde(default)]
+		skip: i64
+	},
+
+	FeedList(Empty),
+
+	Updates {
+		since: i64
+	},
 }
+
 
 // Core -> Front End
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[serde(tag = "method", content = "params")]
 pub enum Core2FrontNotification {
-	Init {  }
+	NewListener {
+		listener: NewFeed,
+		affected: usize
+	},
+
+	RemoveListener {
+		affected: usize
+	},
+
+	EditListener {
+		listener: EditFeed,
+		affected: usize
+	},
+
+	ItemList {
+		items: Vec<FeedItem>,
+
+		item_count: i64,
+		skip_count: i64,
+
+		total_items: i64
+	},
+
+	FeedList {
+		items: Vec<Feed>
+	},
+
+	//
+
+	Updates {
+		since: i64,
+
+		new_items: i64
+	},
+
+	CategoryList {
+		categories: Vec<Category>,
+		category_feeds: Vec<FeedCategory>
+	},
+
+	NewCategory {
+		category: NewCategory,
+		affected: usize
+	},
+
+	NewFeedCategory {
+		category: NewFeedCategory,
+		affected: usize
+	},
+
+	RemoveFeedCategory {
+		affected: usize
+	},
+}
+
+
+// Defaults
+
+fn default_items() -> i64 {
+	50
 }

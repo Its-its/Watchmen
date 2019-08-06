@@ -4,9 +4,72 @@ use std::thread;
 
 use diesel::RunQueryDsl;
 
-use crate::error::Error;
+use crate::error::{Error, Result};
 use crate::database::schema::{items as ItemsSchema, feeds as FeedsSchema};
 use crate::database::models::{NewItem, Feed, NewFeed};
+
+
+pub enum FeedType {
+	Rss(Result<rss::Channel>),
+	Atom(Result<atom_syndication::Feed>),
+
+	__Unknown
+}
+
+impl FeedType {
+	pub fn from_url(url: &str) -> FeedType {
+		// RSS
+		match get_rss_from_url(url) {
+			Ok(c) => return FeedType::Rss(Ok(c)),
+
+			Err(e) => {
+				println!("rss: {:?}", e);
+				if let Error::Rss(e) = e {
+					use rss::Error::InvalidStartTag;
+
+					if let InvalidStartTag = e {
+						// TODO: Fix this so it's not an if else
+					} else {
+						return FeedType::Rss(Err(Error::Rss(e)));
+					}
+				} else {
+					return FeedType::Rss(Err(e));
+				}
+			}
+		};
+
+		// ATOM
+		match get_atom_from_url(url) {
+			Ok(c) => return FeedType::Atom(Ok(c)),
+
+			Err(e) => {
+				println!("atom: {:?}", e);
+				if let Error::Atom(e) = e {
+					use atom_syndication::Error::InvalidStartTag;
+
+					if let InvalidStartTag = e {
+						//
+					} else {
+						return FeedType::Atom(Err(Error::Atom(e)));
+					}
+				} else {
+					return FeedType::Atom(Err(e));
+				}
+			}
+		};
+
+		FeedType::__Unknown
+	}
+
+	pub fn from_feed_type(feed_type: i32, url: &str) -> FeedType {
+		match feed_type {
+			0 => FeedType::Rss(get_rss_from_url(url)),
+			1 => FeedType::Atom(get_atom_from_url(url)),
+			_ => FeedType::__Unknown
+		}
+	}
+}
+
 
 pub struct RequestManager {
 	pub feeds: Vec<Feed>,
@@ -14,8 +77,7 @@ pub struct RequestManager {
 	pub concurrency: i32,
 }
 
-pub type CollectedResult = Result<RequestFeedResults, Error>;
-
+pub type CollectedResult = Result<RequestFeedResults>;
 
 impl RequestManager {
 	pub fn new() -> Self {
@@ -27,7 +89,7 @@ impl RequestManager {
 		}
 	}
 
-	pub fn init(&mut self, connection: &diesel::SqliteConnection) -> Result<usize, Error> {
+	pub fn init(&mut self, connection: &diesel::SqliteConnection) -> Result<usize> {
 		use diesel::prelude::*;
 		use FeedsSchema::dsl::*;
 
@@ -43,27 +105,63 @@ impl RequestManager {
 		}
 	}
 
-	pub fn add_feed_url(&self, url: String, connection: &diesel::SqliteConnection) {
-		let feed = NewFeed {
-			url: url,
+	pub fn add_feed_url(&self, url: String, connection: &diesel::SqliteConnection) -> Result<(NewFeed, usize)> {
+		let feed = match FeedType::from_url(&url) {
+			FeedType::Rss(Ok(feed)) => {
+				NewFeed {
+					url: url,
 
-			sec_interval: 60 * 5,
-			remove_after: 0,
+					title: feed.title().to_string(),
+					description: feed.description().to_string(),
+					generator: feed.generator().unwrap_or_default().to_string(),
 
-			ignore_if_not_new: true,
+					feed_type: 0,
 
-			date_added: chrono::Utc::now().naive_utc().timestamp(),
-			last_called: chrono::Utc::now().naive_utc().timestamp()
+					sec_interval: 60 * 5,
+					remove_after: 0,
+
+					global_show: true,
+					ignore_if_not_new: true,
+
+					date_added: chrono::Utc::now().naive_utc().timestamp(),
+					last_called: chrono::Utc::now().naive_utc().timestamp()
+				}
+			}
+
+			FeedType::Atom(Ok(feed)) => {
+				NewFeed {
+					url: url,
+
+					title: feed.title().to_string(),
+					description: feed.subtitle().unwrap_or_default().to_string(),
+					generator: feed.generator().unwrap_or(&atom_syndication::Generator::default()).value().to_string(),
+
+					feed_type: 1,
+
+					sec_interval: 60 * 5,
+					remove_after: 0,
+
+					global_show: true,
+					ignore_if_not_new: true,
+
+					date_added: chrono::Utc::now().naive_utc().timestamp(),
+					last_called: chrono::Utc::now().naive_utc().timestamp()
+				}
+			}
+
+			FeedType::__Unknown => {
+				return Err("Unknown Feed.. It didn't match the current supported ones.".into())
+			}
+
+			FeedType::Atom(Err(e))
+			| FeedType::Rss(Err(e)) => return Err(e)
 		};
 
-
-		let e = diesel::insert_or_ignore_into(FeedsSchema::table)
+		diesel::insert_or_ignore_into(FeedsSchema::table)
 			.values(&feed)
-			.execute(connection);
-
-		if let Ok(count) = e {
-			println!("{}", count);
-		}
+			.execute(connection)
+			.map(|i| (feed, i))
+			.map_err(|e| e.into())
 	}
 
 	pub fn run_if_idle(&mut self, is_manual: bool, connection: &diesel::SqliteConnection) -> RequestResults {
@@ -98,10 +196,11 @@ impl RequestManager {
 
 		self.is_idle = false;
 
-		println!("Starting Requests..");
+		println!("Starting Requests.. Found: {}", feeds.len());
 
 
 		let (tx, rx) = channel();
+
 
 		// The RSS feed grabber.
 		let safe_request = |feed: Feed| -> CollectedResult {
@@ -113,20 +212,36 @@ impl RequestManager {
 				to_insert: Vec::new()
 			};
 
-			let channel = match get_rss_from_url(&feed.url) {
-				Ok(c) => c,
-				Err(e) => return Err(e)
+			match FeedType::from_feed_type(feed.feed_type, &feed.url) {
+				FeedType::Rss(Ok(channel)) => {
+					feed_res.to_insert = channel.items()
+					.iter()
+					.map(|i| {
+						let mut item: NewItem = i.into();
+						item.feed_id = feed.id;
+						item
+					})
+					.collect();
+				}
+
+				FeedType::Atom(Ok(atom_feed)) => {
+					feed_res.to_insert = atom_feed.entries()
+					.iter()
+					.map(|i| {
+						let mut item: NewItem = i.into();
+						item.feed_id = feed.id;
+						item
+					})
+					.collect();
+				}
+
+				FeedType::__Unknown => {
+					return Err("Unknown Feed.. It didn't match the current supported ones.".into())
+				}
+
+				FeedType::Atom(Err(e))
+				| FeedType::Rss(Err(e)) => return Err(e)
 			};
-
-			feed_res.to_insert = channel.items()
-				.iter()
-				.map(|i| {
-					let mut item: NewItem = i.into();
-					item.feed_id = feed.id;
-					item
-				})
-				.collect();
-
 
 			feed_res.duration = feed_res.start_time.elapsed();
 
@@ -145,8 +260,6 @@ impl RequestManager {
 
 		let mut feed_iter = feeds.iter();
 
-		println!("Concurrency: {}", self.concurrency);
-
 		for _ in 0..self.concurrency {
 			if let Some(feed) = feed_iter.next() {
 				spawn_next(tx.clone(), (*feed).clone());
@@ -163,9 +276,11 @@ impl RequestManager {
 			}
 		}
 
+
 		// Update Last Called
 		let new_timestamp = chrono::Utc::now().timestamp();
 		update_feed_last_called_db(new_timestamp, feeds, connection);
+
 
 		// After finished insert new items to DB.
 		for res in results.feeds.iter_mut() {
@@ -223,10 +338,24 @@ pub struct RequestFeedResults {
 }
 
 
-pub fn get_rss_from_url(url: &str) -> Result<rss::Channel, Error> {
+pub fn get_rss_from_url(url: &str) -> Result<rss::Channel> {
 	use std::io::Read;
 
 	let mut content = Vec::new();
-	reqwest::get(url)?.read_to_end(&mut content)?;
+
+	let mut resp = reqwest::get(url)?;
+	resp.read_to_end(&mut content)?;
+
 	Ok(rss::Channel::read_from(&content[..])?)
+}
+
+pub fn get_atom_from_url(url: &str) -> Result<atom_syndication::Feed> {
+	use std::io::Read;
+
+	let mut content = Vec::new();
+
+	let mut resp = reqwest::get(url)?;
+	resp.read_to_end(&mut content)?;
+
+	Ok(atom_syndication::Feed::read_from(&content[..])?)
 }

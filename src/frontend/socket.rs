@@ -8,7 +8,7 @@ use actix_web::{web, Error as ActixError, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
 
 use crate::rpc::Object2CoreNotification;
-use super::rpc::{Front2CoreNotification, Core2FrontNotification};
+use super::rpc::{Core2FrontNotification};
 use crate::core::WeakFeederCore;
 use crate::error::Error;
 use crate::types::MessageId;
@@ -58,6 +58,7 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for WebSocket {
 				let mut wrapper = WebsocketWrapper::new(ctx);
 				if let Err(e) = handle_text(&mut wrapper, &mut self.weak_core, text) {
 					eprintln!("handle_text: {}", e);
+					wrapper._respond(None, Err(e));
 				}
 			}
 
@@ -77,9 +78,9 @@ impl WebSocket {
 		WebSocket { weak_core, hb: Instant::now() }
 	}
 
-	fn on_start(&self, ctx: &mut <Self as Actor>::Context) {
-		let init = Core2FrontNotification::Init{};
-		ctx.text(serde_json::to_string(&init).unwrap());
+	fn on_start(&self, _ctx: &mut <Self as Actor>::Context) {
+		// let init = Core2FrontNotification::Init{};
+		// ctx.text(serde_json::to_string(&init).unwrap());
 	}
 
 	fn hb(&self, ctx: &mut <Self as Actor>::Context) {
@@ -103,7 +104,7 @@ fn handle_text(
 	let derived = serde_json::from_str(&text)?;
 
 	if let Object2CoreNotification::Frontend { message_id, command } = derived {
-		weak_core.handle_frontend(ctx, message_id, command);
+		weak_core.handle_frontend(ctx, message_id, command)?;
 	}
 
 	Ok(())
@@ -119,26 +120,44 @@ fn handle_binary(
 }
 
 
+pub type WebSocketContext = ws::WebsocketContext<WebSocket>;
+
 pub struct WebsocketWrapper<'a> {
-	ctx: &'a mut ws::WebsocketContext<WebSocket>
+	ctx: &'a mut WebSocketContext
 }
 
 impl<'a> WebsocketWrapper<'a> {
-	pub fn new(ctx: &'a mut ws::WebsocketContext<WebSocket>) -> Self {
-		Self {
-			ctx
+	pub fn new(ctx: &'a mut WebSocketContext) -> Self {
+		Self { ctx }
+	}
+
+	pub fn respond_with(&mut self, message_id: Option<MessageId>, response: Core2FrontNotification) {
+		match message_id {
+			Some(mid) => self.respond_request(mid, response),
+			None => self.respond_notification(response)
 		}
 	}
 
-	pub fn respond_request(&mut self, message_id: MessageId, response: Result<Value, Error>) {
-		self.respond(Some(message_id), response);
+
+	pub fn respond_request(&mut self, message_id: MessageId, response: Core2FrontNotification) {
+		self.respond_request_value(message_id, serde_json::to_value(response).map_err(|e| e.into()))
 	}
 
-	pub fn respond_notification(&mut self, response: Result<Value, Error>) {
-		self.respond(None, response);
+	pub fn respond_notification(&mut self, response: Core2FrontNotification) {
+		self.respond_notification_value(serde_json::to_value(response).map_err(|e| e.into()))
 	}
 
-	pub fn respond(&mut self, message_id: Option<MessageId>, response: Result<Value, Error>) {
+
+	pub fn respond_request_value(&mut self, message_id: MessageId, response: Result<Value, Error>) {
+		self._respond(Some(message_id), response);
+	}
+
+	pub fn respond_notification_value(&mut self, response: Result<Value, Error>) {
+		self._respond(None, response);
+	}
+
+
+	pub fn _respond(&mut self, message_id: Option<MessageId>, response: Result<Value, Error>) {
 		self.ctx.text(
 			to_string(
 				&match response {

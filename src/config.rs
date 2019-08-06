@@ -1,5 +1,5 @@
 use std::io::{Read, Write};
-use std::fs::{OpenOptions, File};
+use std::fs::{OpenOptions};
 use std::path::PathBuf;
 
 use serde_json::{from_str, to_string_pretty};

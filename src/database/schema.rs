@@ -1,5 +1,5 @@
 table! {
-	items (id) {
+	items(id) {
 		id -> Integer,
 
 		guid -> Text,
@@ -19,18 +19,51 @@ table! {
 	}
 }
 
+// TODO: remove duplicates option
 table! {
-	feeds (id) {
+	feeds(id) {
 		id -> Integer,
 
+		// Save favicon.ico ?
+
 		url -> Text,
+		title -> Text,
+		description -> Text,
+		generator -> Text,
+
+		#[sql_name = "type"]
+		feed_type -> Integer,
 
 		sec_interval -> Integer,
 		remove_after -> Integer,
+
+		global_show -> Bool,
 
 		ignore_if_not_new -> Bool,
 
 		date_added -> BigInt,
 		last_called -> BigInt,
+	}
+}
+
+table! {
+	categories(id) {
+		id -> Integer,
+
+		position -> Integer,
+
+		name -> Text,
+		name_lowercase -> Text,
+
+		date_added -> BigInt,
+	}
+}
+
+table! {
+	feed_categories(id) {
+		id -> Integer,
+
+		feed_id -> Integer,
+		category_id -> Integer,
 	}
 }

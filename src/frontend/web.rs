@@ -1,11 +1,9 @@
 use std::{io, thread};
-use std::path::Path;
-use std::fs::File;
-use std::io::Read;
+
 
 use serde_json::json;
 use actix_files as fs;
-use actix_web::{get, web, App, HttpServer, Responder, HttpResponse};
+use actix_web::{get, web, App, HttpServer, HttpResponse};
 
 use crate::core::WeakFeederCore;
 use super::{WeakFrontendCore, FrontendCore};

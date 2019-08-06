@@ -7,8 +7,10 @@ use crate::frontend::rpc::Front2CoreNotification;
 #[serde(rename_all = "snake_case")]
 #[serde(tag = "method", content = "params")]
 pub enum Object2CoreNotification {
-	// Keeping the possibility of plugins.
-	Plugin {  },
+	Plugin {
+		// Keeping the possibility of plugins.
+	},
+
 	Frontend {
 		message_id: Option<MessageId>,
 		command: Front2CoreNotification
