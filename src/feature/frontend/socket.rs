@@ -1,6 +1,8 @@
 use std::ops::Deref;
 use std::time::{Duration, Instant};
 
+use log::{info, error};
+
 use serde_json::{Value, to_string, json};
 
 use actix::prelude::*;
@@ -57,7 +59,7 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for WebSocket {
 			Text(text) => {
 				let mut wrapper = WebsocketWrapper::new(ctx);
 				if let Err(e) = handle_text(&mut wrapper, &mut self.weak_core, text) {
-					eprintln!("handle_text: {}", e);
+					error!("handle_text: {}", e);
 					wrapper.respond(None, Err(e));
 				}
 			}
@@ -65,7 +67,7 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for WebSocket {
 			Binary(bin) => {
 				let mut wrapper = WebsocketWrapper::new(ctx);
 				if let Err(e) = handle_binary(&mut wrapper, &mut self.weak_core, bin.as_ref()) {
-					eprintln!("handle_binary: {}", e);
+					error!("handle_binary: {}", e);
 				}
 			}
 		}
@@ -86,7 +88,7 @@ impl WebSocket {
 	fn hb(&self, ctx: &mut <Self as Actor>::Context) {
 		ctx.run_interval(HEARTBEAT_INTERVAL, |act, ctx| {
 			if Instant::now().duration_since(act.hb) > CLIENT_TIMEOUT {
-				println!("Websocket Client heartbeat failed, disconnecting!");
+				info!("Websocket Client heartbeat failed, disconnecting!");
 
 				ctx.stop();
 
@@ -115,7 +117,7 @@ fn handle_text(
 fn handle_binary(
 	_ctx: &mut WebsocketWrapper, _weak_core: &mut WeakFeederCore, binary: &[u8]
 ) -> Result<(), Error> {
-	println!("Binary: {:?}", binary);
+	info!("Binary: {:?}", binary);
 
 	Ok(())
 }

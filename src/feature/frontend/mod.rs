@@ -17,7 +17,6 @@ impl FrontendCore {
 		Self(Arc::new(Mutex::new(FrontendState::new())))
 	}
 
-	//
 
 	pub fn init(&mut self, weak_core: WeakFeederCore) {
 		let weak = self.to_weak();
@@ -27,7 +26,6 @@ impl FrontendCore {
 		inner.init(weak_core, weak);
 	}
 
-	//
 
 	pub fn to_inner(&self) -> MutexGuard<FrontendState> {
 		self.0.lock().unwrap()

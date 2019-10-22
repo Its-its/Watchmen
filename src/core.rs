@@ -1,5 +1,6 @@
 use std::sync::{Arc, Mutex, MutexGuard, Weak};
 
+use log::info;
 
 use crate::state::CoreState;
 use crate::request::CollectedResult;
@@ -28,29 +29,18 @@ impl FeederCore {
 				let req = inner.run_all_requests();
 
 				if let Some(e) = req.error.as_ref() {
-					println!("Request Error: {:?}", e);
+					info!("Request Error: {:?}", e);
 				} else {
 					let feed_errors = req.feeds.iter()
 						.filter(|f| f.is_err())
 						.collect::<Vec<&CollectedResult>>();
 
 					if !feed_errors.is_empty() {
-						println!("Feed Errors: {:#?}", feed_errors);
+						info!("Feed Errors: {:#?}", feed_errors);
 					} else {
-						println!("Feeds ran without error. Took: {}s :)", req.duration.as_secs());
+						info!("Feeds ran without error. Took: {}s :)", req.duration.as_secs());
 					}
 				}
-
-				// TODO: Check to see if there are new items.
-				// Go through filter, then notify.
-
-				// let filter = Filter::Regex("[0-9]+\\s?tb".into(), Default::default());
-
-				// for site_feed in req.feeds {
-				// 	if let Ok(req_feed) = site_feed {
-				// 		let found = req_feed.filter_items(&filter);
-				// 	}
-				// };
 			}
 
 			// Sleep otherwise loop will make the process use lots of cpu power.

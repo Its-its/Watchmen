@@ -2,6 +2,7 @@ use std::sync::mpsc::{channel, Sender};
 use std::time::{Duration, Instant};
 use std::thread;
 
+use log::{info, error};
 use diesel::RunQueryDsl;
 
 use crate::error::{Error, Result};
@@ -26,7 +27,7 @@ impl FeedType {
 			Ok(c) => return FeedType::Rss(Ok(c)),
 
 			Err(e) => {
-				println!("rss: {:?}", e);
+				info!("rss: {:?}", e);
 				if let Error::Rss(e) = e {
 					use rss::Error::InvalidStartTag;
 
@@ -46,7 +47,7 @@ impl FeedType {
 			Ok(c) => return FeedType::Atom(Ok(c)),
 
 			Err(e) => {
-				println!("atom: {:?}", e);
+				info!("atom: {:?}", e);
 				if let Error::Atom(e) = e {
 					use atom_syndication::Error::InvalidStartTag;
 
@@ -191,7 +192,7 @@ impl RequestManager {
 
 		self.is_idle = false;
 
-		println!("Starting Requests.. Found: {}", feeds.len());
+		info!("Starting Requests.. Found: {}", feeds.len());
 
 		let (tx, rx) = channel();
 
@@ -202,7 +203,7 @@ impl RequestManager {
 			.spawn(move || tx.send(request_feed(feed)).expect("send"));
 
 			if let Err(e) = thread {
-				eprintln!("Thread Error: {}", e);
+				error!("Thread Error: {}", e);
 			}
 		};
 

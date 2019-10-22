@@ -3,26 +3,23 @@ use serde_json::Value;
 use crate::types::MessageId;
 use crate::Result;
 
-
+pub mod logging;
 pub mod database;
 
-#[cfg(feature = "website")]
-pub mod frontend;
-
-pub mod cmdline;
+#[cfg(feature = "daemon")] pub mod daemon;
+#[cfg(feature = "terminal")] pub mod terminal;
+#[cfg(feature = "website")] pub mod frontend;
 
 pub mod library;
-
 pub mod rpc;
 
 
-pub use database::*;
-#[cfg(feature = "website")]
-pub use frontend::*;
-
-pub use cmdline::*;
+#[cfg(feature = "daemon")] pub use daemon::*;
+#[cfg(feature = "terminal")] pub use terminal::*;
+#[cfg(feature = "website")] pub use frontend::*;
 
 pub use library::*;
+pub use database::*;
 
 pub use rpc::{Front2CoreNotification, Core2FrontNotification};
 

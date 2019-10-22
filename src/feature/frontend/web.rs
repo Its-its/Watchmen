@@ -1,5 +1,6 @@
 use std::{io, thread};
 
+use log::info;
 
 use serde_json::json;
 use actix_files as fs;
@@ -31,7 +32,7 @@ impl Web {
 		self.weak_frontend = Some(weak_frontend);
 		self.weak_core = Some(weak_core);
 
-		println!("Running HTTP + WS Server");
+		info!("Running HTTP + WS Server");
 
 		let mut handlebars = Handlebars::new();
 		handlebars.register_templates_directory(".hbs", "./app/views").expect("register_templates_dirs");
