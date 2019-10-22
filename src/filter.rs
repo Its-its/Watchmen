@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use regex::RegexBuilder;
 
-use crate::database::models::{NewItem, Item};
+use crate::feature::models::Item;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -19,9 +19,9 @@ pub enum Filter {
 	Or(Vec<Filter>)
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegexOpts {
-	case_sensitive: bool,
+	case_insensitive: bool,
 	multi_line: bool,
 	dot_matches_new_line: bool,
 	swap_greed: bool,
@@ -30,14 +30,28 @@ pub struct RegexOpts {
 	octal: bool
 }
 
+impl Default for RegexOpts {
+	fn default() -> Self {
+		RegexOpts {
+			dot_matches_new_line: false,
+			ignore_whitespace: false,
+			case_insensitive: true,
+			multi_line: false,
+			swap_greed: false,
+			unicode: true,
+			octal: false
+		}
+	}
+}
+
 
 impl Filter {
-	fn filter(&self, item: &NewItem) -> bool {
+	pub fn filter(&self, item: &Item) -> bool {
 		match self {
 			Self::Regex(regex, opts) => {
 				let mut builder = RegexBuilder::new(&regex);
 
-				builder.case_insensitive(!opts.case_sensitive);
+				builder.case_insensitive(opts.case_insensitive);
 				builder.multi_line(opts.multi_line);
 				builder.dot_matches_new_line(opts.dot_matches_new_line);
 				builder.swap_greed(opts.swap_greed);
@@ -70,7 +84,7 @@ impl Filter {
 	}
 
 	// Display showing why said item is being filtered in or out. (new enum FilterDisplay ??)
-	fn display(&self, item: &Item) {
+	pub fn display(&self, _item: &Item) {
 		//
 	}
 }

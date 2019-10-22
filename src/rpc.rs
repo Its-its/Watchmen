@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 
 use crate::types::MessageId;
-use crate::frontend::rpc::Front2CoreNotification;
+use crate::feature::Front2CoreNotification;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

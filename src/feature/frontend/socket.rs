@@ -8,7 +8,7 @@ use actix_web::{web, Error as ActixError, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
 
 use crate::rpc::Object2CoreNotification;
-use super::rpc::{Core2FrontNotification};
+use crate::feature::ResponseWrapper;
 use crate::core::WeakFeederCore;
 use crate::error::Error;
 use crate::types::MessageId;
@@ -58,7 +58,7 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for WebSocket {
 				let mut wrapper = WebsocketWrapper::new(ctx);
 				if let Err(e) = handle_text(&mut wrapper, &mut self.weak_core, text) {
 					eprintln!("handle_text: {}", e);
-					wrapper._respond(None, Err(e));
+					wrapper.respond(None, Err(e));
 				}
 			}
 
@@ -98,13 +98,14 @@ impl WebSocket {
 	}
 }
 
+
 fn handle_text(
 	ctx: &mut WebsocketWrapper, weak_core: &mut WeakFeederCore, text: String
 ) -> Result<(), Error> {
 	let derived = serde_json::from_str(&text)?;
 
 	if let Object2CoreNotification::Frontend { message_id, command } = derived {
-		weak_core.handle_frontend(ctx, message_id, command)?;
+		weak_core.handle_response(ctx, message_id, command)?;
 	}
 
 	Ok(())
@@ -130,34 +131,10 @@ impl<'a> WebsocketWrapper<'a> {
 	pub fn new(ctx: &'a mut WebSocketContext) -> Self {
 		Self { ctx }
 	}
+}
 
-	pub fn respond_with(&mut self, message_id: Option<MessageId>, response: Core2FrontNotification) {
-		match message_id {
-			Some(mid) => self.respond_request(mid, response),
-			None => self.respond_notification(response)
-		}
-	}
-
-
-	pub fn respond_request(&mut self, message_id: MessageId, response: Core2FrontNotification) {
-		self.respond_request_value(message_id, serde_json::to_value(response).map_err(|e| e.into()))
-	}
-
-	pub fn respond_notification(&mut self, response: Core2FrontNotification) {
-		self.respond_notification_value(serde_json::to_value(response).map_err(|e| e.into()))
-	}
-
-
-	pub fn respond_request_value(&mut self, message_id: MessageId, response: Result<Value, Error>) {
-		self._respond(Some(message_id), response);
-	}
-
-	pub fn respond_notification_value(&mut self, response: Result<Value, Error>) {
-		self._respond(None, response);
-	}
-
-
-	pub fn _respond(&mut self, message_id: Option<MessageId>, response: Result<Value, Error>) {
+impl<'a> ResponseWrapper for WebsocketWrapper<'a> {
+	fn respond(&mut self, message_id: Option<MessageId>, response: Result<Value, Error>) {
 		self.ctx.text(
 			to_string(
 				&match response {

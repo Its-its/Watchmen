@@ -5,8 +5,9 @@ use std::thread;
 use diesel::RunQueryDsl;
 
 use crate::error::{Error, Result};
-use crate::database::schema::{items as ItemsSchema, feeds as FeedsSchema};
-use crate::database::models::{NewItem, Feed, NewFeed};
+use crate::feature::schema::{items as ItemsSchema, feeds as FeedsSchema};
+use crate::feature::models::{NewItem, Feed, NewFeed};
+
 
 pub type CollectedResult = Result<RequestFeedResults>;
 
@@ -105,8 +106,8 @@ impl RequestManager {
 		}
 	}
 
-	pub fn add_feed_url(&self, url: String, connection: &diesel::SqliteConnection) -> Result<(NewFeed, usize)> {
-		let feed = match FeedType::from_url(&url) {
+	pub fn create_new_feed(&self, url: String) -> Result<NewFeed> {
+		Ok(match FeedType::from_url(&url) {
 			FeedType::Rss(Ok(feed)) => {
 				NewFeed {
 					url: url,
@@ -124,7 +125,7 @@ impl RequestManager {
 					ignore_if_not_new: true,
 
 					date_added: chrono::Utc::now().naive_utc().timestamp(),
-					last_called: chrono::Utc::now().naive_utc().timestamp()
+					last_called: chrono::Utc::now().naive_utc().timestamp(),
 				}
 			}
 
@@ -145,7 +146,7 @@ impl RequestManager {
 					ignore_if_not_new: true,
 
 					date_added: chrono::Utc::now().naive_utc().timestamp(),
-					last_called: chrono::Utc::now().naive_utc().timestamp()
+					last_called: chrono::Utc::now().naive_utc().timestamp(),
 				}
 			}
 
@@ -155,13 +156,7 @@ impl RequestManager {
 
 			FeedType::Atom(Err(e))
 			| FeedType::Rss(Err(e)) => return Err(e)
-		};
-
-		diesel::insert_or_ignore_into(FeedsSchema::table)
-			.values(&feed)
-			.execute(connection)
-			.map(|i| (feed, i))
-			.map_err(|e| e.into())
+		})
 	}
 
 	pub fn request_all_if_idle(&mut self, is_manual: bool, connection: &diesel::SqliteConnection) -> RequestResults {
@@ -230,21 +225,22 @@ impl RequestManager {
 			}
 		}
 
+		// Database
+		{
+			// Update Last Called
+			let new_timestamp = chrono::Utc::now().timestamp();
+			update_feed_last_called_db(new_timestamp, feeds, connection);
 
-		// Update Last Called
-		let new_timestamp = chrono::Utc::now().timestamp();
-		update_feed_last_called_db(new_timestamp, feeds, connection);
+			// After finished insert new items to DB.
+			for res in results.feeds.iter_mut() {
+				if let Ok(res) = res {
+					let e = diesel::insert_or_ignore_into(ItemsSchema::table)
+						.values(&res.to_insert)
+						.execute(connection);
 
-
-		// After finished insert new items to DB.
-		for res in results.feeds.iter_mut() {
-			if let Ok(res) = res {
-				let e = diesel::insert_or_ignore_into(ItemsSchema::table)
-					.values(&res.to_insert)
-					.execute(connection);
-
-				if let Ok(count) = e {
-					res.new_item_count = count;
+					if let Ok(count) = e {
+						res.new_item_count = count;
+					}
 				}
 			}
 		}
@@ -327,6 +323,7 @@ pub struct RequestResults {
 	pub concurrency: i32,
 	pub feeds: Vec<CollectedResult>
 }
+
 
 #[derive(Debug)]
 pub struct RequestFeedResults {

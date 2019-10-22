@@ -1,14 +1,11 @@
 use std::sync::{Arc, Mutex, MutexGuard, Weak};
 
 
-use crate::error::Result;
-use crate::database::models;
-use crate::types::MessageId;
 use crate::state::CoreState;
-use crate::frontend::socket::WebsocketWrapper;
-use crate::frontend::rpc::{Front2CoreNotification, Core2FrontNotification};
-
 use crate::request::CollectedResult;
+
+use crate::Result;
+// use crate::Filter;
 
 pub struct FeederCore(Arc<Mutex<CoreState>>);
 
@@ -28,12 +25,14 @@ impl FeederCore {
 		loop {
 			{
 				let mut inner = self.to_inner();
-				let req = inner.run_request();
+				let req = inner.run_all_requests();
 
 				if let Some(e) = req.error.as_ref() {
 					println!("Request Error: {:?}", e);
 				} else {
-					let feed_errors = req.feeds.iter().filter(|f| f.is_err()).collect::<Vec<&CollectedResult>>();
+					let feed_errors = req.feeds.iter()
+						.filter(|f| f.is_err())
+						.collect::<Vec<&CollectedResult>>();
 
 					if !feed_errors.is_empty() {
 						println!("Feed Errors: {:#?}", feed_errors);
@@ -45,15 +44,13 @@ impl FeederCore {
 				// TODO: Check to see if there are new items.
 				// Go through filter, then notify.
 
-				// let filtered = req.feeds.iter()
-				// 	.filter(|f: &Result<crate::request::RequestFeedResults>| {
-				// 		f.map(|res| {
-				// 			res.to_insert.
-				// 		})
-				// 	})
-				// 	.collect::<Vec<&CollectedResult>>();
+				// let filter = Filter::Regex("[0-9]+\\s?tb".into(), Default::default());
 
-				// println!("{:?}", filtered);
+				// for site_feed in req.feeds {
+				// 	if let Ok(req_feed) = site_feed {
+				// 		let found = req_feed.filter_items(&filter);
+				// 	}
+				// };
 			}
 
 			// Sleep otherwise loop will make the process use lots of cpu power.
@@ -74,6 +71,10 @@ impl FeederCore {
 
 
 // Weak Core | sent to the plugins / WebSocket
+use crate::feature::{models, schema::feeds as FeedsSchema};
+use crate::feature::ResponseWrapper;
+use crate::feature::{Core2FrontNotification, Front2CoreNotification};
+use crate::types::MessageId;
 
 #[derive(Clone)]
 pub struct WeakFeederCore(Weak<Mutex<CoreState>>);
@@ -82,13 +83,10 @@ impl WeakFeederCore {
 	pub fn upgrade(&self) -> Option<FeederCore> {
 		self.0.upgrade().map(FeederCore)
 	}
-}
 
-
-impl WeakFeederCore {
-	pub fn handle_frontend(
-		&mut self,
-		ctx: &mut WebsocketWrapper,
+	pub fn handle_response(
+		&self,
+		ctx: &mut dyn ResponseWrapper,
 		msg_id_opt: Option<MessageId>,
 		rpc: Front2CoreNotification
 	) -> Result<()> {
@@ -115,8 +113,11 @@ impl WeakFeederCore {
 			}
 
 			ItemList { category_id, items, skip } => {
+				//
 				let total_amount = models::get_item_total(category_id, &conn)?;
 				let items_found = models::get_items_in_range(category_id, items, skip, &conn)?;
+
+				// let filter = Filter::Regex("[0-9]+\\s?tb".into(), Default::default());
 
 				let list = Core2FrontNotification::ItemList {
 					items: items_found,
@@ -147,11 +148,17 @@ impl WeakFeederCore {
 
 			// Write Only
 			AddListener { url } => {
-				let feed = inner.requester.add_feed_url(url, conn)?;
+				use diesel::RunQueryDsl;
+
+				let feed = inner.requester.create_new_feed(url)?;
+
+				let affected = diesel::insert_or_ignore_into(FeedsSchema::table)
+					.values(&feed)
+					.execute(conn)?;
 
 				let new_feed = Core2FrontNotification::NewListener {
-					affected: feed.1,
-					listener: feed.0,
+					affected: affected,
+					listener: feed,
 				};
 
 				ctx.respond_with(msg_id_opt, new_feed);

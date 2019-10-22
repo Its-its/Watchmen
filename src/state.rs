@@ -1,13 +1,16 @@
 use std::sync::RwLock;
+#[cfg(feature = "website")]
+use crate::feature::FrontendCore;
 
-use crate::frontend::FrontendCore;
+use crate::feature::Connection;
+
 use crate::core::WeakFeederCore;
-use crate::database::Connection;
 use crate::request::{RequestManager, RequestResults};
 use crate::config::ConfigManager;
 
 
 pub struct CoreState {
+	#[cfg(feature = "website")]
 	pub frontend: FrontendCore,
 	pub connection: Connection,
 	pub requester: RequestManager,
@@ -17,6 +20,7 @@ pub struct CoreState {
 impl CoreState {
 	pub fn new() -> Self {
 		Self {
+			#[cfg(feature = "website")]
 			frontend: FrontendCore::new(),
 			connection: Connection::new(),
 			requester: RequestManager::new(),
@@ -24,6 +28,7 @@ impl CoreState {
 		}
 	}
 
+	#[allow(unused_variables)]
 	pub fn init(&mut self, weak_core: WeakFeederCore) {
 		{
 			let mut write = self.config.write().unwrap();
@@ -36,11 +41,12 @@ impl CoreState {
 
 		self.requester.init(self.connection.connection()).unwrap_or_else(|e| panic!("Requester Initiation Error: {}", e));
 
+		#[cfg(feature = "website")]
 		self.frontend.init(weak_core);
 	}
 
 	//
-	pub fn run_request(&mut self) -> RequestResults {
+	pub fn run_all_requests(&mut self) -> RequestResults {
 		self.requester.request_all_if_idle(
 			false,
 			self.connection.connection()

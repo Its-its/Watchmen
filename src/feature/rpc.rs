@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use crate::database::models::{
+use super::models::{
 	QueryId,
 	Item as FeedItem,
 	Feed,

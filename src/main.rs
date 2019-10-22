@@ -6,14 +6,16 @@ pub mod types;
 pub mod error;
 pub mod filter;
 pub mod config;
-pub mod database;
-pub mod notification;
 
 
 pub mod core;
 pub mod state;
 pub mod request;
-pub mod frontend;
+pub mod feature;
+
+
+pub use filter::{Filter, RegexOpts};
+pub use error::Result;
 
 
 fn main() {

@@ -73,5 +73,7 @@ table! {
 		id -> Integer,
 
 		feed_id -> Integer,
+
+		feed -> Text,
 	}
 }

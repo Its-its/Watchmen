@@ -12,7 +12,9 @@ use diesel::prelude::*;
 use super::schema::*;
 use crate::state::CoreState;
 
+
 pub type QueryId = i32;
+
 
 // Item
 
@@ -296,6 +298,8 @@ pub struct FeedFilter {
 	pub id: QueryId,
 
 	pub feed_id: QueryId,
+
+	pub feed: Option<String>
 }
 
 
@@ -303,7 +307,10 @@ pub struct FeedFilter {
 #[table_name = "feed_filter"]
 pub struct NewFeedFilter {
 	pub feed_id: QueryId,
+
+	pub feed: Option<String>
 }
+
 
 
 // Listener Calls
@@ -454,6 +461,7 @@ pub fn update_category(
 		.set(edit)
 		.execute(conn)
 }
+
 
 // Category Feeds Calls
 

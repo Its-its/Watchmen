@@ -1,13 +1,13 @@
 use std::sync::{Arc, Mutex, MutexGuard, Weak};
 
-
 use crate::core::WeakFeederCore;
 
-pub mod rpc;
 pub mod web;
 pub mod socket;
 
 pub use web::Web;
+pub use socket::WebsocketWrapper;
+use super::rpc::{Front2CoreNotification, Core2FrontNotification};
 
 
 pub struct FrontendCore(Arc<Mutex<FrontendState>>);
