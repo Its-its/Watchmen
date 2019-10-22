@@ -19,7 +19,7 @@ table! {
 	}
 }
 
-// TODO: remove duplicates option
+// TODO: a remove duplicates option
 table! {
 	feeds(id) {
 		id -> Integer,
@@ -65,5 +65,13 @@ table! {
 
 		feed_id -> Integer,
 		category_id -> Integer,
+	}
+}
+
+table! {
+	feed_filter(id) {
+		id -> Integer,
+
+		feed_id -> Integer,
 	}
 }

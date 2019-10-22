@@ -39,8 +39,9 @@ impl CoreState {
 		self.frontend.init(weak_core);
 	}
 
+	//
 	pub fn run_request(&mut self) -> RequestResults {
-		self.requester.run_if_idle(
+		self.requester.request_all_if_idle(
 			false,
 			self.connection.connection()
 		)

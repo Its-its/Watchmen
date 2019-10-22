@@ -10,6 +10,7 @@ use diesel::{Queryable, Insertable, SqliteConnection, QueryResult};
 use diesel::prelude::*;
 
 use super::schema::*;
+use crate::state::CoreState;
 
 pub type QueryId = i32;
 
@@ -168,7 +169,7 @@ impl From<&AtomItem> for NewItem {
 
 // Feeds
 
-#[derive(Serialize, Deserialize, Debug, Clone, Queryable, Identifiable)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, Queryable, Identifiable)]
 pub struct Feed {
 	pub id: QueryId,
 
@@ -255,6 +256,17 @@ pub struct NewCategory {
 	pub date_added: i64,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, AsChangeset)]
+#[table_name = "categories"]
+pub struct EditCategory {
+	pub position: Option<i32>,
+
+	pub name: Option<String>,
+	pub name_lowercase: Option<String>,
+
+	pub date_added: Option<i64>,
+}
+
 
 // Feeds Categories
 
@@ -275,10 +287,28 @@ pub struct NewFeedCategory {
 	pub category_id: QueryId
 }
 
+
+//  Filters
+
+#[derive(Serialize, Deserialize, Debug, Clone, Queryable, Identifiable)]
+#[table_name = "feed_filter"]
+pub struct FeedFilter {
+	pub id: QueryId,
+
+	pub feed_id: QueryId,
+}
+
+
+#[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
+#[table_name = "feed_filter"]
+pub struct NewFeedFilter {
+	pub feed_id: QueryId,
+}
+
+
 // Listener Calls
 
 pub fn get_item_total(category_id: Option<QueryId>, conn: &SqliteConnection) -> QueryResult<i64> {
-	use diesel::prelude::*;
 	use self::items::dsl::*;
 
 	match category_id {
@@ -299,7 +329,6 @@ pub fn get_item_total(category_id: Option<QueryId>, conn: &SqliteConnection) -> 
 }
 
 pub fn get_items_in_range(category_id: Option<QueryId>, item_count: i64, skip_count: i64, conn: &SqliteConnection) -> QueryResult<Vec<Item>> {
-	use diesel::prelude::*;
 	use self::items::dsl::*;
 
 	match category_id {
@@ -326,8 +355,6 @@ pub fn get_items_in_range(category_id: Option<QueryId>, item_count: i64, skip_co
 }
 
 pub fn get_item_count_since(since: i64, conn: &SqliteConnection) -> QueryResult<i64> {
-	use diesel::prelude::*;
-
 	self::items::table
 		.filter(self::items::dsl::date.gt(since))
 		.count()
@@ -335,7 +362,6 @@ pub fn get_item_count_since(since: i64, conn: &SqliteConnection) -> QueryResult<
 }
 
 pub fn remove_item(l_id: QueryId, conn: &SqliteConnection) -> QueryResult<usize> {
-	use diesel::prelude::*;
 	use self::items::dsl::*;
 
 	diesel::delete(items.filter(id.eq(l_id))).execute(conn)
@@ -345,13 +371,15 @@ pub fn remove_item(l_id: QueryId, conn: &SqliteConnection) -> QueryResult<usize>
 // Feed Calls
 
 pub fn get_listeners(conn: &SqliteConnection) -> QueryResult<Vec<Feed>> {
-	use diesel::prelude::*;
-
 	self::feeds::table.load(conn)
 }
 
-pub fn remove_listener(f_id: QueryId, rem_stored: bool, conn: &SqliteConnection) -> QueryResult<usize> {
-	use diesel::prelude::*;
+pub fn remove_listener(f_id: QueryId, rem_stored: bool, state: &mut CoreState) -> QueryResult<usize> {
+	let conn = state.connection.connection();
+
+	if let Some(index) = state.requester.feeds.iter().position(|f| f.id == f_id) {
+		state.requester.feeds.remove(index);
+	}
 
 	if rem_stored {
 		use self::items::dsl::*;
@@ -368,68 +396,83 @@ pub fn remove_listener(f_id: QueryId, rem_stored: bool, conn: &SqliteConnection)
 }
 
 pub fn update_listener(
-	l_id: QueryId,
+	f_id: QueryId,
 	edit: &EditFeed,
-	conn: &SqliteConnection
+	state: &mut CoreState
 ) -> QueryResult<usize> {
-	use diesel::prelude::*;
+	{ // Update Stored Feed
+		if let Some(feed) = state.requester.feeds.iter_mut().find(|f| f.id == f_id) {
+			if let Some(i) = edit.description.as_ref() { feed.description = i.to_owned(); }
+			if let Some(i) = edit.generator.as_ref() { feed.generator = i.to_owned(); }
+			if let Some(i) = edit.title.as_ref() { feed.title = i.to_owned(); }
+			if let Some(i) = edit.global_show { feed.global_show = i; }
+			if let Some(i) = edit.ignore_if_not_new { feed.ignore_if_not_new = i; }
+			if let Some(i) = edit.remove_after { feed.remove_after = i; }
+			if let Some(i) = edit.sec_interval { feed.sec_interval = i; }
+		}
+	}
+
 	use self::feeds::dsl::*;
 
-	diesel::update(feeds.filter(id.eq(l_id)))
+	diesel::update(feeds.filter(id.eq(f_id)))
 		.set(edit)
-		.execute(conn)
+		.execute(state.connection.connection())
 }
 
 
 // Category Calls
 
 pub fn get_categories(conn: &SqliteConnection) -> QueryResult<Vec<Category>> {
-	use diesel::prelude::*;
-
 	self::categories::table.load(conn)
 }
 
 pub fn get_category(cat_id: QueryId, conn: &SqliteConnection) -> QueryResult<Category> {
-	use diesel::prelude::*;
 	use self::categories::dsl::*;
 
 	categories.filter(id.eq(cat_id)).get_result(conn)
 }
 
 pub fn create_category(category: &NewCategory, conn: &SqliteConnection) -> QueryResult<usize> {
-	use diesel::prelude::*;
 	use self::categories::dsl::*;
-
 	diesel::insert_into(categories).values(category).execute(conn)
 }
 
+pub fn remove_category(cat_id: QueryId, conn: &SqliteConnection) -> QueryResult<usize> {
+	use self::categories::dsl::*;
+
+	diesel::delete(categories.filter(id.eq(cat_id))).execute(conn)
+}
+
+pub fn update_category(
+	c_id: QueryId,
+	edit: &EditCategory,
+	conn: &SqliteConnection
+) -> QueryResult<usize> {
+	use self::categories::dsl::*;
+
+	diesel::update(categories.filter(id.eq(c_id)))
+		.set(edit)
+		.execute(conn)
+}
 
 // Category Feeds Calls
 
 pub fn create_category_feed(category: &NewFeedCategory, conn: &SqliteConnection) -> QueryResult<usize> {
-	use diesel::prelude::*;
 	use self::feed_categories::dsl::*;
-
 	diesel::insert_into(feed_categories).values(category).execute(conn)
 }
 
 pub fn remove_category_feed(f_id: QueryId, conn: &SqliteConnection) -> QueryResult<usize> {
-	use diesel::prelude::*;
 	use self::feed_categories::dsl::*;
-
-	diesel::delete(feed_categories.filter(id.eq(f_id)))
-		.execute(conn)
+	diesel::delete(feed_categories.filter(id.eq(f_id))).execute(conn)
 }
 
 
 pub fn get_feed_categories(conn: &SqliteConnection) -> QueryResult<Vec<FeedCategory>> {
-	use diesel::prelude::*;
-
 	self::feed_categories::table.load(conn)
 }
 
 pub fn get_category_feeds(cat_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<FeedCategory>> {
-	use diesel::prelude::*;
 	use self::feed_categories::dsl::*;
 
 	feed_categories.filter(category_id.eq(cat_id)).get_results(conn)

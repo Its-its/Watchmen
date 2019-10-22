@@ -33,6 +33,13 @@ interface ModelCategory {
 	position: number;
 };
 
+interface ModelEditCategory {
+	date_added?: number;
+	name?: string;
+	name_lowercase?: string;
+	position?: number;
+}
+
 interface ModelListener {
 	id?: number;
 
@@ -247,6 +254,8 @@ class SocketManager {
 class Table {
 	container = document.createElement('div');
 
+	showing_item_content = <Nullable<HTMLDivElement>>null;
+
 	row_ids: number[] = [];
 	rows: TableItem[] = [];
 
@@ -273,6 +282,7 @@ class Table {
 			this.container.removeChild(this.container.firstChild);
 		}
 
+		this.showing_item_content = null;
 		this.last_req_amount = 0;
 		this.last_skip_amount = 0;
 		this.last_total_items = 0;
@@ -539,7 +549,21 @@ class TableItem {
 			span.href = this.link;
 
 			span.addEventListener('click', e => {
-				console.log('Showing item info');
+				var showing_content = app.table.showing_item_content;
+
+				if (showing_content != null) {
+					this.container.removeChild(showing_content);
+					app.table.showing_item_content = null;
+				} else {
+					showing_content = document.createElement('div');
+					showing_content.style.padding = '10px';
+					showing_content.innerHTML = this.content;
+
+					this.container.appendChild(showing_content);
+
+					app.table.showing_item_content = showing_content;
+				}
+
 				e.preventDefault();
 				return false;
 			});
@@ -569,6 +593,7 @@ class TableItem {
 			var a_href = document.createElement('a');
 			a_href.className = 'default';
 			a_href.innerText = 'link';
+			a_href.target = '_blank';
 			a_href.href = this.link;
 			li.appendChild(a_href);
 
@@ -1305,6 +1330,31 @@ function send_create_category(name: string, cb?: ResponseFunc<CreateCategoryResp
 		app.socket.send_notification('add_category', opts);
 	} else {
 		app.socket.send_response('add_category', opts, cb);
+	}
+}
+
+function send_remove_category(cat_feed_id: number, cb?: ResponseFunc<AddCategoryFeedResponse>) {
+	var opts = {
+		id: cat_feed_id
+	};
+
+	if (cb == null) {
+		app.socket.send_notification('remove_category', opts);
+	} else {
+		app.socket.send_response('remove_category', opts, cb);
+	}
+}
+
+function send_edit_category(id: number, editing: ModelEditCategory,  cb?: ResponseFunc<EditListenerResponse>) {
+	var opts = {
+		id: id,
+		editing: editing
+	};
+
+	if (cb == null) {
+		app.socket.send_notification('edit_category', opts);
+	} else {
+		app.socket.send_response('edit_category', opts, cb);
 	}
 }
 

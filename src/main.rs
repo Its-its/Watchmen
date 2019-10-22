@@ -4,14 +4,17 @@
 pub mod rpc;
 pub mod types;
 pub mod error;
+pub mod filter;
 pub mod config;
 pub mod database;
+pub mod notification;
 
 
 pub mod core;
 pub mod state;
 pub mod request;
 pub mod frontend;
+
 
 fn main() {
 	let mut core = core::FeederCore::new();

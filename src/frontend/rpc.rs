@@ -9,7 +9,8 @@ use crate::database::models::{
 	Category,
 	FeedCategory,
 	NewCategory,
-	NewFeedCategory
+	NewFeedCategory,
+	EditCategory
 };
 
 
@@ -52,8 +53,7 @@ pub enum Front2CoreNotification {
 
 	EditCategory {
 		id: QueryId,
-		name: String,
-		position: i32
+		editing: EditCategory
 	},
 
 	AddFeedCategory {
@@ -120,7 +120,8 @@ pub enum Core2FrontNotification {
 	Updates {
 		since: i64,
 
-		new_items: i64
+		new_items: i64,
+		notifications: i64
 	},
 
 	CategoryList {
@@ -130,6 +131,15 @@ pub enum Core2FrontNotification {
 
 	NewCategory {
 		category: NewCategory,
+		affected: usize
+	},
+
+	RemoveCategory {
+		affected: usize
+	},
+
+	EditCategory {
+		category: EditCategory,
 		affected: usize
 	},
 

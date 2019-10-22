@@ -8,6 +8,8 @@ use crate::state::CoreState;
 use crate::frontend::socket::WebsocketWrapper;
 use crate::frontend::rpc::{Front2CoreNotification, Core2FrontNotification};
 
+use crate::request::CollectedResult;
+
 pub struct FeederCore(Arc<Mutex<CoreState>>);
 
 impl FeederCore {
@@ -31,7 +33,7 @@ impl FeederCore {
 				if let Some(e) = req.error.as_ref() {
 					println!("Request Error: {:?}", e);
 				} else {
-					let feed_errors = req.feeds.iter().filter(|f| f.is_err()).collect::<Vec<_>>();
+					let feed_errors = req.feeds.iter().filter(|f| f.is_err()).collect::<Vec<&CollectedResult>>();
 
 					if !feed_errors.is_empty() {
 						println!("Feed Errors: {:#?}", feed_errors);
@@ -42,10 +44,20 @@ impl FeederCore {
 
 				// TODO: Check to see if there are new items.
 				// Go through filter, then notify.
+
+				// let filtered = req.feeds.iter()
+				// 	.filter(|f: &Result<crate::request::RequestFeedResults>| {
+				// 		f.map(|res| {
+				// 			res.to_insert.
+				// 		})
+				// 	})
+				// 	.collect::<Vec<&CollectedResult>>();
+
+				// println!("{:?}", filtered);
 			}
 
 			// Sleep otherwise loop will make the process use lots of cpu power.
-			std::thread::sleep(std::time::Duration::from_secs(30));
+			std::thread::sleep(std::time::Duration::from_secs(10));
 		}
 	}
 
@@ -83,7 +95,7 @@ impl WeakFeederCore {
 		use Front2CoreNotification::*;
 
 		let upgrade = self.upgrade().unwrap();
-		let inner = upgrade.to_inner();
+		let mut inner = upgrade.to_inner();
 
 		let conn = inner.connection.connection();
 
@@ -95,7 +107,8 @@ impl WeakFeederCore {
 
 				let updates = Core2FrontNotification::Updates {
 					since: since,
-					new_items: new_count
+					new_items: new_count,
+					notifications: 0
 				};
 
 				ctx.respond_with(msg_id_opt, updates);
@@ -145,7 +158,7 @@ impl WeakFeederCore {
 			}
 
 			RemoveListener { id, rem_stored } => {
-				let affected = models::remove_listener(id, rem_stored, conn)?;
+				let affected = models::remove_listener(id, rem_stored, &mut inner)?;
 
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::RemoveListener { affected });
 			}
@@ -193,12 +206,22 @@ impl WeakFeederCore {
 			}
 
 			EditListener { id, editing } => {
-				let affected = models::update_listener(id, &editing, &conn)?;
+				let affected = models::update_listener(id, &editing, &mut inner)?;
 
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::EditListener { affected, listener: editing });
 			}
 
-			_ => ()
+			RemoveCategory { id } => {
+				let affected = models::remove_category(id, conn)?;
+
+				ctx.respond_with(msg_id_opt, Core2FrontNotification::RemoveCategory { affected });
+			}
+
+			EditCategory { id, editing } => {
+				let affected = models::update_category(id, &editing, conn)?;
+
+				ctx.respond_with(msg_id_opt, Core2FrontNotification::EditCategory { affected, category: editing });
+			}
 		}
 
 		Ok(())

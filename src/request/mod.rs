@@ -8,6 +8,8 @@ use crate::error::{Error, Result};
 use crate::database::schema::{items as ItemsSchema, feeds as FeedsSchema};
 use crate::database::models::{NewItem, Feed, NewFeed};
 
+pub type CollectedResult = Result<RequestFeedResults>;
+
 
 pub enum FeedType {
 	Rss(Result<rss::Channel>),
@@ -76,8 +78,6 @@ pub struct RequestManager {
 	pub is_idle: bool,
 	pub concurrency: i32,
 }
-
-pub type CollectedResult = Result<RequestFeedResults>;
 
 impl RequestManager {
 	pub fn new() -> Self {
@@ -164,7 +164,7 @@ impl RequestManager {
 			.map_err(|e| e.into())
 	}
 
-	pub fn run_if_idle(&mut self, is_manual: bool, connection: &diesel::SqliteConnection) -> RequestResults {
+	pub fn request_all_if_idle(&mut self, is_manual: bool, connection: &diesel::SqliteConnection) -> RequestResults {
 		let mut results = RequestResults {
 			error: None,
 			start_time: Instant::now(),
@@ -179,7 +179,7 @@ impl RequestManager {
 			let timestamp = chrono::Utc::now().timestamp();
 
 			self.feeds.iter_mut()
-			.filter(|i| timestamp - i.last_called - i.sec_interval as i64 > 0)
+			.filter(|i: &&mut Feed| timestamp - i.last_called - i.sec_interval as i64 > 0)
 			.collect()
 		};
 
@@ -198,65 +198,19 @@ impl RequestManager {
 
 		println!("Starting Requests.. Found: {}", feeds.len());
 
-
 		let (tx, rx) = channel();
 
-
-		// The RSS feed grabber.
-		let safe_request = |feed: Feed| -> CollectedResult {
-			let mut feed_res = RequestFeedResults {
-				start_time: Instant::now(),
-				duration: Duration::new(0, 0),
-				new_item_count: 0,
-				item_count: 0,
-				to_insert: Vec::new()
-			};
-
-			match FeedType::from_feed_type(feed.feed_type, &feed.url) {
-				FeedType::Rss(Ok(channel)) => {
-					feed_res.to_insert = channel.items()
-					.iter()
-					.map(|i| {
-						let mut item: NewItem = i.into();
-						item.feed_id = feed.id;
-						item
-					})
-					.collect();
-				}
-
-				FeedType::Atom(Ok(atom_feed)) => {
-					feed_res.to_insert = atom_feed.entries()
-					.iter()
-					.map(|i| {
-						let mut item: NewItem = i.into();
-						item.feed_id = feed.id;
-						item
-					})
-					.collect();
-				}
-
-				FeedType::__Unknown => {
-					return Err("Unknown Feed.. It didn't match the current supported ones.".into())
-				}
-
-				FeedType::Atom(Err(e))
-				| FeedType::Rss(Err(e)) => return Err(e)
-			};
-
-			feed_res.duration = feed_res.start_time.elapsed();
-
-			Ok(feed_res)
-		};
 
 		let spawn_next = |tx: Sender<CollectedResult>, feed: Feed| {
 			let thread = thread::Builder::new()
 			.name(format!("Feed: {}", feed.url))
-			.spawn(move || tx.send(safe_request(feed)).expect("send"));
+			.spawn(move || tx.send(request_feed(feed)).expect("send"));
 
 			if let Err(e) = thread {
 				eprintln!("Thread Error: {}", e);
 			}
 		};
+
 
 		let mut feed_iter = feeds.iter();
 
@@ -301,6 +255,52 @@ impl RequestManager {
 
 		results
 	}
+}
+
+
+pub fn request_feed(feed: Feed) -> CollectedResult {
+	let mut feed_res = RequestFeedResults {
+		start_time: Instant::now(),
+		duration: Duration::new(0, 0),
+		new_item_count: 0,
+		item_count: 0,
+		to_insert: Vec::new()
+	};
+
+	match FeedType::from_feed_type(feed.feed_type, &feed.url) {
+		FeedType::Rss(Ok(channel)) => {
+			feed_res.to_insert = channel.items()
+			.iter()
+			.map(|i| {
+				let mut item: NewItem = i.into();
+				item.feed_id = feed.id;
+				item
+			})
+			.collect();
+		}
+
+		FeedType::Atom(Ok(atom_feed)) => {
+			feed_res.to_insert = atom_feed.entries()
+			.iter()
+			.map(|i| {
+				let mut item: NewItem = i.into();
+				item.feed_id = feed.id;
+				item
+			})
+			.collect();
+		}
+
+		FeedType::__Unknown => {
+			return Err("Unknown Feed.. It didn't match the current supported ones.".into())
+		}
+
+		FeedType::Atom(Err(e))
+		| FeedType::Rss(Err(e)) => return Err(e)
+	};
+
+	feed_res.duration = feed_res.start_time.elapsed();
+
+	Ok(feed_res)
 }
 
 
