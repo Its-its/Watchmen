@@ -42,6 +42,7 @@ pub enum Front2CoreNotification {
 	//
 	CategoryList(Empty),
 
+
 	AddCategory {
 		name: String,
 		position: i32
@@ -55,6 +56,7 @@ pub enum Front2CoreNotification {
 		id: QueryId,
 		editing: EditCategory
 	},
+
 
 	AddFeedCategory {
 		feed_id: QueryId,
@@ -102,6 +104,7 @@ pub enum Core2FrontNotification {
 		affected: usize
 	},
 
+
 	ItemList {
 		items: Vec<FeedItem>,
 
@@ -124,6 +127,7 @@ pub enum Core2FrontNotification {
 		notifications: i64
 	},
 
+
 	CategoryList {
 		categories: Vec<Category>,
 		category_feeds: Vec<FeedCategory>
@@ -143,6 +147,7 @@ pub enum Core2FrontNotification {
 		affected: usize
 	},
 
+
 	NewFeedCategory {
 		category: NewFeedCategory,
 		affected: usize
@@ -151,6 +156,8 @@ pub enum Core2FrontNotification {
 	RemoveFeedCategory {
 		affected: usize
 	},
+
+	//
 }
 
 

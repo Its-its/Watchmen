@@ -1,8 +1,7 @@
-// Used to send logs to the terminal properly.
-
 use fern::Dispatch;
 use fern::colors::{Color, ColoredLevelConfig};
 use log::{LevelFilter, Log, Metadata, Record};
+
 
 pub fn configure() {
 	let colors_line = ColoredLevelConfig::new()
@@ -17,7 +16,7 @@ pub fn configure() {
 	let colors_level: ColoredLevelConfig = colors_line.clone().info(Color::Green);
 
 	Dispatch::new()
-		.chain(std::io::stdout()) // TODO: Change so it goes directly into a custom one.
+		.chain(std::io::stdout())
 		.format(move |out, message, record| {
 			out.finish(format_args!(
                 "{color_line}[{date}][{target}][{level}{color_line}] {message}\x1B[0m",

@@ -74,6 +74,6 @@ table! {
 
 		feed_id -> Integer,
 
-		feed -> Text,
+		filter -> Text,
 	}
 }

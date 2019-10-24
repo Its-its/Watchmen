@@ -136,6 +136,8 @@ impl WeakFeederCore {
 				ctx.respond_with(msg_id_opt, list);
 			}
 
+			//
+
 			// Write Only
 			AddListener { url } => {
 				use diesel::RunQueryDsl;
@@ -160,6 +162,13 @@ impl WeakFeederCore {
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::RemoveListener { affected });
 			}
 
+			EditListener { id, editing } => {
+				let affected = models::update_listener(id, &editing, &mut inner)?;
+
+				ctx.respond_with(msg_id_opt, Core2FrontNotification::EditListener { affected, listener: editing });
+			}
+
+
 			AddCategory { name, position } => {
 				// TODO: count categories, set position based on that.
 
@@ -179,6 +188,19 @@ impl WeakFeederCore {
 
 				ctx.respond_with(msg_id_opt, new_cat);
 			}
+
+			RemoveCategory { id } => {
+				let affected = models::remove_category(id, conn)?;
+
+				ctx.respond_with(msg_id_opt, Core2FrontNotification::RemoveCategory { affected });
+			}
+
+			EditCategory { id, editing } => {
+				let affected = models::update_category(id, &editing, conn)?;
+
+				ctx.respond_with(msg_id_opt, Core2FrontNotification::EditCategory { affected, category: editing });
+			}
+
 
 			AddFeedCategory { feed_id, category_id } => {
 				let cat = models::NewFeedCategory {
@@ -202,23 +224,7 @@ impl WeakFeederCore {
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::RemoveFeedCategory { affected });
 			}
 
-			EditListener { id, editing } => {
-				let affected = models::update_listener(id, &editing, &mut inner)?;
-
-				ctx.respond_with(msg_id_opt, Core2FrontNotification::EditListener { affected, listener: editing });
-			}
-
-			RemoveCategory { id } => {
-				let affected = models::remove_category(id, conn)?;
-
-				ctx.respond_with(msg_id_opt, Core2FrontNotification::RemoveCategory { affected });
-			}
-
-			EditCategory { id, editing } => {
-				let affected = models::update_category(id, &editing, conn)?;
-
-				ctx.respond_with(msg_id_opt, Core2FrontNotification::EditCategory { affected, category: editing });
-			}
+			//
 		}
 
 		Ok(())

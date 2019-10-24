@@ -299,7 +299,7 @@ pub struct FeedFilter {
 
 	pub feed_id: QueryId,
 
-	pub feed: Option<String>
+	pub filter: Option<String>
 }
 
 
@@ -308,7 +308,7 @@ pub struct FeedFilter {
 pub struct NewFeedFilter {
 	pub feed_id: QueryId,
 
-	pub feed: Option<String>
+	pub filter: Option<String>
 }
 
 

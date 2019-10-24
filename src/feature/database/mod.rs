@@ -98,6 +98,7 @@ impl Connection {
 			"CREATE UNIQUE INDEX IF NOT EXISTS categories_name on categories ( name_lowercase )"
 		)?;
 
+
 		// Category store for Feeds
 		// Registers what categories a feed is stored since no arrays exist in sqlite.
 
@@ -109,6 +110,19 @@ impl Connection {
 				category_id      INTEGER NOT NULL
 			)"
 		)?;
+
+
+		// Feed Filters
+
+		// self.0.execute(
+		// 	"CREATE TABLE IF NOT EXISTS feed_filters (
+		// 		id          INTEGER PRIMARY KEY,
+
+		// 		feed_id     INTEGER NOT NULL,
+		//
+		// 		filter      TEXT,
+		// 	)"
+		// )?;
 
 		Ok(())
 	}
