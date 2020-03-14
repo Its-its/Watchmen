@@ -9,8 +9,10 @@ use atom_syndication::Entry as AtomItem;
 use diesel::{Queryable, Insertable, SqliteConnection, QueryResult};
 use diesel::prelude::*;
 
+use crate::Filter;
 use super::schema::*;
 use crate::state::CoreState;
+use crate::request::custom::CustomItem;
 
 
 pub type QueryId = i32;
@@ -297,7 +299,9 @@ pub struct NewFeedCategory {
 pub struct FeedFilter {
 	pub id: QueryId,
 
-	pub feed_id: QueryId,
+	pub feed_id: QueryId, // TODO: Make available for categories too?
+
+	pub title: String,
 
 	pub filter: Option<String>
 }
@@ -308,10 +312,60 @@ pub struct FeedFilter {
 pub struct NewFeedFilter {
 	pub feed_id: QueryId,
 
+	pub title: String,
+
 	pub filter: Option<String>
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, AsChangeset)]
+#[table_name = "feed_filter"]
+pub struct EditFeedFilter {
+	pub feed_id: Option<QueryId>,
+	pub title: Option<String>,
+	pub filter: Option<Option<String>>
+}
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct EditFrontFeedFilter { // Used to receive the feed from the front end. And change into DB one.
+	pub feed_id: Option<QueryId>,
+	pub title: Option<String>,
+	pub filter: Option<Option<Filter>>
+}
+
+
+// Custom Items
+
+#[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
+#[table_name = "custom_item"]
+pub struct NewCustomItem {
+	match_url: String,
+	search_opts: String
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, AsChangeset)]
+#[table_name = "custom_item"]
+pub struct EditCustomItem {
+	match_url: Option<String>,
+	search_opts: Option<String>
+}
+
+impl From<CustomItem> for NewCustomItem {
+	fn from(item: CustomItem) -> Self {
+		Self {
+			match_url: item.match_url,
+			search_opts: serde_json::to_string(&item.search_opts).unwrap()
+		}
+	}
+}
+
+impl From<CustomItem> for EditCustomItem {
+	fn from(item: CustomItem) -> Self {
+		Self {
+			match_url: Some(item.match_url),
+			search_opts: Some(serde_json::to_string(&item.search_opts).unwrap())
+		}
+	}
+}
 
 // Listener Calls
 
@@ -450,11 +504,7 @@ pub fn remove_category(cat_id: QueryId, conn: &SqliteConnection) -> QueryResult<
 	diesel::delete(categories.filter(id.eq(cat_id))).execute(conn)
 }
 
-pub fn update_category(
-	c_id: QueryId,
-	edit: &EditCategory,
-	conn: &SqliteConnection
-) -> QueryResult<usize> {
+pub fn update_category(c_id: QueryId, edit: &EditCategory, conn: &SqliteConnection) -> QueryResult<usize> {
 	use self::categories::dsl::*;
 
 	diesel::update(categories.filter(id.eq(c_id)))
@@ -484,4 +534,31 @@ pub fn get_category_feeds(cat_id: QueryId, conn: &SqliteConnection) -> QueryResu
 	use self::feed_categories::dsl::*;
 
 	feed_categories.filter(category_id.eq(cat_id)).get_results(conn)
+}
+
+
+// Feed Filter
+
+pub fn create_feed_filter(feed: &NewFeedFilter, conn: &SqliteConnection) -> QueryResult<usize> {
+	use self::feed_filter::dsl::*;
+	diesel::insert_into(feed_filter).values(feed).execute(conn)
+}
+
+pub fn remove_feed_filter(f_id: QueryId, conn: &SqliteConnection) -> QueryResult<usize> {
+	use self::feed_filter::dsl::*;
+	diesel::delete(feed_filter.filter(id.eq(f_id))).execute(conn)
+}
+
+pub fn get_filters(f_feed_id: Option<QueryId>, conn: &SqliteConnection) -> QueryResult<Vec<FeedFilter>> {
+	use self::feed_filter::dsl::*;
+	if let Some(f_feed_id) = f_feed_id {
+		feed_filter.filter(feed_id.eq(f_feed_id)).get_results(conn)
+	} else {
+		feed_filter.load(conn)
+	}
+}
+
+pub fn get_filter(f_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<FeedFilter>> {
+	use self::feed_filter::dsl::*;
+	feed_filter.filter(id.eq(f_id)).get_results(conn)
 }

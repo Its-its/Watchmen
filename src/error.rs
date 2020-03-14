@@ -1,5 +1,8 @@
 use std::fmt;
 
+use regex::Error as RegexError;
+use xpath::Error as XpathError;
+use chrono::ParseError as ChronoError;
 use std::io::Error as IoError;
 use serde_json::Error as JsonError;
 use rss::Error as RssError;
@@ -14,12 +17,16 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
 	Io(IoError),
 	Json(JsonError),
+	Chrono(ChronoError),
 
 	Diesel(DieselError),
 	Http(HttpError),
 
 	Rss(RssError),
 	Atom(AtomError),
+
+	Regex(RegexError),
+	Xpath(XpathError),
 
 	Other(String)
 }
@@ -30,6 +37,10 @@ impl fmt::Display for Error {
 		use Error::*;
 
 		match *self {
+			Chrono(ref e) => write!(f, "Chrono Error: {:?}", e),
+			Regex(ref e) => write!(f, "Regex Error: {:?}", e),
+			Xpath(ref e) => write!(f, "XPATH Error: {:?}", e),
+
 			Io(ref e) => write!(f, "IO Error: {:?}", e),
 			Json(ref e) => write!(f, "JSON Error: {:?}", e),
 
@@ -47,6 +58,24 @@ impl fmt::Display for Error {
 impl From<JsonError> for Error {
 	fn from(error: JsonError) -> Self {
 		Error::Json(error)
+	}
+}
+
+impl From<RegexError> for Error {
+	fn from(error: RegexError) -> Self {
+		Error::Regex(error)
+	}
+}
+
+impl From<ChronoError> for Error {
+	fn from(error: ChronoError) -> Self {
+		Error::Chrono(error)
+	}
+}
+
+impl From<XpathError> for Error {
+	fn from(error: XpathError) -> Self {
+		Error::Xpath(error)
 	}
 }
 

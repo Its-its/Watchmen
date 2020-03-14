@@ -20,8 +20,8 @@ const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
 
 
-pub fn socket_index(weak_core: web::Data<WeakFeederCore>, r: HttpRequest, stream: web::Payload) -> Result<HttpResponse, ActixError> {
-	ws::start(WebSocket::new(weak_core.deref().clone()), &r, stream)
+pub async fn socket_index(weak_core: web::Data<WeakFeederCore>, r: HttpRequest, stream: web::Payload) -> Result<HttpResponse, ActixError> {
+	ws::start(WebSocket::new(weak_core.as_ref().clone()), &r, stream)
 }
 
 
@@ -40,36 +40,35 @@ impl Actor for WebSocket {
 }
 
 
-impl StreamHandler<ws::Message, ws::ProtocolError> for WebSocket {
-	fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {
+impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocket {
+	fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
 		use ws::Message::*;
 
 		match msg {
-			Nop => (),
-			Close(_) => ctx.stop(),
-
-			Ping(msg) => {
+			Ok(Ping(msg)) => {
 				self.hb = Instant::now();
 				ctx.pong(&msg);
 			}
-			Pong(_) => {
+
+			Ok(Pong(_) )=> {
 				self.hb = Instant::now();
 			}
 
-			Text(text) => {
+			Ok(Text(text)) => {
 				let mut wrapper = WebsocketWrapper::new(ctx);
 				if let Err(e) = handle_text(&mut wrapper, &mut self.weak_core, text) {
 					error!("handle_text: {}", e);
-					wrapper.respond(None, Err(e));
 				}
 			}
 
-			Binary(bin) => {
+			Ok(Binary(bin)) => {
 				let mut wrapper = WebsocketWrapper::new(ctx);
 				if let Err(e) = handle_binary(&mut wrapper, &mut self.weak_core, bin.as_ref()) {
 					error!("handle_binary: {}", e);
 				}
 			}
+
+			_ => ctx.stop()
 		}
 	}
 }
@@ -95,19 +94,23 @@ impl WebSocket {
 				return;
 			}
 
-			ctx.ping("");
+			ctx.ping(&[]);
 		});
 	}
 }
 
 
 fn handle_text(
-	ctx: &mut WebsocketWrapper, weak_core: &mut WeakFeederCore, text: String
+	ctx: &mut WebsocketWrapper,
+	weak_core: &mut WeakFeederCore,
+	text: String
 ) -> Result<(), Error> {
 	let derived = serde_json::from_str(&text)?;
 
 	if let Object2CoreNotification::Frontend { message_id, command } = derived {
-		weak_core.handle_response(ctx, message_id, command)?;
+		if let Err(e) = weak_core.handle_response(ctx, message_id, command) {
+			ctx.respond(message_id, Err(e));
+		}
 	}
 
 	Ok(())
@@ -115,7 +118,9 @@ fn handle_text(
 
 
 fn handle_binary(
-	_ctx: &mut WebsocketWrapper, _weak_core: &mut WeakFeederCore, binary: &[u8]
+	_ctx: &mut WebsocketWrapper,
+	_weak_core: &mut WeakFeederCore,
+	binary: &[u8]
 ) -> Result<(), Error> {
 	info!("Binary: {:?}", binary);
 

@@ -4,6 +4,11 @@ use regex::RegexBuilder;
 use crate::feature::models::Item;
 
 
+pub struct FilterCategory {
+	//
+}
+
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Filter {
 	//    regex, opts
@@ -14,6 +19,9 @@ pub enum Filter {
 
 	//         items, sensitive
 	StartsWith(String, bool),
+
+	//         items, sensitive
+	EndsWith(String, bool),
 
 	And(Vec<Filter>),
 	Or(Vec<Filter>)
@@ -46,9 +54,24 @@ impl Default for RegexOpts {
 
 
 impl Filter {
+	pub fn is_and(&self) -> bool {
+		match self {
+			Filter::And(_) => true,
+			_ => false
+		}
+	}
+
+	pub fn is_or(&self) -> bool {
+		match self {
+			Filter::Or(_) => true,
+			_ => false
+		}
+	}
+
+
 	pub fn filter(&self, item: &Item) -> bool {
 		match self {
-			Self::Regex(regex, opts) => {
+			Filter::Regex(regex, opts) => {
 				let mut builder = RegexBuilder::new(&regex);
 
 				builder.case_insensitive(opts.case_insensitive);
@@ -62,7 +85,7 @@ impl Filter {
 				builder.build().unwrap().is_match(&item.title)
 			}
 
-			Self::Contains(value, case_sensitive) => {
+			Filter::Contains(value, case_sensitive) => {
 				if *case_sensitive {
 					item.title.contains(value.as_str())
 				} else {
@@ -70,7 +93,7 @@ impl Filter {
 				}
 			}
 
-			Self::StartsWith(value, case_sensitive) => {
+			Filter::StartsWith(value, case_sensitive) => {
 				if *case_sensitive {
 					item.title.starts_with(value.as_str())
 				} else {
@@ -78,13 +101,68 @@ impl Filter {
 				}
 			}
 
-			Self::And(filters) => filters.iter().filter(|f| f.filter(item)).count() == filters.len(),
-			Self::Or(filters) => filters.iter().filter(|f| f.filter(item)).count() != 0,
+			Filter::EndsWith(value, case_sensitive) => {
+				if *case_sensitive {
+					item.title.ends_with(value.as_str())
+				} else {
+					item.title.to_lowercase().ends_with(value.to_lowercase().as_str())
+				}
+			}
+
+			Filter::And(filters) => filters.iter().filter(|f| f.filter(item)).count() == filters.len(),
+			Filter::Or(filters) => filters.iter().filter(|f| f.filter(item)).count() != 0,
 		}
 	}
 
 	// Display showing why said item is being filtered in or out. (new enum FilterDisplay ??)
 	pub fn display(&self, _item: &Item) {
 		//
+	}
+
+
+	pub fn add(&mut self, filter: Filter) {
+		match self {
+			Filter::And(vec) |
+			Filter::Or(vec) => vec.push(filter),
+			_ => ()
+		}
+	}
+
+	pub fn remove(&mut self, index: usize) {
+		match self {
+			Filter::And(vec) |
+			Filter::Or(vec) => { vec.remove(index); }
+			_ => ()
+		}
+	}
+
+	/// If one of the filters in an AND add to it. Otherwise make one and add both to it.
+	pub fn and(mut self, mut other: Self) -> Self {
+		if self.is_and() {
+			self.add(other);
+			return self;
+		}
+
+		if other.is_and() {
+			other.add(self);
+			return other;
+		}
+
+		Filter::And(vec![self, other])
+	}
+
+	/// If one of the filters in an OR add to it. Otherwise make one and add both to it.
+	pub fn or(mut self, mut other: Self) -> Self {
+		if self.is_or() {
+			self.add(other);
+			return self;
+		}
+
+		if other.is_or() {
+			other.add(self);
+			return other;
+		}
+
+		Filter::Or(vec![self, other])
 	}
 }

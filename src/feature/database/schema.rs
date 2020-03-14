@@ -74,6 +74,18 @@ table! {
 
 		feed_id -> Integer,
 
-		filter -> Text,
+		title -> Text,
+
+		filter -> Nullable<Text>,
+	}
+}
+
+table! {
+	custom_item(id) {
+		id -> Integer,
+
+		match_url -> Text,
+
+		search_opts -> Text,
 	}
 }

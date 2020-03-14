@@ -11,6 +11,10 @@ serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
 
+futures = "0.3"
+async-std = "1.4.0"
+tokio = { version = "0.2.10", features = ["full"] }
+
 url = "2.1"
 
 rust-crypto = "0.2"
@@ -26,21 +30,23 @@ reqwest = "=0.9.17"
 rss = "1.8"
 quick-xml = "0.17.0"
 atom_syndication = { version = "0.6.0", features = ["serde"] }
-
+xpath = { path = "../../2020/xpath" }
 
 # Database
-
 diesel = { version = "1.4", features = ["sqlite", "extras"] }
 
 # Only here for bundled feature. Using version from diesel.
 libsqlite3-sys = { version = "0.9.1", features = ["bundled"] }
 
+#Telegram
+telegram-bot = { git = "https://github.com/telegram-rs/telegram-bot", optional = true }
 
 # Website
-actix = { version = "0.8", optional = true }
-actix-web = { version = "1.0", optional = true }
-actix-web-actors = { version = "1.0", optional = true }
-actix-files = { version = "0.1", optional = true }
+actix = { version = "0.9.0", optional = true }
+actix-rt = { version = "1.0.0", optional = true }
+actix-web = { version = "2.0.0", optional = true }
+actix-web-actors = { version = "2.0.0", optional = true }
+actix-files = { version = "0.2.1", optional = true }
 handlebars = { version = "2.0", optional = true }
 
 
@@ -57,10 +63,12 @@ optional = true
 
 
 [features]
-default = ["website"]
+default = ["website", "telegram"]
 
+# Telegram
+telegram = ["telegram-bot"]
 # Fully interactive webpage.
-website = ["actix", "actix-web", "actix-web-actors", "actix-files", "handlebars"]
+website = ["actix", "actix-web", "actix-web-actors", "actix-files", "actix-rt", "handlebars"]
 # Fully intervative terminal
 terminal = ["tui", "structopt", "crossterm"]
 # Daemon that you can send requests to.

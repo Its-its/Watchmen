@@ -112,6 +112,20 @@ impl Connection {
 		)?;
 
 
+		// SearchParser store for Custom Items
+		// Stores the search options for the custom url.
+		// Called by match_url
+
+		self.0.execute(
+			"CREATE TABLE IF NOT EXISTS custom_item (
+				id               INTEGER PRIMARY KEY,
+
+				match_url        TEXT NOT NULL,
+				search_opts      TEXT NOT NULL
+			)"
+		)?;
+
+
 		// Feed Filters
 
 		// self.0.execute(
@@ -119,7 +133,9 @@ impl Connection {
 		// 		id          INTEGER PRIMARY KEY,
 
 		// 		feed_id     INTEGER NOT NULL,
-		//
+
+		// 		title       TEXT NOT NULL,
+
 		// 		filter      TEXT,
 		// 	)"
 		// )?;

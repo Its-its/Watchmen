@@ -2,6 +2,7 @@ use std::{io, thread};
 
 use log::info;
 
+use actix_rt::System;
 use serde_json::json;
 use actix_files as fs;
 use actix_web::{get, web, App, HttpServer, HttpResponse};
@@ -34,27 +35,32 @@ impl Web {
 
 		info!("Running HTTP + WS Server");
 
-		let mut handlebars = Handlebars::new();
-		handlebars.register_templates_directory(".hbs", "./app/views").expect("register_templates_dirs");
-
-		let handlebars_ref = web::Data::new(handlebars);
-		let frontend_ref = web::Data::new(self.weak_frontend.as_ref().unwrap().clone());
-		let core_ref = web::Data::new(self.weak_core.as_ref().unwrap().clone());
+		let frontend_ref = self.weak_frontend.as_ref().unwrap().clone();
+		let core_ref = self.weak_core.as_ref().unwrap().clone();
 
 		thread::spawn(move || {
-			let http_server = HttpServer::new(move || {
+			let mut sys = System::new("HTTP Server");
+
+			let server = HttpServer::new(move || {
 				App::new()
-				.register_data(handlebars_ref.clone())
-				.register_data(frontend_ref.clone())
-				.register_data(core_ref.clone())
+				.data({
+					let mut handlebars = Handlebars::new();
+					handlebars.register_templates_directory(".hbs", "./app/views").expect("register_templates_dirs");
+					handlebars
+				})
+				.data(frontend_ref.clone())
+				.data(core_ref.clone())
 				.service(index)
+				.service(scraper_editor)
 				.service(fs::Files::new("/script", "./app/compiled/js"))
 				.service(fs::Files::new("/style", "./app/compiled/css"))
 				.service(web::resource("/ws/").route(web::get().to(socket_index)))
 			})
-			.bind("127.0.0.1:8080").expect("HttpServer.bind");
+			.bind("127.0.0.1:8080")
+			.unwrap()
+			.run();
 
-			http_server.run().expect("HttpServer.run");
+			let _ = sys.block_on(server);
 		});
 
 		Ok(())
@@ -71,6 +77,18 @@ fn index(hb: web::Data<Handlebars>) -> HttpResponse {
 	let data = json!({});
 
 	let body = hb.render("index", &data).unwrap();
+
+	HttpResponse::Ok().body(body)
+}
+
+
+// Scaper
+
+#[get("/scraper/editor")]
+fn scraper_editor(hb: web::Data<Handlebars>) -> HttpResponse {
+	let data = json!({});
+
+	let body = hb.render("scraper_editor", &data).unwrap();
 
 	HttpResponse::Ok().body(body)
 }

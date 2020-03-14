@@ -1,6 +1,6 @@
 use fern::Dispatch;
 use fern::colors::{Color, ColoredLevelConfig};
-use log::{LevelFilter, Log, Metadata, Record};
+use log::{LevelFilter, Metadata, Record};
 
 
 pub fn configure() {
@@ -30,7 +30,7 @@ pub fn configure() {
                 message = message,
             ))
 		})
-		.level(LevelFilter::Debug)
+		.level(LevelFilter::Info)
 		.level_for("tokio_reactor", LevelFilter::Info)
 		.apply()
 		.expect("fern logging");

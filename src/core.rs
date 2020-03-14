@@ -1,3 +1,4 @@
+use std::io::Read;
 use std::sync::{Arc, Mutex, MutexGuard, Weak};
 
 use log::info;
@@ -90,6 +91,7 @@ impl WeakFeederCore {
 		match rpc {
 			// Read only
 
+			// Return updates since time
 			Updates { since } => {
 				let new_count = models::get_item_count_since(since, &conn)?;
 
@@ -103,7 +105,6 @@ impl WeakFeederCore {
 			}
 
 			ItemList { category_id, items, skip } => {
-				//
 				let total_amount = models::get_item_total(category_id, &conn)?;
 				let items_found = models::get_items_in_range(category_id, items, skip, &conn)?;
 
@@ -222,6 +223,22 @@ impl WeakFeederCore {
 				let affected = models::remove_category_feed(id, conn)?;
 
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::RemoveFeedCategory { affected });
+			}
+
+
+			// Scaper Editor
+
+			GetWebpage { url } => {
+				let mut content = String::new();
+
+				let mut resp = reqwest::get(&url)?;
+				resp.read_to_string(&mut content)?;
+
+				ctx.respond_with(msg_id_opt, Core2FrontNotification::WebpageSource { html: content });
+			}
+
+			UpdateCustomItem { id, item } => {
+				println!("UpdateCustomItem: {:?} {:?}", id, item);
 			}
 
 			//

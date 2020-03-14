@@ -1,5 +1,7 @@
 use serde::{Serialize, Deserialize};
 
+use crate::request::custom::UpdateableCustomItem;
+
 use super::models::{
 	QueryId,
 	Item as FeedItem,
@@ -10,7 +12,10 @@ use super::models::{
 	FeedCategory,
 	NewCategory,
 	NewFeedCategory,
-	EditCategory
+	EditCategory,
+	NewFeedFilter,
+	FeedFilter,
+	EditFrontFeedFilter
 };
 
 
@@ -82,6 +87,33 @@ pub enum Front2CoreNotification {
 	Updates {
 		since: i64
 	},
+
+
+	// NewFeedFilter {
+	// 	title: String,
+	// 	feed_id: QueryId
+	// },
+
+	// RemoveFeedFilter {
+	// 	id: QueryId
+	// },
+
+	// FeedFilterList {
+	// 	feed_id: QueryId,
+	// 	editing: EditFrontFeedFilter
+	// },
+
+
+	// Scraper Editor
+
+	GetWebpage {
+		url: String
+	},
+
+	UpdateCustomItem {
+		id: Option<QueryId>,
+		item: UpdateableCustomItem
+	}
 }
 
 
@@ -157,7 +189,31 @@ pub enum Core2FrontNotification {
 		affected: usize
 	},
 
-	//
+
+	FeedFilterList {
+		items: Vec<FeedFilter>
+	},
+
+	EditFeedFilter {
+		filter: EditFrontFeedFilter,
+		affected: usize
+	},
+
+	NewFeedFilter {
+		filter: NewFeedFilter,
+		affected: usize
+	},
+
+	RemoveFeedFilter {
+		affected: usize
+	},
+
+
+	// Scaper Editor
+
+	WebpageSource {
+		html: String
+	}
 }
 
 

@@ -10,12 +10,17 @@ use crate::feature::schema::{items as ItemsSchema, feeds as FeedsSchema};
 use crate::feature::models::{NewItem, Feed, NewFeed};
 
 
+pub mod rss;
+pub mod atom;
+pub mod custom;
+
 pub type CollectedResult = Result<RequestFeedResults>;
 
 
 pub enum FeedType {
-	Rss(Result<rss::Channel>),
-	Atom(Result<atom_syndication::Feed>),
+	Rss(rss::FeedResult),
+	Atom(atom::FeedResult),
+	Custom(custom::CustomResult),
 
 	__Unknown
 }
@@ -23,13 +28,13 @@ pub enum FeedType {
 impl FeedType {
 	pub fn from_url(url: &str) -> FeedType {
 		// RSS
-		match get_rss_from_url(url) {
+		match rss::get_from_url(url) {
 			Ok(c) => return FeedType::Rss(Ok(c)),
 
 			Err(e) => {
 				info!("rss: {:?}", e);
 				if let Error::Rss(e) = e {
-					use rss::Error::InvalidStartTag;
+					use ::rss::Error::InvalidStartTag;
 
 					if let InvalidStartTag = e {
 						// TODO: Fix this so it's not an if else
@@ -40,10 +45,10 @@ impl FeedType {
 					return FeedType::Rss(Err(e));
 				}
 			}
-		};
+		}
 
 		// ATOM
-		match get_atom_from_url(url) {
+		match atom::get_from_url(url) {
 			Ok(c) => return FeedType::Atom(Ok(c)),
 
 			Err(e) => {
@@ -60,15 +65,18 @@ impl FeedType {
 					return FeedType::Atom(Err(e));
 				}
 			}
-		};
+		}
+
+		// CUSTOM
+		//
 
 		FeedType::__Unknown
 	}
 
 	pub fn from_feed_type(feed_type: i32, url: &str) -> FeedType {
 		match feed_type {
-			0 => FeedType::Rss(get_rss_from_url(url)),
-			1 => FeedType::Atom(get_atom_from_url(url)),
+			0 => FeedType::Rss(rss::get_from_url(url)),
+			1 => FeedType::Atom(atom::get_from_url(url)),
 			_ => FeedType::__Unknown
 		}
 	}
@@ -109,54 +117,13 @@ impl RequestManager {
 
 	pub fn create_new_feed(&self, url: String) -> Result<NewFeed> {
 		Ok(match FeedType::from_url(&url) {
-			FeedType::Rss(Ok(feed)) => {
-				NewFeed {
-					url: url,
-
-					title: feed.title().to_string(),
-					description: feed.description().to_string(),
-					generator: feed.generator().unwrap_or_default().to_string(),
-
-					feed_type: 0,
-
-					sec_interval: 60 * 5,
-					remove_after: 0,
-
-					global_show: true,
-					ignore_if_not_new: true,
-
-					date_added: chrono::Utc::now().naive_utc().timestamp(),
-					last_called: chrono::Utc::now().naive_utc().timestamp(),
-				}
-			}
-
-			FeedType::Atom(Ok(feed)) => {
-				NewFeed {
-					url: url,
-
-					title: feed.title().to_string(),
-					description: feed.subtitle().unwrap_or_default().to_string(),
-					generator: feed.generator().unwrap_or(&atom_syndication::Generator::default()).value().to_string(),
-
-					feed_type: 1,
-
-					sec_interval: 60 * 5,
-					remove_after: 0,
-
-					global_show: true,
-					ignore_if_not_new: true,
-
-					date_added: chrono::Utc::now().naive_utc().timestamp(),
-					last_called: chrono::Utc::now().naive_utc().timestamp(),
-				}
-			}
-
-			FeedType::__Unknown => {
-				return Err("Unknown Feed.. It didn't match the current supported ones.".into())
-			}
+			FeedType::Rss(Ok(feed)) => rss::new_from_feed(url, feed),
+			FeedType::Atom(Ok(feed)) => atom::new_from_feed(url, feed),
 
 			FeedType::Atom(Err(e))
-			| FeedType::Rss(Err(e)) => return Err(e)
+			| FeedType::Rss(Err(e)) => return Err(e),
+
+			_ => return Err("Unknown Feed.. It didn't match the current supported ones.".into())
 		})
 	}
 
@@ -186,7 +153,7 @@ impl RequestManager {
 		}
 
 		if feeds.is_empty() {
-			results.error = Some("No feeds to run...".into());
+			// results.error = Some("No feeds to run...".into());
 			return results;
 		}
 
@@ -287,12 +254,10 @@ pub fn request_feed(feed: Feed) -> CollectedResult {
 			.collect();
 		}
 
-		FeedType::__Unknown => {
-			return Err("Unknown Feed.. It didn't match the current supported ones.".into())
-		}
-
 		FeedType::Atom(Err(e))
-		| FeedType::Rss(Err(e)) => return Err(e)
+		| FeedType::Rss(Err(e)) => return Err(e),
+
+		_ => return Err("Unknown Feed.. It didn't match the current supported ones.".into())
 	};
 
 	feed_res.duration = feed_res.start_time.elapsed();
@@ -333,27 +298,4 @@ pub struct RequestFeedResults {
 	pub new_item_count: usize,
 	pub item_count: i32,
 	pub to_insert: Vec<NewItem>
-}
-
-
-pub fn get_rss_from_url(url: &str) -> Result<rss::Channel> {
-	use std::io::Read;
-
-	let mut content = Vec::new();
-
-	let mut resp = reqwest::get(url)?;
-	resp.read_to_end(&mut content)?;
-
-	Ok(rss::Channel::read_from(&content[..])?)
-}
-
-pub fn get_atom_from_url(url: &str) -> Result<atom_syndication::Feed> {
-	use std::io::Read;
-
-	let mut content = Vec::new();
-
-	let mut resp = reqwest::get(url)?;
-	resp.read_to_end(&mut content)?;
-
-	Ok(atom_syndication::Feed::read_from(&content[..])?)
 }

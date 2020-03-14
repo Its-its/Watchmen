@@ -5,6 +5,8 @@ use std::sync::RwLock;
 use crate::feature::FrontendCore;
 #[cfg(feature = "terminal")]
 use crate::feature::TerminalCore;
+#[cfg(feature = "telegram")]
+use crate::feature::TelegramCore;
 
 use crate::feature::Connection;
 
@@ -18,6 +20,8 @@ pub struct CoreState {
 	pub frontend: FrontendCore,
 	#[cfg(feature = "terminal")]
 	pub terminal: TerminalCore,
+	#[cfg(feature = "telegram")]
+	pub telegram: TelegramCore,
 
 	pub connection: Connection,
 	pub requester: RequestManager,
@@ -31,6 +35,8 @@ impl CoreState {
 			frontend: FrontendCore::new(),
 			#[cfg(feature = "terminal")]
 			terminal: TerminalCore::new(),
+			#[cfg(feature = "telegram")]
+			telegram: TelegramCore::new(),
 
 			connection: Connection::new(),
 			requester: RequestManager::new(),
@@ -41,9 +47,11 @@ impl CoreState {
 	#[allow(unused_variables)]
 	pub fn init(&mut self, weak_core: WeakFeederCore) {
 		#[cfg(feature = "website")]
-		self.frontend.init(weak_core);
+		self.frontend.init(weak_core.clone());
 		#[cfg(feature = "terminal")]
-		self.terminal.init(weak_core);
+		self.terminal.init(weak_core.clone());
+		#[cfg(feature = "telegram")]
+		self.telegram.init(weak_core.clone());
 
 		{
 			let mut write = self.config.write().unwrap();
@@ -54,7 +62,8 @@ impl CoreState {
 
 		self.connection.init_sql().unwrap_or_else(|e| panic!("Loading Database Error: {}", e));
 
-		self.requester.init(self.connection.connection()).unwrap_or_else(|e| panic!("Requester Initiation Error: {}", e));
+		self.requester.init(self.connection.connection())
+			.unwrap_or_else(|e| panic!("Requester Initiation Error: {}", e));
 	}
 
 	//

@@ -9,6 +9,7 @@ pub mod database;
 #[cfg(feature = "daemon")] pub mod daemon;
 #[cfg(feature = "terminal")] pub mod terminal;
 #[cfg(feature = "website")] pub mod frontend;
+#[cfg(feature = "telegram")] pub mod telegram;
 
 pub mod library;
 pub mod rpc;
@@ -17,6 +18,7 @@ pub mod rpc;
 #[cfg(feature = "daemon")] pub use daemon::*;
 #[cfg(feature = "terminal")] pub use terminal::*;
 #[cfg(feature = "website")] pub use frontend::*;
+#[cfg(feature = "telegram")] pub use telegram::*;
 
 pub use library::*;
 pub use database::*;

@@ -17,7 +17,7 @@ pub mod request;
 pub use filter::{Filter, RegexOpts};
 pub use error::Result;
 
-fn main() {
+fn main() -> std::io::Result<()> {
 	feature::logging::configure();
 
 	let mut core = core::FeederCore::new();
@@ -25,4 +25,6 @@ fn main() {
 	core.init();
 
 	core.run_loop();
+
+	Ok(())
 }
