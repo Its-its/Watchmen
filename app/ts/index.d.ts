@@ -4,6 +4,26 @@ type Obj<I> = { [name: string]: I };
 type Nullable<I> = I | null;
 
 
+declare namespace rust {
+	type Values = string | string[] | number | number[] | boolean | boolean[] | null;
+
+	export type EnumValue = null | Values | ObjectType;
+	export type EnumObject = {
+		[name: string]: EnumValue
+	}
+	export type EnumNone = "None";
+
+	export type ObjectType = {
+		[name: string]: Values;
+	}
+
+	export type BaseEnum = {
+		name: string
+		value: EnumValue
+	}
+}
+
+
 interface SocketResponse {
 	[name: string]: any;
 
@@ -95,6 +115,34 @@ interface ModelFeedCategory {
 	category_id: number;
 }
 
+interface ModelCustomItem {
+	id?: number;
+
+	title: string;
+	description: string;
+	match_url: string;
+
+	search_opts: {
+		[name: string]: Nullable<{
+			xpath: string
+			parse_type: rust.BaseEnum
+		} | string>
+	}
+}
+
+interface ModelEditCustomItem {
+	title?: string;
+	description?: string;
+	match_url?: string;
+
+	search_opts?: {
+		[name: string]: Nullable<{
+			xpath: string
+			parse_type: rust.BaseEnum
+		}>
+	}
+}
+
 // Responses
 
 interface RemoveListenerResponse {
@@ -144,4 +192,13 @@ interface AddCategoryFeedResponse {
 
 interface GetWebpageResponse {
 	html: string;
+}
+
+interface CreateCustomItemResponse {
+	affected: number;
+	category: ModelCustomItem;
+}
+
+interface CustomItemListResponse {
+	items: ModelCustomItem[];
 }

@@ -1,5 +1,6 @@
 use crypto::digest::Digest;
 
+use url::Url;
 use serde::{Serialize, Deserialize};
 
 use chrono::{DateTime, Utc};
@@ -12,7 +13,7 @@ use diesel::prelude::*;
 use crate::Filter;
 use super::schema::*;
 use crate::state::CoreState;
-use crate::request::custom::CustomItem;
+use crate::request::custom::{CustomItem as CustomItemBase, FoundItem as CustomFoundItem};
 
 
 pub type QueryId = i32;
@@ -170,6 +171,58 @@ impl From<&AtomItem> for NewItem {
 	}
 }
 
+impl From<CustomFoundItem> for NewItem {
+	fn from(item: CustomFoundItem) -> NewItem {
+		let mut new_item = NewItem {
+			guid: item.guid,
+
+			title: item.title,
+			author: item.author.unwrap_or_default(),
+			content: item.content.unwrap_or_default(),
+			link: item.link,
+			date: Some(item.date)
+				.and_then(|d| DateTime::parse_from_rfc3339(&d).map(|i| i.naive_utc()).ok())
+				.unwrap_or_else(|| Utc::now().naive_utc())
+				.timestamp(),
+
+			hash: String::default(),
+
+			date_added: Utc::now().timestamp(),
+			is_read: false,
+			is_starred: false,
+			is_removed: false,
+			tags: String::default(),
+
+			feed_id: 0
+		};
+
+		// md5(link + title + authors + content + tags) | Iffy on tags. If tags change then hash needs to change.
+		new_item.hash = {
+			let mut md5 = crypto::md5::Md5::new();
+
+			md5.input_str(&format!(
+				"{}-{}-{}",
+				new_item.link,
+				new_item.title,
+				new_item.author
+				// new_item.content Removed b/c some content updates with random ids.
+			));
+
+			md5.result_str()
+		};
+
+		// OR pre-defined link OR self.hash
+		if new_item.guid.is_empty() {
+			if new_item.link.is_empty() {
+				new_item.guid = new_item.link.clone();
+			} else {
+				new_item.guid = new_item.hash.clone();
+			}
+		}
+
+		new_item
+	}
+}
 
 // Feeds
 
@@ -334,34 +387,68 @@ pub struct EditFrontFeedFilter { // Used to receive the feed from the front end.
 
 
 // Custom Items
+#[derive(Serialize, Deserialize, Debug, Clone, Queryable, Identifiable)]
+#[table_name = "custom_item"]
+pub struct CustomItem {
+	pub id: QueryId,
+
+	pub title: String,
+	pub description: String,
+	pub match_url: String,
+
+	pub search_opts: String
+}
+
+impl Into<CustomItemBase> for CustomItem {
+	fn into(self) -> CustomItemBase {
+		CustomItemBase {
+			id: Some(self.id),
+			title: self.title,
+			match_url: self.match_url,
+			description: self.description,
+			search_opts: serde_json::from_str(&self.search_opts).unwrap()
+		}
+	}
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
 #[table_name = "custom_item"]
 pub struct NewCustomItem {
-	match_url: String,
-	search_opts: String
+	pub title: String,
+	pub match_url: String,
+	pub description: String,
+
+	pub search_opts: String
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, AsChangeset)]
 #[table_name = "custom_item"]
 pub struct EditCustomItem {
-	match_url: Option<String>,
-	search_opts: Option<String>
+	pub title: Option<String>,
+	pub match_url: Option<String>,
+	pub description: Option<String>,
+
+	pub search_opts: Option<String>
 }
 
-impl From<CustomItem> for NewCustomItem {
-	fn from(item: CustomItem) -> Self {
+
+impl From<CustomItemBase> for NewCustomItem {
+	fn from(item: CustomItemBase) -> Self {
 		Self {
+			title: item.title,
 			match_url: item.match_url,
+			description: item.description,
 			search_opts: serde_json::to_string(&item.search_opts).unwrap()
 		}
 	}
 }
 
-impl From<CustomItem> for EditCustomItem {
-	fn from(item: CustomItem) -> Self {
+impl From<CustomItemBase> for EditCustomItem {
+	fn from(item: CustomItemBase) -> Self {
 		Self {
+			title: Some(item.title),
 			match_url: Some(item.match_url),
+			description: Some(item.description),
 			search_opts: Some(serde_json::to_string(&item.search_opts).unwrap())
 		}
 	}
@@ -561,4 +648,32 @@ pub fn get_filters(f_feed_id: Option<QueryId>, conn: &SqliteConnection) -> Query
 pub fn get_filter(f_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<FeedFilter>> {
 	use self::feed_filter::dsl::*;
 	feed_filter.filter(id.eq(f_id)).get_results(conn)
+}
+
+
+// Custom Item
+
+pub fn create_custom_item(item: &NewCustomItem, conn: &SqliteConnection) -> QueryResult<usize> {
+	use self::custom_item::dsl::*;
+
+	diesel::insert_into(custom_item).values(item).execute(conn)
+}
+
+pub fn get_custom_item_from_url(f_url: Url, conn: &SqliteConnection) -> QueryResult<CustomItemBase> {
+	use self::custom_item::dsl::*;
+
+	Ok(
+		custom_item.filter(match_url.eq(f_url.host_str().unwrap()))
+		.get_result::<CustomItem>(conn)?
+		.into()
+	)
+}
+
+pub fn get_custom_items(conn: &SqliteConnection) -> QueryResult<Vec<CustomItemBase>> {
+	Ok(
+		self::custom_item::table.load::<CustomItem>(conn)?
+		.into_iter()
+		.map(|i| i.into())
+		.collect()
+	)
 }

@@ -51,7 +51,7 @@ impl FeederCore {
 
 	// Util
 
-	pub fn to_inner(&self) -> MutexGuard<CoreState> {
+	pub fn to_inner(&self) -> MutexGuard<'_, CoreState> {
 		self.0.lock().unwrap()
 	}
 
@@ -81,8 +81,6 @@ impl WeakFeederCore {
 		msg_id_opt: Option<MessageId>,
 		rpc: Front2CoreNotification
 	) -> Result<()> {
-		use Front2CoreNotification::*;
-
 		let upgrade = self.upgrade().unwrap();
 		let mut inner = upgrade.to_inner();
 
@@ -92,11 +90,11 @@ impl WeakFeederCore {
 			// Read only
 
 			// Return updates since time
-			Updates { since } => {
+			Front2CoreNotification::Updates { since } => {
 				let new_count = models::get_item_count_since(since, &conn)?;
 
 				let updates = Core2FrontNotification::Updates {
-					since: since,
+					since,
 					new_items: new_count,
 					notifications: 0
 				};
@@ -104,7 +102,7 @@ impl WeakFeederCore {
 				ctx.respond_with(msg_id_opt, updates);
 			}
 
-			ItemList { category_id, items, skip } => {
+			Front2CoreNotification::ItemList { category_id, items, skip } => {
 				let total_amount = models::get_item_total(category_id, &conn)?;
 				let items_found = models::get_items_in_range(category_id, items, skip, &conn)?;
 
@@ -122,13 +120,13 @@ impl WeakFeederCore {
 				ctx.respond_with(msg_id_opt, list);
 			}
 
-			FeedList(..) => {
+			Front2CoreNotification::FeedList(..) => {
 				let list = Core2FrontNotification::FeedList { items: inner.requester.feeds.clone() };
 
 				ctx.respond_with(msg_id_opt, list);
 			}
 
-			CategoryList(..) => {
+			Front2CoreNotification::CategoryList(..) => {
 				let list = Core2FrontNotification::CategoryList {
 					categories: models::get_categories(&conn)?,
 					category_feeds: models::get_feed_categories(&conn)?
@@ -137,40 +135,39 @@ impl WeakFeederCore {
 				ctx.respond_with(msg_id_opt, list);
 			}
 
-			//
 
 			// Write Only
-			AddListener { url } => {
+			Front2CoreNotification::AddListener { url } => {
 				use diesel::RunQueryDsl;
 
-				let feed = inner.requester.create_new_feed(url)?;
+				let feed = inner.requester.create_new_feed(url, conn)?;
 
 				let affected = diesel::insert_or_ignore_into(FeedsSchema::table)
 					.values(&feed)
 					.execute(conn)?;
 
 				let new_feed = Core2FrontNotification::NewListener {
-					affected: affected,
+					affected,
 					listener: feed,
 				};
 
 				ctx.respond_with(msg_id_opt, new_feed);
 			}
 
-			RemoveListener { id, rem_stored } => {
+			Front2CoreNotification::RemoveListener { id, rem_stored } => {
 				let affected = models::remove_listener(id, rem_stored, &mut inner)?;
 
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::RemoveListener { affected });
 			}
 
-			EditListener { id, editing } => {
+			Front2CoreNotification::EditListener { id, editing } => {
 				let affected = models::update_listener(id, &editing, &mut inner)?;
 
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::EditListener { affected, listener: editing });
 			}
 
 
-			AddCategory { name, position } => {
+			Front2CoreNotification::AddCategory { name, position } => {
 				// TODO: count categories, set position based on that.
 
 				let cat = models::NewCategory {
@@ -190,20 +187,20 @@ impl WeakFeederCore {
 				ctx.respond_with(msg_id_opt, new_cat);
 			}
 
-			RemoveCategory { id } => {
+			Front2CoreNotification::RemoveCategory { id } => {
 				let affected = models::remove_category(id, conn)?;
 
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::RemoveCategory { affected });
 			}
 
-			EditCategory { id, editing } => {
+			Front2CoreNotification::EditCategory { id, editing } => {
 				let affected = models::update_category(id, &editing, conn)?;
 
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::EditCategory { affected, category: editing });
 			}
 
 
-			AddFeedCategory { feed_id, category_id } => {
+			Front2CoreNotification::AddFeedCategory { feed_id, category_id } => {
 				let cat = models::NewFeedCategory {
 					feed_id,
 					category_id
@@ -219,7 +216,7 @@ impl WeakFeederCore {
 				ctx.respond_with(msg_id_opt, new_cat);
 			}
 
-			RemoveFeedCategory { id } => {
+			Front2CoreNotification::RemoveFeedCategory { id } => {
 				let affected = models::remove_category_feed(id, conn)?;
 
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::RemoveFeedCategory { affected });
@@ -228,7 +225,7 @@ impl WeakFeederCore {
 
 			// Scaper Editor
 
-			GetWebpage { url } => {
+			Front2CoreNotification::GetWebpage { url } => {
 				let mut content = String::new();
 
 				let mut resp = reqwest::get(&url)?;
@@ -237,8 +234,36 @@ impl WeakFeederCore {
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::WebpageSource { html: content });
 			}
 
-			UpdateCustomItem { id, item } => {
-				println!("UpdateCustomItem: {:?} {:?}", id, item);
+
+			// Custom Item
+
+			Front2CoreNotification::CustomItemList(..) => {
+				let items = Core2FrontNotification::CustomItemList {
+					items: models::get_custom_items(conn)?
+				};
+
+				ctx.respond_with(msg_id_opt, items);
+			}
+
+			Front2CoreNotification::UpdateCustomItem { id, item } => {
+				println!("UpdateCustomItem: {:?}", id);
+				println!("{:#?}", item);
+			}
+
+			Front2CoreNotification::NewCustomItem { item } => {
+				println!("NewCustomItem");
+				println!("{:#?}", item);
+
+				let model = item.clone().into();
+
+				let affected = models::create_custom_item(&model, conn)?;
+
+				let new_item = Core2FrontNotification::NewCustomItem {
+					affected,
+					item,
+				};
+
+				ctx.respond_with(msg_id_opt, new_item);
 			}
 
 			//

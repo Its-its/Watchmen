@@ -10,7 +10,7 @@ pub type FeedResult = Result<atom_syndication::Feed>;
 
 pub fn new_from_feed(url: String, feed: atom_syndication::Feed) -> NewFeed {
 	NewFeed {
-		url: url,
+		url,
 
 		title: feed.title().to_string(),
 		description: feed.subtitle().unwrap_or_default().to_string(),

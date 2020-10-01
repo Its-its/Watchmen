@@ -120,7 +120,10 @@ impl Connection {
 			"CREATE TABLE IF NOT EXISTS custom_item (
 				id               INTEGER PRIMARY KEY,
 
+				title            TEXT NOT NULL,
 				match_url        TEXT NOT NULL,
+				description      TEXT NOT NULL,
+
 				search_opts      TEXT NOT NULL
 			)"
 		)?;

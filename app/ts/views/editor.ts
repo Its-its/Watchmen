@@ -1,11 +1,11 @@
 import core from '../core';
-import { rustify_object, RustEnum, NULL_ENUM, EnumObject, EnumValue } from '../util/rust';
+import { rustify_object, RustEnum, NULL_ENUM } from '../util/rust';
 import { parseFromString } from '../util/time';
 
 import View from './index';
 import FeedView from './feed';
 
-import { send_get_webpage_source } from '../socket';
+import { send_get_webpage_source, send_new_custom_item, send_get_custom_items_list } from '../socket';
 
 
 type ItemTypes = 'items' | 'title' | 'link' | 'guid' | 'date' | 'author' | 'content';
@@ -209,20 +209,11 @@ export default class EditorView extends View {
 		container.appendChild(confirm_button);
 
 		confirm_button.addEventListener('click', () => {
-			type CustomItem = {
-				title: string;
-				description: string;
-				search_opts: {
-					[name: string]: {
-						xpath: string;
-						parse_type: RustEnum;
-					} | string;
-				};
-			};
-
-			let rustify: CustomItem = {
+			let rustify: ModelCustomItem = {
 				title: custom_name.value,
 				description: custom_desc.value,
+				match_url: custom_cont_url.value,
+
 				search_opts: {
 					items: compiled.items.xpath!
 				}
@@ -236,16 +227,26 @@ export default class EditorView extends View {
 					// 	return console.log('Invalid:', values);
 					// }
 
-					rustify.search_opts[name] = {
-						xpath: values.xpath!,
-						parse_type: values.parseType
-					};
+					if ((values.xpath == null || values.xpath == 'None') && values.parseType.name == 'None') {
+						rustify.search_opts[name] = null;
+					} else {
+						rustify.search_opts[name] = {
+							xpath: values.xpath!,
+							parse_type: values.parseType
+						};
+					}
 				}
 			}
 
+			console.log(JSON.stringify(rustify, null, 4));
+
 			let obj = rustify_object(rustify);
-			console.log(JSON.stringify(obj, null, 4));
-			console.log(obj);
+
+			send_new_custom_item(obj, (err, value, method) => {
+				console.log(err);
+				console.log(method);
+				console.log(value);
+			});
 		});
 
 
@@ -415,6 +416,7 @@ class ItemInfoSearch {
 
 		if (comp_item.xpath.length == 0) {
 			this.search_found.innerText = '';
+			comp_item.xpath = null;
 			return;
 		}
 
@@ -465,27 +467,32 @@ class ItemInfoSearch {
 	}
 
 
-	load(opts: { xpath: string, parse_type: EnumObject }) {
-		let parseType = new RustEnum(opts.parse_type);
+	load(opts?: { xpath: string, parse_type: rust.EnumObject } | rust.EnumNone) {
+		if (opts == null || opts == "None") {
+			this.setValue('');
+			this.displayNoneType();
+		} else {
+			let parseType = new RustEnum(opts.parse_type);
 
-		console.log(parseType);
+			console.log(parseType);
 
-		this.parser_container.childNodes.forEach(i => i.remove());
-		this.parse_type_selection.value = parseType.name;
+			this.parser_container.childNodes.forEach(i => i.remove());
+			this.parse_type_selection.value = parseType.name;
 
-		switch (parseType.name) {
-			case 'Regex':
-				this.displayRegexType(parseType.value);
-				break;
-			case 'TimeFormat':
-				this.displayTimeFormatType(parseType.value);
-				break;
-			case 'None':
-				this.displayNoneType();
-				break;
+			switch (parseType.name) {
+				case 'Regex':
+					this.displayRegexType(parseType.value);
+					break;
+				case 'TimeFormat':
+					this.displayTimeFormatType(parseType.value);
+					break;
+				case 'None':
+					this.displayNoneType();
+					break;
+			}
+
+			this.setValue(opts.xpath);
 		}
-
-		this.setValue(opts.xpath);
 	}
 
 
@@ -605,15 +612,15 @@ class ItemInfoSearch {
 		});
 	}
 
-	displayRegexType(value?: EnumValue) {
+	displayRegexType(value?: rust.EnumValue) {
 		let comp_item = this.compiled[this.config_name];
 
 		comp_item.parseType.name = 'Regex';
-		comp_item.parseType.value = [];
+		comp_item.parseType.value = (value != null ? value : '');
 
 		let input = document.createElement('input');
 		// @ts-ignore
-		if (input != null) input.value = value;
+		if (value != null) input.value = value;
 		input.type = 'text';
 		input.placeholder = 'Regex';
 		this.parser_container.appendChild(input);
@@ -670,7 +677,7 @@ class ItemInfoSearch {
 		});
 	}
 
-	displayTimeFormatType(value?: EnumValue) {
+	displayTimeFormatType(value?: rust.EnumValue) {
 		let comp_item = this.compiled[this.config_name];
 
 		comp_item.parseType.name = 'TimeFormat';

@@ -1,6 +1,6 @@
 use fern::Dispatch;
 use fern::colors::{Color, ColoredLevelConfig};
-use log::{LevelFilter, Metadata, Record};
+use log::LevelFilter;
 
 
 pub fn configure() {

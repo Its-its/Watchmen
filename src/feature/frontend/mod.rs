@@ -7,7 +7,6 @@ pub mod socket;
 
 pub use web::Web;
 pub use socket::WebsocketWrapper;
-use super::rpc::{Front2CoreNotification, Core2FrontNotification};
 
 
 pub struct FrontendCore(Arc<Mutex<FrontendState>>);
@@ -27,7 +26,7 @@ impl FrontendCore {
 	}
 
 
-	pub fn to_inner(&self) -> MutexGuard<FrontendState> {
+	pub fn to_inner(&self) -> MutexGuard<'_, FrontendState> {
 		self.0.lock().unwrap()
 	}
 

@@ -1,3 +1,9 @@
+#![warn(warnings, rust_2018_idioms, unsafe_code, dead_code)]
+#![allow(
+	clippy::new_without_default,
+	clippy::large_enum_variant
+)]
+
 #[macro_use] extern crate diesel;
 
 pub mod feature;
@@ -15,7 +21,7 @@ pub mod request;
 
 
 pub use filter::{Filter, RegexOpts};
-pub use error::Result;
+pub use error::{Result, Error};
 
 fn main() -> std::io::Result<()> {
 	feature::logging::configure();

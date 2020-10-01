@@ -1,4 +1,3 @@
-use std::ops::Deref;
 use std::time::{Duration, Instant};
 
 use log::{info, error};
@@ -42,26 +41,40 @@ impl Actor for WebSocket {
 
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocket {
 	fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
-		use ws::Message::*;
+		use ws::Message;
 
 		match msg {
-			Ok(Ping(msg)) => {
+			Ok(Message::Ping(msg)) => {
 				self.hb = Instant::now();
 				ctx.pong(&msg);
 			}
 
-			Ok(Pong(_) )=> {
+			Ok(Message::Pong(_) )=> {
 				self.hb = Instant::now();
 			}
 
-			Ok(Text(text)) => {
+			Ok(Message::Text(text)) => {
 				let mut wrapper = WebsocketWrapper::new(ctx);
-				if let Err(e) = handle_text(&mut wrapper, &mut self.weak_core, text) {
-					error!("handle_text: {}", e);
+				if let Err(e) = handle_text(&mut wrapper, &mut self.weak_core, &text) {
+					match e {
+						Error::Json(e) => {
+							error!("handle_text JSON: {}", e);
+
+							let line = text.split('\n').nth(e.line() - 1);
+
+							if let Some(line) = line {
+								println!("Line: '{}'", line);
+							}
+						}
+
+						e  => {
+							error!("handle_text: {}", e);
+						}
+					}
 				}
 			}
 
-			Ok(Binary(bin)) => {
+			Ok(Message::Binary(bin)) => {
 				let mut wrapper = WebsocketWrapper::new(ctx);
 				if let Err(e) = handle_binary(&mut wrapper, &mut self.weak_core, bin.as_ref()) {
 					error!("handle_binary: {}", e);
@@ -101,11 +114,11 @@ impl WebSocket {
 
 
 fn handle_text(
-	ctx: &mut WebsocketWrapper,
+	ctx: &mut WebsocketWrapper<'_>,
 	weak_core: &mut WeakFeederCore,
-	text: String
+	text: &str
 ) -> Result<(), Error> {
-	let derived = serde_json::from_str(&text)?;
+	let derived = serde_json::from_str(text)?;
 
 	if let Object2CoreNotification::Frontend { message_id, command } = derived {
 		if let Err(e) = weak_core.handle_response(ctx, message_id, command) {
@@ -118,7 +131,7 @@ fn handle_text(
 
 
 fn handle_binary(
-	_ctx: &mut WebsocketWrapper,
+	_ctx: &mut WebsocketWrapper<'_>,
 	_weak_core: &mut WeakFeederCore,
 	binary: &[u8]
 ) -> Result<(), Error> {

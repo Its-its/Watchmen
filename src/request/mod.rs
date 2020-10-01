@@ -1,9 +1,7 @@
-use std::sync::mpsc::{channel, Sender};
 use std::time::{Duration, Instant};
-use std::thread;
 
-use log::{info, error};
-use diesel::RunQueryDsl;
+use log::{info};
+use diesel::{RunQueryDsl, SqliteConnection};
 
 use crate::error::{Error, Result};
 use crate::feature::schema::{items as ItemsSchema, feeds as FeedsSchema};
@@ -26,7 +24,7 @@ pub enum FeedType {
 }
 
 impl FeedType {
-	pub fn from_url(url: &str) -> FeedType {
+	pub fn from_url(url: &str, conn: &SqliteConnection) -> FeedType {
 		// RSS
 		match rss::get_from_url(url) {
 			Ok(c) => return FeedType::Rss(Ok(c)),
@@ -68,15 +66,21 @@ impl FeedType {
 		}
 
 		// CUSTOM
-		//
+		match custom::get_from_url(url, conn) {
+			Ok(i) => FeedType::Custom(Ok(i)),
 
-		FeedType::__Unknown
+			Err(e) => {
+				info!("custom: {:?}", e);
+				FeedType::Custom(Err(e))
+			}
+		}
 	}
 
-	pub fn from_feed_type(feed_type: i32, url: &str) -> FeedType {
+	pub fn req_from_feed_type(feed_type: i32, url: &str, conn: &SqliteConnection) -> FeedType {
 		match feed_type {
 			0 => FeedType::Rss(rss::get_from_url(url)),
 			1 => FeedType::Atom(atom::get_from_url(url)),
+			2 => FeedType::Custom(custom::get_from_url(url, conn)),
 			_ => FeedType::__Unknown
 		}
 	}
@@ -99,35 +103,32 @@ impl RequestManager {
 		}
 	}
 
-	pub fn init(&mut self, connection: &diesel::SqliteConnection) -> Result<usize> {
+	pub fn init(&mut self, connection: &SqliteConnection) -> Result<usize> {
 		use diesel::prelude::*;
 		use FeedsSchema::dsl::*;
 
-		let found = feeds.filter(id.ne(0)).load::<Feed>(connection);
+		let found = feeds.filter(id.ne(0)).load::<Feed>(connection)?;
 
-		match found {
-			Ok(found) => {
-				self.feeds = found;
-				Ok(self.feeds.len())
-			}
+		self.feeds = found;
 
-			Err(e) => Err(e.into())
-		}
+		Ok(self.feeds.len())
 	}
 
-	pub fn create_new_feed(&self, url: String) -> Result<NewFeed> {
-		Ok(match FeedType::from_url(&url) {
+	pub fn create_new_feed(&self, url: String, conn: &SqliteConnection) -> Result<NewFeed> {
+		Ok(match FeedType::from_url(&url, conn) {
 			FeedType::Rss(Ok(feed)) => rss::new_from_feed(url, feed),
 			FeedType::Atom(Ok(feed)) => atom::new_from_feed(url, feed),
+			FeedType::Custom(Ok(_)) => custom::new_from_url(url, conn)?,
 
-			FeedType::Atom(Err(e))
+			FeedType::Custom(Err(e))
+			| FeedType::Atom(Err(e))
 			| FeedType::Rss(Err(e)) => return Err(e),
 
 			_ => return Err("Unknown Feed.. It didn't match the current supported ones.".into())
 		})
 	}
 
-	pub fn request_all_if_idle(&mut self, is_manual: bool, connection: &diesel::SqliteConnection) -> RequestResults {
+	pub fn request_all_if_idle(&mut self, is_manual: bool, connection: &SqliteConnection) -> RequestResults {
 		let mut results = RequestResults {
 			error: None,
 			start_time: Instant::now(),
@@ -161,37 +162,11 @@ impl RequestManager {
 
 		info!("Starting Requests.. Found: {}", feeds.len());
 
-		let (tx, rx) = channel();
 
-
-		let spawn_next = |tx: Sender<CollectedResult>, feed: Feed| {
-			let thread = thread::Builder::new()
-			.name(format!("Feed: {}", feed.url))
-			.spawn(move || tx.send(request_feed(feed)).expect("send"));
-
-			if let Err(e) = thread {
-				error!("Thread Error: {}", e);
-			}
-		};
-
-
-		let mut feed_iter = feeds.iter();
-
-		for _ in 0..self.concurrency {
-			if let Some(feed) = feed_iter.next() {
-				spawn_next(tx.clone(), (*feed).clone());
-			}
+		for feed in &feeds {
+			results.feeds.push(request_feed((*feed).clone(), connection));
 		}
 
-
-		// Loop until finished.
-		while results.feeds.len() != feeds.len() {
-			results.feeds.push(rx.recv().expect("Error Receving Request:"));
-
-			if let Some(feed) = feed_iter.next() {
-				spawn_next(tx.clone(), (*feed).clone());
-			}
-		}
 
 		// Database
 		{
@@ -222,7 +197,9 @@ impl RequestManager {
 }
 
 
-pub fn request_feed(feed: Feed) -> CollectedResult {
+pub fn request_feed(feed: Feed, conn: &SqliteConnection) -> CollectedResult {
+	info!(" - Requesting: {}", feed.url);
+
 	let mut feed_res = RequestFeedResults {
 		start_time: Instant::now(),
 		duration: Duration::new(0, 0),
@@ -231,7 +208,7 @@ pub fn request_feed(feed: Feed) -> CollectedResult {
 		to_insert: Vec::new()
 	};
 
-	match FeedType::from_feed_type(feed.feed_type, &feed.url) {
+	match FeedType::req_from_feed_type(feed.feed_type, &feed.url, conn) {
 		FeedType::Rss(Ok(channel)) => {
 			feed_res.to_insert = channel.items()
 			.iter()
@@ -254,7 +231,19 @@ pub fn request_feed(feed: Feed) -> CollectedResult {
 			.collect();
 		}
 
+		FeedType::Custom(Ok(custom_feed_items)) => {
+			feed_res.to_insert = custom_feed_items
+			.into_iter()
+			.map(|i| {
+				let mut item: NewItem = i.into();
+				item.feed_id = feed.id;
+				item
+			})
+			.collect();
+		}
+
 		FeedType::Atom(Err(e))
+		// | FeedType::Custom(Err(e))
 		| FeedType::Rss(Err(e)) => return Err(e),
 
 		_ => return Err("Unknown Feed.. It didn't match the current supported ones.".into())
@@ -266,7 +255,7 @@ pub fn request_feed(feed: Feed) -> CollectedResult {
 }
 
 
-pub fn update_feed_last_called_db(set_last_called: i64, feeds_arr: Vec<&mut Feed>, connection: &diesel::SqliteConnection) {
+pub fn update_feed_last_called_db(set_last_called: i64, feeds_arr: Vec<&mut Feed>, connection: &SqliteConnection) {
 	use diesel::prelude::*;
 	use FeedsSchema::dsl::*;
 

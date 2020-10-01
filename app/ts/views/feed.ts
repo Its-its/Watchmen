@@ -13,7 +13,8 @@ import {
 	send_create_category,
 	send_get_category_list,
 	send_remove_feed_from_category,
-	send_add_feed_to_category
+	send_add_feed_to_category,
+	send_get_custom_items_list
 } from '../socket';
 
 export class Table {
@@ -435,6 +436,7 @@ export default class FeedView extends View {
 				form.className = 'form-group';
 				container.appendChild(form);
 
+
 				// Feed URL
 				let cat_row = document.createElement('div');
 				cat_row.className = 'form-row';
@@ -444,6 +446,30 @@ export default class FeedView extends View {
 				cat_text.placeholder = 'Feed URL';
 				cat_text.type = 'text';
 				cat_row.appendChild(cat_text);
+
+
+				// Custom Items
+				let custom_row = document.createElement('div');
+				custom_row.className = 'form-row';
+				form.appendChild(custom_row);
+
+				let custom_item_sel = document.createElement('select');
+				custom_item_sel.name = 'custom_item';
+				custom_row.appendChild(custom_item_sel);
+
+				send_get_custom_items_list((_, resp) => {
+					if (resp != null) {
+						resp.items.forEach(item => {
+							let option = document.createElement('option');
+							option.innerText = item.match_url;
+							// option.title = item.title;
+							option.value = '' + item.id!;
+
+							custom_item_sel.appendChild(option);
+						});
+					}
+				});
+
 
 				// Submit
 				let sub_row = document.createElement('div');
@@ -456,7 +482,7 @@ export default class FeedView extends View {
 				sub_row.appendChild(submit);
 
 				submit.addEventListener('click', _ => {
-					send_create_listener(cat_text.value, (err, opts) => {
+					send_create_listener(cat_text.value, parseInt(custom_item_sel.value), (err, opts) => {
 						if (err != null) {
 							return console.error('create_listener: ', err);
 						}
@@ -479,7 +505,6 @@ export default class FeedView extends View {
 							});
 						}
 					});
-
 				});
 
 				open();

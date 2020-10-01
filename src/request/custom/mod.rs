@@ -1,13 +1,14 @@
-use std::io::Read;
-
 use serde::{Serialize, Deserialize};
+use url::Url;
 
 use regex::RegexBuilder;
 use xpath::{Node, Document, Value};
 use chrono::{DateTime, FixedOffset};
 
-use crate::Result;
+use crate::{Result, Error};
 use super::NewFeed;
+
+use crate::feature::models::get_custom_item_from_url;
 
 
 pub type CustomResult = Result<Vec<FoundItem>>;
@@ -24,6 +25,8 @@ pub struct UpdateableCustomItem {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CustomItem {
+	pub id: Option<i32>,
+
 	pub title: String,
 	pub description: String,
 	pub match_url: String,
@@ -115,7 +118,7 @@ impl ParseOpts {
 					date.to_rfc2822()
 				}
 
-				Parse::None |_ => value
+				_ => value
 			}
 		)
 	}
@@ -148,14 +151,38 @@ impl std::ops::Deref for ParseOpts {
 }
 
 
+// TODO: Impl. Title / Description scrape from webpage. Currently getting from db.
+
+pub fn new_from_url(url: String, conn: &diesel::SqliteConnection) -> Result<NewFeed> {
+	let item = get_custom_item_from_url(Url::parse(&url).unwrap(), conn)?;
+
+	Ok(NewFeed {
+		url,
+
+		title: item.title,
+		description: item.description,
+		generator: String::new(),
+
+		feed_type: 2,
+
+		sec_interval: 60 * 5,
+		remove_after: 0,
+
+		global_show: true,
+		ignore_if_not_new: true,
+
+		date_added: chrono::Utc::now().naive_utc().timestamp(),
+		last_called: chrono::Utc::now().naive_utc().timestamp(),
+	})
+}
 
 pub fn new_from_feed(url: String, feed: CustomItem) -> NewFeed {
 	NewFeed {
-		url: url,
+		url,
 
 		title: feed.title,
 		description: feed.description,
-		generator: atom_syndication::Generator::default().value().to_string(),
+		generator: String::new(),
 
 		feed_type: 2,
 
@@ -170,52 +197,87 @@ pub fn new_from_feed(url: String, feed: CustomItem) -> NewFeed {
 	}
 }
 
-pub fn get_from_url(url: &str, parser: &SearchParser) -> CustomResult {
+
+pub fn get_from_url(url: &str, conn: &diesel::SqliteConnection) -> CustomResult {
+	// let found = get_custom_item_from_url(Url::parse(url).unwrap());
+
+	// turn found into SearchParser
+
+	get_from_url_parser(url, &SearchParser::default())
+}
+
+pub fn get_from_url_parser(url: &str, parser: &SearchParser) -> CustomResult {
 	// TODO: url DB call for parser.
+	// TODO: Better Error Handling.
 	let mut resp = reqwest::get(url)?;
 
 	let doc = xpath::parse_doc(&mut resp);
 
 	Ok(
 		doc.evaluate(&parser.items).expect("items")
-		.into_iterset()
-		.map(|node| {
+		.into_iterset()?
+		.map::<Result<FoundItem>, _>(|node| {
 			let title = parser.title.evaluate(&doc, node.clone())
-				.and_then(|v| v.vec_string().first().map(|i| i.clone()))
-				.map(|v| parser.title.parse(v).expect("1"));
+				.map(|v| v.vec_string())
+				.transpose()?
+				.and_then(|v| v.first().cloned())
+				.map(|v| parser.title.parse(v))
+				.transpose()?;
 
 			let author = parser.author.as_ref()
 				.and_then(|i| i.evaluate(&doc, node.clone()))
-				.and_then(|v| v.vec_string().first().map(|i| i.clone()))
-				.and_then(|v| parser.author.as_ref().map(|i| i.parse(v).expect("2")));
+				.map(|v| v.vec_string())
+				.transpose()?
+				.and_then(|v| v.first().cloned())
+				.and_then(|v| parser.author.as_ref().map(|i| i.parse(v)))
+				.transpose()?;
 
 			let content = parser.content.as_ref()
 				.and_then(|i| i.evaluate(&doc, node.clone()))
-				.and_then(|v| v.into_iterset().next())
+				.map(|v| v.into_iterset())
+				.transpose()?
+				.and_then(|mut v| v.next())
 				.map(|v| v.as_simple_html())
-				.and_then(|v| parser.content.as_ref().map(|i| i.parse(v).expect("3")));
+				.and_then(|v| parser.content.as_ref().map(|i| i.parse(v)))
+				.transpose()?;
 
 			let date = parser.date.evaluate(&doc, node.clone())
-				.and_then(|v| v.vec_string().first().map(|i| i.clone()))
-				.map(|v| parser.date.parse(v).expect("4"));
+				.map(|v| v.vec_string())
+				.transpose()?
+				.and_then(|v| v.first().cloned())
+				.map(|v| parser.date.parse(v))
+				.transpose()?;
 
 			let guid = parser.guid.evaluate(&doc, node.clone())
-				.and_then(|v| v.vec_string().first().map(|i| i.clone()))
-				.map(|v| parser.guid.parse(v).expect("5"));
+				.map(|v| v.vec_string())
+				.transpose()?
+				.and_then(|v| v.first().cloned())
+				.map(|v| parser.guid.parse(v))
+				.transpose()?;
 
-			let link = parser.link.evaluate(&doc, node.clone())
-				.and_then(|v| v.vec_string().first().map(|i| i.clone()))
-				.map(|v| parser.link.parse(v).expect("6"));
+			let link = parser.link.evaluate(&doc, node)
+				.map(|v| v.vec_string())
+				.transpose()?
+				.and_then(|v| v.first().cloned())
+				.map(|v| parser.link.parse(v))
+				.transpose()?;
 
-			FoundItem {
-				title: title.expect("title"),
-				link: link.expect("link"),
-				guid: guid.expect("guid"),
+			Ok(FoundItem {
+				title: title.ok_or_else(|| Error::Other("Missing Required Title.".into()))?,
+				link: link.ok_or_else(|| Error::Other("Missing Required Link.".into()))?,
+				guid: guid.ok_or_else(|| Error::Other("Missing Required GUID.".into()))?,
 				date: date.unwrap_or_default(),
 
 				author,
 				content
+			})
+		})
+		.filter_map(|i| {
+			if i.is_err() {
+				println!("EVALUATION ERROR: {:?}", i);
 			}
+
+			i.ok()
 		})
 		.collect()
 	)

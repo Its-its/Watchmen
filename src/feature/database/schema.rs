@@ -84,7 +84,9 @@ table! {
 	custom_item(id) {
 		id -> Integer,
 
+		title -> Text,
 		match_url -> Text,
+		description -> Text,
 
 		search_opts -> Text,
 	}

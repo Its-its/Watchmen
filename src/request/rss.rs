@@ -10,7 +10,7 @@ pub type FeedResult = Result<rss::Channel>;
 
 pub fn new_from_feed(url: String, feed: rss::Channel) -> NewFeed {
 	NewFeed {
-		url: url,
+		url,
 
 		title: feed.title().to_string(),
 		description: feed.description().to_string(),

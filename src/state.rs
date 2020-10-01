@@ -51,7 +51,7 @@ impl CoreState {
 		#[cfg(feature = "terminal")]
 		self.terminal.init(weak_core.clone());
 		#[cfg(feature = "telegram")]
-		self.telegram.init(weak_core.clone());
+		self.telegram.init(weak_core);
 
 		{
 			let mut write = self.config.write().unwrap();

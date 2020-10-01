@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use crate::request::custom::UpdateableCustomItem;
+use crate::request::custom::{UpdateableCustomItem, CustomItem};
 
 use super::models::{
 	QueryId,
@@ -110,8 +110,17 @@ pub enum Front2CoreNotification {
 		url: String
 	},
 
+
+	// Custom Items
+
+	CustomItemList(Empty),
+
+	NewCustomItem {
+		item: CustomItem
+	},
+
 	UpdateCustomItem {
-		id: Option<QueryId>,
+		id: QueryId,
 		item: UpdateableCustomItem
 	}
 }
@@ -213,7 +222,18 @@ pub enum Core2FrontNotification {
 
 	WebpageSource {
 		html: String
-	}
+	},
+
+	// Custom Items
+
+	CustomItemList {
+		items: Vec<CustomItem>
+	},
+
+	NewCustomItem {
+		item: CustomItem,
+		affected: usize
+	},
 }
 
 

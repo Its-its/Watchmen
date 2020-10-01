@@ -4,16 +4,13 @@
 // TimeFormat(String, String) = "TimeFormat": [ "%b-%e %R", "PST" ]
 // Test { a: String } = "Test": { a: "" }
 
-type Values = string | string[] | number | number[] | boolean | boolean[];
-export type EnumValue = null | Values | ObjectType;
-export type EnumObject = { [name: string]: EnumValue };
 
 
 export class RustEnum {
 	name: string;
-	value: EnumValue;
+	value: rust.EnumValue;
 
-	constructor(name: null | string | EnumObject, value?: EnumValue) {
+	constructor(name: null | string | rust.EnumObject, value?: rust.EnumValue) {
 		if (name == null) {
 			this.name = 'None';
 			this.value = null;
@@ -28,9 +25,6 @@ export class RustEnum {
 	}
 }
 
-export type ObjectType = {
-	[name: string]: Values;
-};
 
 
 
@@ -41,14 +35,16 @@ export function rustify_object(obj: any): any {
 		return obj;
 	}
 
-	let corrected: ObjectType = {};
+	let corrected: rust.ObjectType = {};
 
 	for (const key in obj) {
 		if (obj.hasOwnProperty(key)) {
 			const value = obj[key];
 
-			if (value instanceof RustEnum || value == null) {
+			if (value instanceof RustEnum) {
 				corrected[key] = object_to_rust_enum(value);
+			} else if (value == null) {
+				corrected[key] = null;
 			} else {
 				corrected[key] = rustify_object(value);
 			}
@@ -59,7 +55,6 @@ export function rustify_object(obj: any): any {
 }
 
 export function object_to_rust_enum(obj: Nullable<RustEnum>): any {
-	console.log('Enum: ', obj);
 	if (obj == null || obj.name == 'None') return 'None';
 
 	if (obj.value == null) {

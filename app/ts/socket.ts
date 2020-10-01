@@ -3,7 +3,7 @@ import app from './core';
 export default class SocketManager {
 	socket = new WebSocket("ws://" + window.location.host + "/ws/");
 
-	debug = false;
+	debug = true;
 
 	last_message_id = 0;
 
@@ -95,7 +95,7 @@ export default class SocketManager {
 
 		// console.log('Sending:', wrapper);
 
-		this.socket.send(JSON.stringify(wrapper));
+		this.socket.send(JSON.stringify(wrapper, null, 4));
 	}
 
 	public send_notification(name: string, opts?: Obj<any>) {
@@ -217,9 +217,10 @@ export function send_get_feed_list(cb?: ResponseFunc<FeedListResponse>) {
 	}
 }
 
-export function send_create_listener(url: string, cb?: ResponseFunc<CreateListenerResponse>) {
+export function send_create_listener(url: string, custom_item_id: Nullable<number>, cb?: ResponseFunc<CreateListenerResponse>) {
 	let opts = {
-		url: url
+		url: url,
+		custom_item_id: custom_item_id
 	};
 
 	if (cb == null) {
@@ -255,10 +256,34 @@ export function send_remove_listener(id: number, rem_stored: boolean,  cb?: Resp
 	}
 }
 
-//
+
+// Editor / Custom Item
 
 export function send_get_webpage_source(url: string, cb: ResponseFunc<GetWebpageResponse>) {
 	app.socket.send_response('get_webpage', { url }, cb);
+}
+
+// Custom Items
+
+export function send_get_custom_items_list(cb?: ResponseFunc<CustomItemListResponse>) {
+	if (cb == null) {
+		app.socket.send_notification('custom_item_list');
+	} else {
+		app.socket.send_response('custom_item_list', {}, cb);
+	}
+}
+
+// export function send_update_custom_item(id: number, item: ModelCustomItem, cb: ResponseFunc<any>) {
+// 	app.socket.send_response('update_custom_item', {
+// 		id,
+// 		item
+// 	}, cb);
+// }
+
+export function send_new_custom_item(item: ModelCustomItem, cb: ResponseFunc<CreateCustomItemResponse>) {
+	app.socket.send_response('new_custom_item', {
+		item
+	}, cb);
 }
 
 
