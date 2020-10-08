@@ -69,14 +69,20 @@ table! {
 }
 
 table! {
-	feed_filter(id) {
+	filters(id) {
+		id -> Integer,
+
+		title -> Text,
+		filter -> Text,
+	}
+}
+
+table! {
+	feed_filters(id) {
 		id -> Integer,
 
 		feed_id -> Integer,
-
-		title -> Text,
-
-		filter -> Nullable<Text>,
+		filter_id -> Integer,
 	}
 }
 

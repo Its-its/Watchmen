@@ -4,6 +4,7 @@ use diesel::prelude::*;
 
 pub mod models;
 pub mod schema;
+pub mod objects;
 
 
 pub struct Connection(pub SqliteConnection);
@@ -67,6 +68,7 @@ impl Connection {
 				ignore_if_not_new  BOOL NOT NULL DEFAULT true,
 
 				global_show        BOOL NOT NULL DEFAULT true,
+				alert              INTEGER NOT NULL,
 
 				date_added         LONG NOT NULL,
 				last_called        LONG NOT NULL
@@ -131,17 +133,27 @@ impl Connection {
 
 		// Feed Filters
 
-		// self.0.execute(
-		// 	"CREATE TABLE IF NOT EXISTS feed_filters (
-		// 		id          INTEGER PRIMARY KEY,
+		self.0.execute(
+			"CREATE TABLE IF NOT EXISTS feed_filters (
+				id          INTEGER PRIMARY KEY,
 
-		// 		feed_id     INTEGER NOT NULL,
+				feed_id     INTEGER NOT NULL,
+				filter_id   INTEGER NOT NULL
+			)"
+		)?;
 
-		// 		title       TEXT NOT NULL,
 
-		// 		filter      TEXT,
-		// 	)"
-		// )?;
+		// General Filters
+
+		self.0.execute(
+			"CREATE TABLE IF NOT EXISTS filters (
+				id          INTEGER PRIMARY KEY,
+
+				title       TEXT NOT NULL,
+
+				filter      TEXT
+			)"
+		)?;
 
 		Ok(())
 	}

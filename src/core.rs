@@ -7,7 +7,7 @@ use crate::state::CoreState;
 use crate::request::CollectedResult;
 
 use crate::Result;
-// use crate::Filter;
+use crate::Filter;
 
 pub struct FeederCore(Arc<Mutex<CoreState>>);
 
@@ -62,7 +62,7 @@ impl FeederCore {
 
 
 // Weak Core | sent to the plugins / WebSocket
-use crate::feature::{models, schema::feeds as FeedsSchema};
+use crate::feature::{objects, models, schema::feeds as FeedsSchema};
 use crate::feature::ResponseWrapper;
 use crate::feature::{Core2FrontNotification, Front2CoreNotification};
 use crate::types::MessageId;
@@ -91,7 +91,7 @@ impl WeakFeederCore {
 
 			// Return updates since time
 			Front2CoreNotification::Updates { since } => {
-				let new_count = models::get_item_count_since(since, &conn)?;
+				let new_count = objects::get_item_count_since(since, &conn)?;
 
 				let updates = Core2FrontNotification::Updates {
 					since,
@@ -103,8 +103,8 @@ impl WeakFeederCore {
 			}
 
 			Front2CoreNotification::ItemList { category_id, items, skip } => {
-				let total_amount = models::get_item_total(category_id, &conn)?;
-				let items_found = models::get_items_in_range(category_id, items, skip, &conn)?;
+				let total_amount = objects::get_item_total(category_id, &conn)?;
+				let items_found = objects::get_items_in_range(category_id, items, skip, &conn)?;
 
 				// let filter = Filter::Regex("[0-9]+\\s?tb".into(), Default::default());
 
@@ -128,8 +128,8 @@ impl WeakFeederCore {
 
 			Front2CoreNotification::CategoryList(..) => {
 				let list = Core2FrontNotification::CategoryList {
-					categories: models::get_categories(&conn)?,
-					category_feeds: models::get_feed_categories(&conn)?
+					categories: objects::get_categories(&conn)?,
+					category_feeds: objects::get_feed_categories(&conn)?
 				};
 
 				ctx.respond_with(msg_id_opt, list);
@@ -137,12 +137,12 @@ impl WeakFeederCore {
 
 
 			// Write Only
-			Front2CoreNotification::AddListener { url } => {
+			Front2CoreNotification::AddListener { url, custom_item_id } => {
 				use diesel::RunQueryDsl;
 
 				let feed = inner.requester.create_new_feed(url, conn)?;
 
-				let affected = diesel::insert_or_ignore_into(FeedsSchema::table)
+				let affected = diesel::insert_into(FeedsSchema::table)
 					.values(&feed)
 					.execute(conn)?;
 
@@ -155,13 +155,13 @@ impl WeakFeederCore {
 			}
 
 			Front2CoreNotification::RemoveListener { id, rem_stored } => {
-				let affected = models::remove_listener(id, rem_stored, &mut inner)?;
+				let affected = objects::remove_listener(id, rem_stored, &mut inner)?;
 
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::RemoveListener { affected });
 			}
 
 			Front2CoreNotification::EditListener { id, editing } => {
-				let affected = models::update_listener(id, &editing, &mut inner)?;
+				let affected = objects::update_listener(id, &editing, &mut inner)?;
 
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::EditListener { affected, listener: editing });
 			}
@@ -177,7 +177,7 @@ impl WeakFeederCore {
 					name,
 				};
 
-				let affected = models::create_category(&cat, conn)?;
+				let affected = objects::create_category(&cat, conn)?;
 
 				let new_cat = Core2FrontNotification::NewCategory {
 					affected,
@@ -188,13 +188,13 @@ impl WeakFeederCore {
 			}
 
 			Front2CoreNotification::RemoveCategory { id } => {
-				let affected = models::remove_category(id, conn)?;
+				let affected = objects::remove_category(id, conn)?;
 
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::RemoveCategory { affected });
 			}
 
 			Front2CoreNotification::EditCategory { id, editing } => {
-				let affected = models::update_category(id, &editing, conn)?;
+				let affected = objects::update_category(id, &editing, conn)?;
 
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::EditCategory { affected, category: editing });
 			}
@@ -206,7 +206,7 @@ impl WeakFeederCore {
 					category_id
 				};
 
-				let affected = models::create_category_feed(&cat, conn)?;
+				let affected = objects::create_category_feed(&cat, conn)?;
 
 				let new_cat = Core2FrontNotification::NewFeedCategory {
 					affected,
@@ -217,7 +217,7 @@ impl WeakFeederCore {
 			}
 
 			Front2CoreNotification::RemoveFeedCategory { id } => {
-				let affected = models::remove_category_feed(id, conn)?;
+				let affected = objects::remove_category_feed(id, conn)?;
 
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::RemoveFeedCategory { affected });
 			}
@@ -239,7 +239,7 @@ impl WeakFeederCore {
 
 			Front2CoreNotification::CustomItemList(..) => {
 				let items = Core2FrontNotification::CustomItemList {
-					items: models::get_custom_items(conn)?
+					items: objects::get_custom_items(conn)?
 				};
 
 				ctx.respond_with(msg_id_opt, items);
@@ -256,7 +256,7 @@ impl WeakFeederCore {
 
 				let model = item.clone().into();
 
-				let affected = models::create_custom_item(&model, conn)?;
+				let affected = objects::create_custom_item(&model, conn)?;
 
 				let new_item = Core2FrontNotification::NewCustomItem {
 					affected,
@@ -266,7 +266,94 @@ impl WeakFeederCore {
 				ctx.respond_with(msg_id_opt, new_item);
 			}
 
-			//
+
+			// Feed
+
+			Front2CoreNotification::FilterList(..) => {
+				let mut items = Vec::new();
+
+				for filter in objects::get_filters(conn)? {
+					let feeds = objects::get_filters_from_filter_id(filter.id, conn)?
+						.into_iter()
+						.map(|f| f.feed_id)
+						.collect();
+
+					items.push(objects::FilterGrouping {
+						filter,
+						feeds
+					});
+				}
+
+				let response = Core2FrontNotification::FeedFilterList {
+					items
+				};
+
+				ctx.respond_with(msg_id_opt, response);
+			}
+
+			Front2CoreNotification::NewFilter { title , filter } => {
+				let new_filter = objects::NewFilterModel {
+					title,
+					filter
+				};
+
+				let affected = objects::create_filter(
+					new_filter.clone(),
+					conn
+				)?;
+
+				ctx.respond_with(
+					msg_id_opt,
+					Core2FrontNotification::NewFilter {
+						filter: new_filter,
+						affected
+					}
+				);
+			}
+
+			Front2CoreNotification::UpdateFilter { id, title , filter } => {
+				let affected = objects::update_filter(
+					id,
+					objects::EditFilterModel {
+						title: Some(title),
+						filter: Some(filter)
+					},
+					conn
+				)?;
+
+				ctx.respond_with(
+					msg_id_opt,
+					Core2FrontNotification::EditFilter {
+						affected
+					}
+				);
+			}
+
+			Front2CoreNotification::RemoveFilter { id } => {
+				let (affected_filters, affected_feeds) = objects::remove_filter(id, conn)?;
+
+				ctx.respond_with(
+					msg_id_opt,
+					Core2FrontNotification::RemoveFilter {
+						affected_filters,
+						affected_feeds,
+					}
+				);
+			}
+
+
+			// Feed Filter
+
+			Front2CoreNotification::NewFeedFilter { feed_id, filter_id } => {
+				let affected = objects::create_feed_and_filter_link(filter_id, feed_id, conn)?;
+
+				ctx.respond_with(
+					msg_id_opt,
+					Core2FrontNotification::LinkFeedAndFilter {
+						affected
+					}
+				);
+			}
 		}
 
 		Ok(())

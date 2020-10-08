@@ -1,4 +1,5 @@
 import app from './core';
+import { RustEnum } from './util/rust';
 
 export default class SocketManager {
 	socket = new WebSocket("ws://" + window.location.host + "/ws/");
@@ -286,6 +287,44 @@ export function send_new_custom_item(item: ModelCustomItem, cb: ResponseFunc<Cre
 	}, cb);
 }
 
+
+// Filters / Feed Filters
+export function send_get_filter_list(cb?: ResponseFunc<FilterListResponse>) {
+	if (cb == null) {
+		app.socket.send_notification('filter_list');
+	} else {
+		app.socket.send_response('filter_list', {}, cb);
+	}
+}
+
+export function send_new_filter(title: string, filter: rust.EnumObject, cb: ResponseFunc<any>) {
+	app.socket.send_response('new_filter', {
+		title,
+		filter
+	}, cb);
+}
+
+export function send_update_filter(id: number, title: string, filter: rust.EnumObject, cb: ResponseFunc<any>) {
+	app.socket.send_response('update_filter', {
+		id,
+		title,
+		filter
+	}, cb);
+}
+
+export function send_remove_filter(id: number, cb: ResponseFunc<any>) {
+	app.socket.send_response('remove_filter', {
+		id
+	}, cb);
+}
+
+
+export function send_new_feed_filter(feed_id: number, filter_id: number, cb: ResponseFunc<any>) {
+	app.socket.send_response('new_filter', {
+		feed_id,
+		filter_id
+	}, cb);
+}
 
 // other
 export function send_get_updates_since(since_timestamp: number, cb?: ResponseFunc<UpdatesResponse>) {

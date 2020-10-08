@@ -1,5 +1,6 @@
 import View from './index';
 import EditorView from './editor';
+import FilterView from './filter';
 
 import core, { create_popup, for_each } from '../core';
 
@@ -457,19 +458,26 @@ export default class FeedView extends View {
 				custom_item_sel.name = 'custom_item';
 				custom_row.appendChild(custom_item_sel);
 
+				let cidefault = document.createElement('option');
+				cidefault.innerText = 'Pick a Custom Item';
+				cidefault.value = '';
+				cidefault.disabled = true;
+				cidefault.selected = true;
+				custom_item_sel.appendChild(cidefault);
+
 				send_get_custom_items_list((_, resp) => {
 					if (resp != null) {
 						resp.items.forEach(item => {
 							let option = document.createElement('option');
-							option.innerText = item.match_url;
-							// option.title = item.title;
+							console.log(item);
+							option.innerText = item.title;
+							option.title = item.description;
 							option.value = '' + item.id!;
 
 							custom_item_sel.appendChild(option);
 						});
 					}
 				});
-
 
 				// Submit
 				let sub_row = document.createElement('div');
@@ -482,6 +490,8 @@ export default class FeedView extends View {
 				sub_row.appendChild(submit);
 
 				submit.addEventListener('click', _ => {
+					if (custom_item_sel.value.length == 0) return;
+
 					send_create_listener(cat_text.value, parseInt(custom_item_sel.value), (err, opts) => {
 						if (err != null) {
 							return console.error('create_listener: ', err);
@@ -495,7 +505,7 @@ export default class FeedView extends View {
 							core.process.refresh_feeds(() => {
 								close();
 
-								let feed: Nullable<FeedListener> = null;
+								let feed: Optional<FeedListener> = undefined;
 
 								if (feed = core.process.get_feed_by_url(opts!.listener.url)) {
 									this.edit_listener(feed);
@@ -516,9 +526,15 @@ export default class FeedView extends View {
 		open_editor.innerText = 'Open Editor';
 		core.navbar.append_left_html(open_editor);
 
-		open_editor.addEventListener('click', () => {
-			core.open_view(new EditorView());
-		});
+		open_editor.addEventListener('click', () => core.open_view(new EditorView()));
+
+
+		let open_filter = document.createElement('div');
+		open_filter.className = 'button';
+		open_filter.innerText = 'Filter Viewer';
+		core.navbar.append_left_html(open_filter);
+
+		open_filter.addEventListener('click', () => core.open_view(new FilterView()));
 
 		// Right side
 

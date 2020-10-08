@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 
+use crate::Filter;
 use crate::request::custom::{UpdateableCustomItem, CustomItem};
 
 use super::models::{
@@ -13,9 +14,12 @@ use super::models::{
 	NewCategory,
 	NewFeedCategory,
 	EditCategory,
-	NewFeedFilter,
-	FeedFilter,
-	EditFrontFeedFilter
+};
+
+use super::objects::{
+	NewFilterModel,
+	EditFilterModel,
+	FilterGrouping
 };
 
 
@@ -30,7 +34,8 @@ pub struct Empty {}
 pub enum Front2CoreNotification {
 	/// Add something else to listen to.
 	AddListener {
-		url: String
+		url: String,
+		custom_item_id: Option<i32>
 	},
 
 	RemoveListener {
@@ -89,21 +94,6 @@ pub enum Front2CoreNotification {
 	},
 
 
-	// NewFeedFilter {
-	// 	title: String,
-	// 	feed_id: QueryId
-	// },
-
-	// RemoveFeedFilter {
-	// 	id: QueryId
-	// },
-
-	// FeedFilterList {
-	// 	feed_id: QueryId,
-	// 	editing: EditFrontFeedFilter
-	// },
-
-
 	// Scraper Editor
 
 	GetWebpage {
@@ -122,7 +112,33 @@ pub enum Front2CoreNotification {
 	UpdateCustomItem {
 		id: QueryId,
 		item: UpdateableCustomItem
-	}
+	},
+
+	// Feed Filter
+
+	NewFeedFilter {
+		feed_id: QueryId,
+		filter_id: QueryId
+	},
+
+	// Filter
+
+	FilterList(Empty),
+
+	UpdateFilter {
+		id: QueryId,
+		title: String,
+		filter: Filter
+	},
+
+	NewFilter {
+		title: String,
+		filter: Filter
+	},
+
+	RemoveFilter {
+		id: QueryId
+	},
 }
 
 
@@ -200,20 +216,25 @@ pub enum Core2FrontNotification {
 
 
 	FeedFilterList {
-		items: Vec<FeedFilter>
+		items: Vec<FilterGrouping>
 	},
 
-	EditFeedFilter {
-		filter: EditFrontFeedFilter,
+	EditFilter {
 		affected: usize
 	},
 
-	NewFeedFilter {
-		filter: NewFeedFilter,
+	NewFilter {
+		filter: NewFilterModel,
 		affected: usize
 	},
 
-	RemoveFeedFilter {
+	RemoveFilter {
+		affected_filters: usize,
+		affected_feeds: usize
+	},
+
+
+	LinkFeedAndFilter {
 		affected: usize
 	},
 

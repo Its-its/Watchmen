@@ -8,7 +8,7 @@ use chrono::{DateTime, FixedOffset};
 use crate::{Result, Error};
 use super::NewFeed;
 
-use crate::feature::models::get_custom_item_from_url;
+use crate::feature::objects::get_custom_item_from_url;
 
 
 pub type CustomResult = Result<Vec<FoundItem>>;
@@ -199,22 +199,22 @@ pub fn new_from_feed(url: String, feed: CustomItem) -> NewFeed {
 
 
 pub fn get_from_url(url: &str, conn: &diesel::SqliteConnection) -> CustomResult {
-	// let found = get_custom_item_from_url(Url::parse(url).unwrap());
+	let found = get_custom_item_from_url(Url::parse(url).unwrap(), conn)?;
 
 	// turn found into SearchParser
 
-	get_from_url_parser(url, &SearchParser::default())
+	get_from_url_parser(url, &found.search_opts)
 }
 
 pub fn get_from_url_parser(url: &str, parser: &SearchParser) -> CustomResult {
-	// TODO: url DB call for parser.
-	// TODO: Better Error Handling.
 	let mut resp = reqwest::get(url)?;
 
 	let doc = xpath::parse_doc(&mut resp);
 
+
 	Ok(
-		doc.evaluate(&parser.items).expect("items")
+		doc.evaluate(&parser.items)
+		.ok_or_else(|| Error::Other("Xpath Evaluation Error!".into()))?
 		.into_iterset()?
 		.map::<Result<FoundItem>, _>(|node| {
 			let title = parser.title.evaluate(&doc, node.clone())

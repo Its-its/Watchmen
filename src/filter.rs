@@ -4,11 +4,6 @@ use regex::RegexBuilder;
 use crate::feature::models::Item;
 
 
-pub struct FilterCategory {
-	//
-}
-
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Filter {
 	//    regex, opts
@@ -82,7 +77,9 @@ impl Filter {
 				builder.unicode(opts.unicode);
 				builder.octal(opts.octal);
 
-				builder.build().unwrap().is_match(&item.title)
+				let build = builder.build().unwrap();
+
+				build.is_match(&item.title)
 			}
 
 			Filter::Contains(value, case_sensitive) => {
@@ -109,8 +106,8 @@ impl Filter {
 				}
 			}
 
-			Filter::And(filters) => filters.iter().filter(|f| f.filter(item)).count() == filters.len(),
-			Filter::Or(filters) => filters.iter().filter(|f| f.filter(item)).count() != 0,
+			Filter::And(filters) => filters.iter().all(|f| f.filter(item)),
+			Filter::Or(filters) => filters.iter().any(|f| f.filter(item)),
 		}
 	}
 

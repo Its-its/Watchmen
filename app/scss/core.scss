@@ -322,3 +322,97 @@ input {
 		border-style: solid;
 	}
 }
+
+select.custom {
+	padding: 5px;
+	border-radius: 5px;
+	background-color: #1b1c24;
+	color: white;
+	font-size: 16px;
+	border: 1px solid #3b3d48;
+
+	> option {
+		&:hover, &:active, &:checked {
+			background-color: #5f5a19;
+		}
+	}
+}
+
+
+.filter-container {
+	display: flex;
+	flex-grow: 1;
+	overflow-y: auto;
+	margin: 1em;
+	flex-direction: column;
+
+	.filter-tools {
+		display: flex;
+		padding: 4px;
+		flex-direction: row;
+
+		.button {
+			margin-left: 2px;
+			margin-right: 2px;
+		}
+	}
+
+	.filter-editor {
+		//
+	}
+
+	.sub-filter {
+		display: flex;
+		flex-grow: 1;
+
+		.filter {
+			display: flex;
+			flex-grow: 1;
+			flex-direction: column;
+			padding-left: 0.5em;
+
+			> .title {
+				margin-block-start: 4px;
+				margin-block-end: 0.5em;
+				font-size: 20px;
+
+				.delete {
+					color: #cf1414;
+					padding-right: 0.5em;
+					cursor: pointer;
+				}
+			}
+
+			> .content {
+				display: flex;
+				// flex-grow: 1;
+				flex-direction: row;
+
+				.grouping {
+					margin: 4px;
+				}
+
+				.sub-title {
+					margin-block-start: 4px;
+					margin-block-end: 0.5em;
+				}
+			}
+		}
+
+		.filter-and,
+		.filter-or {
+			> .content {
+				padding-left: 2em;
+				flex-direction: column;
+
+				> .sub-filter {
+					padding: 4px;
+					margin-bottom: 0.5em;
+					// background-color: #1b1c24;
+					border-left: 6px solid #1b1c24;
+				}
+			}
+
+		}
+	}
+}

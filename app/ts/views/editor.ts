@@ -4,6 +4,7 @@ import { parseFromString } from '../util/time';
 
 import View from './index';
 import FeedView from './feed';
+import FilterView from './filter';
 
 import { send_get_webpage_source, send_new_custom_item, send_get_custom_items_list } from '../socket';
 
@@ -252,8 +253,8 @@ export default class EditorView extends View {
 
 		load({
 			"title": "Ebay",
-			"description": "Ebay desc",
-			"match_url": "ebay.com",
+			"description": "Parser for Ebay..",
+			"match_url": "*.ebay.com",
 			"search_opts": {
 				"items": "//ul[@class=\"srp-results srp-list clearfix\"]/li",
 				"title": {
@@ -267,9 +268,9 @@ export default class EditorView extends View {
 					}
 				},
 				"guid": {
-					"xpath": ".//a[@class=\"s-item__link\"]/@href",
+					"xpath": ".//div[@class=\"s-item__image\"]/a/@href",
 					"parse_type": {
-						"Regex": "^[a-z0-9:/.-]+/([0-9]+)\?"
+						"Regex": "^[a-zA-Z0-9:/.-]+/([0-9]+)\?"
 					}
 				},
 				"date": {
@@ -652,6 +653,7 @@ class ItemInfoSearch {
 
 		input.addEventListener('mousedown', () => {
 			comp_item.parseType.value = input.value;
+			console.log(input.value);
 
 			this.foundItems.value = '';
 
@@ -677,15 +679,16 @@ class ItemInfoSearch {
 		});
 	}
 
-	displayTimeFormatType(value?: rust.EnumValue) {
+	displayTimeFormatType(value: rust.EnumValue = []) {
+		if (value == null || !Array.isArray(value)) return console.error('INVALID TIME FORMAT VALUE: ', value);
+
 		let comp_item = this.compiled[this.config_name];
 
 		comp_item.parseType.name = 'TimeFormat';
-		comp_item.parseType.value = [];
+		comp_item.parseType.value = value;
 
 		let format_input = document.createElement('input');
-		// @ts-ignore
-		if (format_input != null) format_input.value = value[0];
+		if (format_input != null) format_input.value = (value.length == 0 ? '' : '' + value[0]);
 		format_input.type = 'text';
 		format_input.placeholder = 'Time Format';
 		this.parser_container.appendChild(format_input);
@@ -693,8 +696,7 @@ class ItemInfoSearch {
 		this.parser_container.appendChild(document.createElement('br'));
 
 		let tz_input = document.createElement('input');
-		// @ts-ignore
-		if (tz_input != null) tz_input.value = value[1];
+		if (tz_input != null) tz_input.value = (value.length == 0 ? '' : '' + value[1]);
 		tz_input.type = 'text';
 		tz_input.placeholder = 'Timezone of the Date/Time (ex: UTC)';
 		this.parser_container.appendChild(tz_input);

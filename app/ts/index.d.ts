@@ -2,12 +2,13 @@
 type Obj<I> = { [name: string]: I };
 
 type Nullable<I> = I | null;
+type Optional<I> = I | undefined;
 
 
 declare namespace rust {
-	type Values = string | string[] | number | number[] | boolean | boolean[] | null;
+	type Values = string | number | boolean | null;
 
-	export type EnumValue = null | Values | ObjectType;
+	export type EnumValue = EnumObject | Values | ObjectType | EnumValue[];
 	export type EnumObject = {
 		[name: string]: EnumValue
 	}
@@ -75,6 +76,7 @@ interface ModelListener {
 	last_called: number;
 	remove_after: number;
 	sec_interval: number;
+	alert: boolean;
 }
 
 interface ModelEditListener {
@@ -143,6 +145,17 @@ interface ModelEditCustomItem {
 	}
 }
 
+interface FilterModel {
+	id: number;
+	title: string;
+	filter: rust.EnumObject;
+}
+
+interface FilterGroupListener {
+	feeds: number[];
+	filter: FilterModel;
+}
+
 // Responses
 
 interface RemoveListenerResponse {
@@ -159,6 +172,10 @@ interface ItemListResponse {
 	skip_count: number;
 	total_items: number;
 	items: ModelItem[];
+}
+
+interface FilterListResponse {
+	items: FilterGroupListener[];
 }
 
 interface FeedListResponse {

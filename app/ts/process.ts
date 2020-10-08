@@ -23,6 +23,7 @@ export class FeedListener {
 	title: string;
 	description: string;
 	generator: string;
+	alert: boolean;
 
 	constructor(opts: ModelListener) {
 		this.id = opts.id!;
@@ -36,6 +37,7 @@ export class FeedListener {
 		this.sec_interval = opts.sec_interval;
 		this.date_added = opts.date_added;
 		this.last_called = opts.last_called;
+		this.alert = opts.alert;
 	}
 }
 
@@ -169,28 +171,12 @@ export default class BackgroundProcess {
 		return updated;
 	}
 
-	get_feed_by_id(id: number): Nullable<FeedListener> {
-		for (let i = 0; i < this.feed_listeners.length; i++) {
-			let feed = this.feed_listeners[i];
-
-			if (feed.id == id) {
-				return feed;
-			}
-		}
-
-		return null;
+	get_feed_by_id(id: number): Optional<FeedListener> {
+		return this.feed_listeners.find(f => f.id == id);
 	}
 
-	get_feed_by_url(url: string): Nullable<FeedListener> {
-		for (let i = 0; i < this.feed_listeners.length; i++) {
-			let feed = this.feed_listeners[i];
-
-			if (feed.url == url) {
-				return feed;
-			}
-		}
-
-		return null;
+	get_feed_by_url(url: string): Optional<FeedListener> {
+		return this.feed_listeners.find(i => i.url == url);
 	}
 
 	on_received_update_items(items: ModelItem[]) {
@@ -204,8 +190,10 @@ export default class BackgroundProcess {
 			core.view.table.add_sort_render_rows(new_items);
 		}
 
-		if (this.has_notification_perms()) {
-			new Notification(`Received ${new_items.length} new items.`)
+		let alertable = new_items.filter(i => this.get_feed_by_id(i.feed_id)?.alert);
+
+		if (alertable.length != 0 && this.has_notification_perms()) {
+			new Notification(`Received ${alertable.length} new items.`)
 		}
 	}
 
