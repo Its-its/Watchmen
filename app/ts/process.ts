@@ -1,7 +1,7 @@
 // Background processing.
 
 import core from './core';
-import FeedView from './views/feed';
+import FeedItemsView from './views/items';
 
 import {
 	send_get_item_list,
@@ -100,7 +100,7 @@ export default class BackgroundProcess {
 		Notification.requestPermission();
 
 		setInterval(() => {
-			if (core.view != null && core.view instanceof FeedView) {
+			if (core.view != null && core.view instanceof FeedItemsView) {
 				core.view.table.rows.forEach(r => r.update_date_element());
 			}
 
@@ -111,7 +111,7 @@ export default class BackgroundProcess {
 
 						this.on_received_update_items(resp!.items);
 
-						if (core.view != null && core.view instanceof FeedView) {
+						if (core.view != null && core.view instanceof FeedItemsView) {
 							if (core.view.table.container.scrollTop < 40 * 4) {
 								core.view.table.container.scrollTo({ top: 0, behavior: 'smooth' });
 							}
@@ -125,7 +125,7 @@ export default class BackgroundProcess {
 	refresh_feeds(finished?: () => any) {
 		console.log('Refresh Feeds');
 
-		if (core.view != null && core.view instanceof FeedView) {
+		if (core.view != null && core.view instanceof FeedItemsView) {
 			core.view.table.reset();
 		}
 
@@ -135,7 +135,7 @@ export default class BackgroundProcess {
 
 			let viewing_category = null;
 			// Set the viewing_category only if viewing table. Otherwise get all.
-			if (core.view != null && core.view instanceof FeedView) {
+			if (core.view != null && core.view instanceof FeedItemsView) {
 				viewing_category = core.view.table.viewing_category;
 			}
 
@@ -143,7 +143,7 @@ export default class BackgroundProcess {
 				let feed_items = items!.items.map(i => new FeedItem(i));
 				feed_items = this.add_or_update_feed_items(feed_items);
 
-				if (core.view != null && core.view instanceof FeedView) {
+				if (core.view != null && core.view instanceof FeedItemsView) {
 					core.view.table.new_items(items!, feed_items);
 				}
 
@@ -186,7 +186,7 @@ export default class BackgroundProcess {
 		new_items = this.add_or_update_feed_items(new_items);
 
 		// Send items to table.
-		if (core.view != null && core.view instanceof FeedView) {
+		if (core.view != null && core.view instanceof FeedItemsView) {
 			core.view.table.add_sort_render_rows(new_items);
 		}
 

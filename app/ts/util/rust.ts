@@ -5,11 +5,11 @@
 // Test { a: String } = "Test": { a: "" }
 
 
-type UpdatedValue = rust.EnumObject | rust.Values | rust.ObjectType | RustEnum | (rust.EnumValue | RustEnum)[];
+export type CompleteRustValues = rust.EnumObject | rust.Values | rust.ObjectType | RustEnum | (rust.EnumValue | RustEnum)[];
 
 export class RustEnum {
 	name: string;
-	value: UpdatedValue;
+	value: CompleteRustValues;
 
 	constructor(name: null | string | rust.EnumObject, value?: rust.EnumValue) {
 		if (name == null) {
@@ -24,7 +24,7 @@ export class RustEnum {
 			this.value = name[this.name];
 		}
 
-		this.value = genValue(this.value);
+		this.value = object_to_rust_enum(this.value);
 	}
 
 	toJSON() {
@@ -32,11 +32,11 @@ export class RustEnum {
 	}
 }
 
-function genValue(value: UpdatedValue): any {
+function object_to_rust_enum(value: CompleteRustValues): any {
 	if (value == null) {
 		return null;
 	} else if (Array.isArray(value)) {
-		return value.map(genValue);
+		return value.map(object_to_rust_enum);
 	} else if (value instanceof RustEnum) {
 		return value;
 	} else if (typeof value == 'object') {
@@ -83,7 +83,7 @@ export function rustify_object(obj: any): any {
 	return corrected;
 }
 
-export function from_rust_enum_to_object(obj: Nullable<RustEnum>): any {
+export function from_rust_enum_to_object(obj: Nullable<RustEnum>): rust.EnumObject | rust.EnumNone {
 	if (obj == null || obj.name == 'None') return 'None';
 
 	if (obj.value == null) {
@@ -98,14 +98,14 @@ export function from_rust_enum_to_object(obj: Nullable<RustEnum>): any {
 		// }
 	}
 
-	return { [obj.name]: obj.value };
+	return { [obj.name]: from_enum_value_to_object(obj.value) };
 }
 
-export function from_enum_value_to_object(value: UpdatedValue): any {
+export function from_enum_value_to_object(value: CompleteRustValues): rust.EnumValue {
 	if (value == null) return 'None';
 
 	if (Array.isArray(value)) {
-		return value.map(genValue);
+		return value.map(from_enum_value_to_object);
 	}
 
 	if (value instanceof RustEnum) {

@@ -3,7 +3,7 @@ import BackgroundProcess from './process';
 import Navbar from './navbar';
 
 import View from './views/index';
-import FeedView from './views/feed';
+import FeedItemsView from './views/items';
 
 const app = {
 	view: <Nullable<View>>null,
@@ -16,7 +16,7 @@ const app = {
 
 	init() {
 		this.navbar.render();
-		this.open_view(new FeedView());
+		this.open_view(new FeedItemsView());
 	},
 
 	on_connection_open() {

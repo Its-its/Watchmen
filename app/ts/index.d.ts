@@ -8,7 +8,9 @@ type Optional<I> = I | undefined;
 declare namespace rust {
 	type Values = string | number | boolean | null;
 
-	export type EnumValue = EnumObject | Values | ObjectType | EnumValue[];
+	export type Optional<T> = T | EnumNone;
+
+	export type EnumValue = rust.EnumNone | EnumObject | Values | ObjectType | EnumValue[];
 	export type EnumObject = {
 		[name: string]: EnumValue
 	}
@@ -76,7 +78,6 @@ interface ModelListener {
 	last_called: number;
 	remove_after: number;
 	sec_interval: number;
-	alert: boolean;
 }
 
 interface ModelEditListener {
@@ -127,7 +128,7 @@ interface ModelCustomItem {
 	search_opts: {
 		[name: string]: Nullable<{
 			xpath: string
-			parse_type: rust.BaseEnum
+			parse_type: rust.EnumValue
 		} | string>
 	}
 }
@@ -140,7 +141,7 @@ interface ModelEditCustomItem {
 	search_opts?: {
 		[name: string]: Nullable<{
 			xpath: string
-			parse_type: rust.BaseEnum
+			parse_type: rust.EnumValue
 		}>
 	}
 }

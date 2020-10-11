@@ -1,6 +1,6 @@
 import View from './index';
 import EditorView from './editor';
-import FeedView from './feed';
+import FeedView from './items';
 
 import core, { create_popup, for_each } from '../core';
 
@@ -495,7 +495,7 @@ class FilterContainer {
 
 		const inputRegex = document.createElement('input');
 		inputRegex.type = 'text';
-		inputRegex.placeholder = 'Regex Query';
+		inputRegex.placeholder = 'Value';
 		inputContainer.appendChild(inputRegex);
 
 		// @ts-ignore

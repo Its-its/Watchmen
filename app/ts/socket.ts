@@ -297,14 +297,14 @@ export function send_get_filter_list(cb?: ResponseFunc<FilterListResponse>) {
 	}
 }
 
-export function send_new_filter(title: string, filter: rust.EnumObject, cb: ResponseFunc<any>) {
+export function send_new_filter(title: string, filter: rust.Optional<rust.EnumObject>, cb: ResponseFunc<any>) {
 	app.socket.send_response('new_filter', {
 		title,
 		filter
 	}, cb);
 }
 
-export function send_update_filter(id: number, title: string, filter: rust.EnumObject, cb: ResponseFunc<any>) {
+export function send_update_filter(id: number, title: string, filter: rust.Optional<rust.EnumObject>, cb: ResponseFunc<any>) {
 	app.socket.send_response('update_filter', {
 		id,
 		title,
@@ -321,6 +321,13 @@ export function send_remove_filter(id: number, cb: ResponseFunc<any>) {
 
 export function send_new_feed_filter(feed_id: number, filter_id: number, cb: ResponseFunc<any>) {
 	app.socket.send_response('new_filter', {
+		feed_id,
+		filter_id
+	}, cb);
+}
+
+export function send_remove_feed_filter(feed_id: number, filter_id: number, cb: ResponseFunc<any>) {
+	app.socket.send_response('remove_filter', {
 		feed_id,
 		filter_id
 	}, cb);

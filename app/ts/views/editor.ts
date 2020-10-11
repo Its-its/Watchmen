@@ -1,9 +1,9 @@
 import core from '../core';
-import { rustify_object, RustEnum, NULL_ENUM } from '../util/rust';
+import { rustify_object, RustEnum, NULL_ENUM, CompleteRustValues } from '../util/rust';
 import { parseFromString } from '../util/time';
 
 import View from './index';
-import FeedView from './feed';
+import FeedItemsView from './items';
 import FilterView from './filter';
 
 import { send_get_webpage_source, send_new_custom_item, send_get_custom_items_list } from '../socket';
@@ -35,7 +35,7 @@ export default class EditorView extends View {
 			if (this.parent != null) {
 				core.open_view(this.parent);
 			} else {
-				core.open_view(new FeedView());
+				core.open_view(new FeedItemsView());
 			}
 		});
 	}
@@ -233,7 +233,7 @@ export default class EditorView extends View {
 					} else {
 						rustify.search_opts[name] = {
 							xpath: values.xpath!,
-							parse_type: values.parseType
+							parse_type: values.parseType.toJSON()
 						};
 					}
 				}
@@ -613,7 +613,7 @@ class ItemInfoSearch {
 		});
 	}
 
-	displayRegexType(value?: rust.EnumValue) {
+	displayRegexType(value?: CompleteRustValues) {
 		let comp_item = this.compiled[this.config_name];
 
 		comp_item.parseType.name = 'Regex';
@@ -679,7 +679,7 @@ class ItemInfoSearch {
 		});
 	}
 
-	displayTimeFormatType(value: rust.EnumValue = []) {
+	displayTimeFormatType(value: CompleteRustValues = []) {
 		if (value == null || !Array.isArray(value)) return console.error('INVALID TIME FORMAT VALUE: ', value);
 
 		let comp_item = this.compiled[this.config_name];

@@ -1,6 +1,7 @@
 import View from './index';
 import EditorView from './editor';
 import FilterView from './filter';
+import FeedsView from './feeds';
 
 import core, { create_popup, for_each } from '../core';
 
@@ -8,14 +9,10 @@ import { FeedListener, FeedItem } from '../process';
 
 import {
 	send_get_item_list,
-	send_edit_listener,
-	send_remove_listener,
-	send_create_listener,
 	send_create_category,
 	send_get_category_list,
 	send_remove_feed_from_category,
-	send_add_feed_to_category,
-	send_get_custom_items_list
+	send_add_feed_to_category
 } from '../socket';
 
 export class Table {
@@ -43,7 +40,7 @@ export class Table {
 	waiting_for_more_feeds = false;
 
 	constructor() {
-		this.container.className = 'feed-container';
+		this.container.className = 'feed-items-container';
 		this.init();
 	}
 
@@ -428,98 +425,10 @@ export default class FeedView extends View {
 
 		let new_listener = document.createElement('div');
 		new_listener.className = 'button';
-		new_listener.innerText = 'New Feed';
+		new_listener.innerText = 'Feeds';
 		core.navbar.append_left_html(new_listener);
 
-		new_listener.addEventListener('click', _ => {
-			create_popup((container, open, close) => {
-				let form = document.createElement('div');
-				form.className = 'form-group';
-				container.appendChild(form);
-
-
-				// Feed URL
-				let cat_row = document.createElement('div');
-				cat_row.className = 'form-row';
-				form.appendChild(cat_row);
-
-				let cat_text = document.createElement('input');
-				cat_text.placeholder = 'Feed URL';
-				cat_text.type = 'text';
-				cat_row.appendChild(cat_text);
-
-
-				// Custom Items
-				let custom_row = document.createElement('div');
-				custom_row.className = 'form-row';
-				form.appendChild(custom_row);
-
-				let custom_item_sel = document.createElement('select');
-				custom_item_sel.name = 'custom_item';
-				custom_row.appendChild(custom_item_sel);
-
-				let cidefault = document.createElement('option');
-				cidefault.innerText = 'Pick a Custom Item';
-				cidefault.value = '';
-				cidefault.disabled = true;
-				cidefault.selected = true;
-				custom_item_sel.appendChild(cidefault);
-
-				send_get_custom_items_list((_, resp) => {
-					if (resp != null) {
-						resp.items.forEach(item => {
-							let option = document.createElement('option');
-							console.log(item);
-							option.innerText = item.title;
-							option.title = item.description;
-							option.value = '' + item.id!;
-
-							custom_item_sel.appendChild(option);
-						});
-					}
-				});
-
-				// Submit
-				let sub_row = document.createElement('div');
-				sub_row.className = 'form-row';
-				form.appendChild(sub_row);
-
-				let submit = document.createElement('div');
-				submit.className = 'button';
-				submit.innerText = 'Create';
-				sub_row.appendChild(submit);
-
-				submit.addEventListener('click', _ => {
-					if (custom_item_sel.value.length == 0) return;
-
-					send_create_listener(cat_text.value, parseInt(custom_item_sel.value), (err, opts) => {
-						if (err != null) {
-							return console.error('create_listener: ', err);
-						}
-
-						console.log('create_listener:', opts);
-
-						if (opts!.affected != 0) {
-							// We only use the url of opts.listener. Since it doesn't include the id of it.
-
-							core.process.refresh_feeds(() => {
-								close();
-
-								let feed: Optional<FeedListener> = undefined;
-
-								if (feed = core.process.get_feed_by_url(opts!.listener.url)) {
-									this.edit_listener(feed);
-								} else {
-									console.log('Unable to find feed to edit from url.');
-								}
-							});
-						}
-					});
-				});
-
-				open();
-			});
-		});
+		new_listener.addEventListener('click', () => core.open_view(new FeedsView()));
 
 		let open_editor = document.createElement('div');
 		open_editor.className = 'button';
@@ -579,154 +488,6 @@ export default class FeedView extends View {
 		core.navbar.clear();
 	}
 
-
-	// TODO: Something with the Remove is not working properly.
-	edit_listener(listener: FeedListener) {
-		create_popup((container, open, close) => {
-			let form = document.createElement('div');
-			form.className = 'form-group';
-			container.appendChild(form);
-
-			// URL
-			let url_row = document.createElement('div');
-			url_row.className = 'form-row';
-			form.appendChild(url_row);
-
-			let url_input = document.createElement('input');
-			url_input.placeholder = '((Unknown Feed URL))';
-			url_input.value = listener.url;
-			url_input.type = 'text';
-			url_input.disabled = true;
-			url_row.appendChild(url_input);
-
-			// Generator
-			let gen_row = document.createElement('div');
-			gen_row.className = 'form-row';
-			form.appendChild(gen_row);
-
-			let gen_input = document.createElement('input');
-			gen_input.disabled = true;
-			gen_input.placeholder = 'Generator';
-			gen_input.value = listener.generator;
-			gen_input.type = 'text';
-			gen_row.appendChild(gen_input);
-
-			// Title
-			let title_row = document.createElement('div');
-			title_row.className = 'form-row';
-			form.appendChild(title_row);
-
-			let title_input = document.createElement('input');
-			title_input.placeholder = 'No title. Please specify one.';
-			title_input.value = listener.title;
-			title_input.type = 'text';
-			title_row.appendChild(title_input);
-
-			// Description
-			let desc_row = document.createElement('div');
-			desc_row.className = 'form-row';
-			form.appendChild(desc_row);
-
-			let desc_input = document.createElement('textarea');
-			desc_input.placeholder = 'Listener Description';
-			desc_input.value = listener.description;
-			desc_row.appendChild(desc_input);
-
-
-			// Edit
-			let sub_row = document.createElement('div');
-			sub_row.className = 'form-row';
-			form.appendChild(sub_row);
-
-			let submit = document.createElement('div');
-			submit.className = 'button';
-			submit.innerText = 'Edit';
-			sub_row.appendChild(submit);
-
-			// Delete
-			let remove = document.createElement('div');
-			remove.className = 'button';
-			remove.innerText = 'Delete';
-			sub_row.appendChild(remove);
-
-			let to_check: ['title' | 'description', HTMLInputElement | HTMLTextAreaElement][] = [
-				[ 'title', title_input ],
-				[ 'description', desc_input ]
-			];
-
-			submit.addEventListener('click', () => {
-				let edited: ModelEditListener = {};
-
-				to_check.forEach(i => {
-					let name = i[0], input = i[1];
-					if (listener[name] != input.value) edited[name] = input.value;
-				});
-
-				if (Object.keys(edited).length != 0) {
-					send_edit_listener(listener.id, edited, (e, opts) => {
-						if (e != null) return console.error('edit_listener:', e);
-
-						// TODO: if (opts.affected == 0) {}
-
-						for(let name in edited) {
-							//@ts-ignore
-							listener[name] = edited[name];
-						}
-
-						// Re-render table.
-						this.table.render();
-					});
-				}
-
-				close();
-			});
-
-			remove.addEventListener('click', () => {
-				close();
-
-				// Option on what to remove
-				create_popup((container, open, close) => {
-					// Submit
-					let sub_row = document.createElement('div');
-					sub_row.className = 'form-row';
-					container.appendChild(sub_row);
-
-					let partial = document.createElement('div');
-					partial.className = 'button';
-					partial.innerText = 'Partial Delete (Only remove feed)';
-					sub_row.appendChild(partial);
-
-					// Delete
-					let fully = document.createElement('div');
-					fully.className = 'button';
-					fully.innerText = 'Fully Delete (Remove feed AND feed items)';
-					sub_row.appendChild(fully);
-
-					let partial_func = () => remove(false);
-					let full_func = () => remove(true)
-
-					partial.addEventListener('click', partial_func);
-					fully.addEventListener('click', full_func);
-
-					function remove(full: boolean) {
-						fully.removeEventListener('click', full_func);
-						partial.removeEventListener('click', partial_func);
-
-						send_remove_listener(listener.id, full, (err, opts) => {
-							console.log('send_remove_listener:', err, opts);
-
-							core.process.refresh_feeds(() => close());
-						});
-					}
-
-					open();
-				});
-
-			});
-
-			open();
-		});
-	}
 
 	create_nav_items(opts: CategoryListResponse) {
 		// New Category Button

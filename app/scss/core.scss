@@ -109,6 +109,30 @@ body {
 	&:hover {
 		background-color: #30313a;
 	}
+
+	&.danger {
+		background-color: #521515;
+
+		&:hover {
+			background-color: #3f1212;
+		}
+	}
+
+	&.warning {
+		background-color: #524e15;
+
+		&:hover {
+			background-color: #3f3c12;
+		}
+	}
+
+	&.success {
+		background-color: #1c5215;
+
+		&:hover {
+			background-color: #143f12;
+		}
+	}
 }
 
 
@@ -155,6 +179,10 @@ body {
 			.tree-item {
 				display: flex;
 				flex-wrap: nowrap;
+
+				&.clickable {
+					cursor: pointer;
+				}
 
 				&:hover {
 					.tree-item-options {
@@ -229,7 +257,7 @@ body {
 	}
 }
 
-.feed-container {
+.feed-items-container {
 	flex-grow: 1;
 	overflow-y: auto;
 	height: 100%;
@@ -323,6 +351,17 @@ input {
 	}
 }
 
+textarea {
+	background-color: #151518;
+	color: white;
+	font-size: 15px;
+	padding: 6px 8px;
+	border-radius: 6px;
+	border-color: #292828;
+	border-width: 1px;
+	border-style: solid;
+}
+
 select.custom {
 	padding: 5px;
 	border-radius: 5px;
@@ -413,6 +452,79 @@ select.custom {
 				}
 			}
 
+		}
+	}
+}
+
+
+.feeds-container {
+	display: flex;
+	flex-grow: 1;
+	overflow-y: auto;
+	margin: 1em;
+	flex-direction: column;
+
+	.feed-table {
+		> .table-item {
+			margin-bottom: 5px;
+			background-color: #1b1c24;
+			padding: 6px;
+
+			.display {
+				display: flex;
+				flex-direction: row;
+
+				.info {
+					flex-grow: 1;
+
+					.item-row {
+						&.title {
+							font-size: 20px;
+							margin-bottom: 2px;
+						}
+
+						&.small {
+							font-size: 13px;
+						}
+					}
+				}
+
+				.buttons {
+					display: flex;
+					flex-direction: column;
+					margin-left: 4px;
+
+					> .button:not(:first-child) {
+						margin-top: 4px;
+					}
+				}
+			}
+
+			.editor {
+				margin-top: 0.5em;
+				padding: 1em;
+				display: flex;
+				flex-direction: column;
+
+				.title {
+					font-size: 20px;
+					margin-bottom: 0.5em;
+				}
+
+				.contents {
+					display: flex;
+					flex-direction: row;
+
+					.form-row {
+						display: flex;
+						flex-direction: column;
+
+						label {
+							margin-bottom: 5px;
+						}
+					}
+				}
+			}
 		}
 	}
 }

@@ -121,6 +121,11 @@ pub enum Front2CoreNotification {
 		filter_id: QueryId
 	},
 
+	RemoveFeedFilter {
+		feed_id: QueryId,
+		filter_id: QueryId
+	},
+
 	// Filter
 
 	FilterList(Empty),
@@ -235,6 +240,10 @@ pub enum Core2FrontNotification {
 
 
 	LinkFeedAndFilter {
+		affected: usize
+	},
+
+	RemoveFeedAndFilter {
 		affected: usize
 	},
 

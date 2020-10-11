@@ -161,6 +161,8 @@ impl WeakFeederCore {
 			}
 
 			Front2CoreNotification::EditListener { id, editing } => {
+				// TODO: Check if changed url. If so; call it and return url it gives us. Will prevent duplicates/redirects.
+
 				let affected = objects::update_listener(id, &editing, &mut inner)?;
 
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::EditListener { affected, listener: editing });
@@ -346,6 +348,17 @@ impl WeakFeederCore {
 
 			Front2CoreNotification::NewFeedFilter { feed_id, filter_id } => {
 				let affected = objects::create_feed_and_filter_link(filter_id, feed_id, conn)?;
+
+				ctx.respond_with(
+					msg_id_opt,
+					Core2FrontNotification::LinkFeedAndFilter {
+						affected
+					}
+				);
+			}
+
+			Front2CoreNotification::RemoveFeedFilter { feed_id, filter_id } => {
+				let affected = objects::remove_feed_and_filter_link(filter_id, feed_id, conn)?;
 
 				ctx.respond_with(
 					msg_id_opt,

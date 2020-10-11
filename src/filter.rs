@@ -50,17 +50,11 @@ impl Default for RegexOpts {
 
 impl Filter {
 	pub fn is_and(&self) -> bool {
-		match self {
-			Filter::And(_) => true,
-			_ => false
-		}
+		matches!(self, Filter::And(_))
 	}
 
 	pub fn is_or(&self) -> bool {
-		match self {
-			Filter::Or(_) => true,
-			_ => false
-		}
+		matches!(self, Filter::Or(_))
 	}
 
 

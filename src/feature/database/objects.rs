@@ -265,6 +265,16 @@ pub fn create_feed_and_filter_link(f_filter_id: QueryId, f_feed_id: QueryId, con
 	}
 }
 
+pub fn remove_feed_and_filter_link(f_filter_id: QueryId, f_feed_id: QueryId, conn: &SqliteConnection) -> QueryResult<usize> {
+	use self::feed_filters::dsl::*;
+
+	diesel::delete(
+		feed_filters
+					.filter(filter_id.eq(f_filter_id))
+					.filter(feed_id.eq(f_feed_id))
+	).execute(conn)
+}
+
 
 
 // Feed Items
@@ -508,6 +518,8 @@ pub fn remove_listener(f_id: QueryId, rem_stored: bool, state: &mut CoreState) -
 	if rem_stored {
 		use self::items::dsl::*;
 		diesel::delete(items.filter(feed_id.eq(f_id))).execute(conn)?;
+	} else {
+		// TODO: If not removing everything. We need to keep the listener otherwise we can't display the items.
 	}
 
 	{ // Remove Feed Categories
