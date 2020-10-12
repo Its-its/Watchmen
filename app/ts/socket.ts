@@ -320,7 +320,7 @@ export function send_remove_filter(id: number, cb: ResponseFunc<any>) {
 
 
 export function send_new_feed_filter(feed_id: number, filter_id: number, cb: ResponseFunc<any>) {
-	app.socket.send_response('new_filter', {
+	app.socket.send_response('new_feed_filter', {
 		feed_id,
 		filter_id
 	}, cb);

@@ -9,7 +9,7 @@ use telegram_bot::*;
 
 use crate::feature::database::objects;
 use crate::core::WeakFeederCore;
-use crate::Filter;
+use crate::filter::filter_items;
 
 pub struct TelegramCore(Arc<Mutex<TelegramState>>);
 
@@ -133,11 +133,13 @@ impl TelegramState {
 										*since = Some(newest_time[0]);
 									}
 
-									let filtered: Vec<_> = items.iter()
-										.filter(|i| if i.feed_id == 5 { i.title.to_lowercase().contains("kinetic") } else { true })
-										.filter(|i| if i.feed_id == 4 { i.title.to_lowercase().contains("ssd") } else { true })
-										// TODO: Remove ^
-										.collect();
+									let filtered = match filter_items(&items, conn) {
+										Ok(v) => v,
+										Err(e) => {
+											eprintln!("{}", e);
+											continue;
+										}
+									};
 
 									if !filtered.is_empty() {
 										rt.block_on(async {

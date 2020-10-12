@@ -1,7 +1,10 @@
 use serde::{Serialize, Deserialize};
 use regex::RegexBuilder;
+use diesel::SqliteConnection;
 
+use crate::Result;
 use crate::feature::models::Item;
+use crate::feature::objects::{get_filters, get_feed_filters};
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -155,5 +158,29 @@ impl Filter {
 		}
 
 		Filter::Or(vec![self, other])
+	}
+}
+
+
+pub fn filter_items<'a>(items: &'a [Item], conn: &SqliteConnection) -> Result<Vec<&'a Item>> {
+	let feed_filters = get_feed_filters(conn)?;
+	let filter_models = get_filters(conn)?;
+
+	if filter_models.is_empty() {
+		Ok(items.iter().collect())
+	} else {
+		Ok(
+			items.iter()
+			.filter(|item| {
+				for ff in &feed_filters {
+					if ff.feed_id == item.feed_id && filter_models.iter().any(|fm| ff.filter_id == fm.id && fm.filter.filter(*item)) {
+						return true;
+					}
+				}
+
+				false
+			})
+			.collect()
+		)
 	}
 }

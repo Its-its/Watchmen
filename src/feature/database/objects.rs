@@ -232,6 +232,12 @@ pub fn get_filters(conn: &SqliteConnection) -> QueryResult<Vec<FilterModel>> {
 
 // Feed Filter Listeners.
 
+pub fn get_feed_filters(conn: &SqliteConnection) -> QueryResult<Vec<FeedFilterDB>> {
+	use self::feed_filters::dsl::*;
+
+	feed_filters.filter(id.ne(0)).get_results(conn)
+}
+
 pub fn get_filters_from_feed_id(f_feed_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<FeedFilterDB>> {
 	use self::feed_filters::dsl::*;
 
