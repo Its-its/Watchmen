@@ -57,7 +57,9 @@ export class FeedItem {
 	tags: string;
 	feed_id: number;
 
-	constructor(opts: ModelItem) {
+	alert: boolean;
+
+	constructor(opts: ModelItem, alert: boolean) {
 		this.id = opts.id!;
 		this.guid = opts.guid;
 		this.title = opts.title;
@@ -72,6 +74,7 @@ export class FeedItem {
 		this.is_removed = opts.is_removed;
 		this.tags = opts.tags;
 		this.feed_id = opts.feed_id;
+		this.alert = alert;
 	}
 
 	public parse_timestamp(): string {
@@ -138,14 +141,14 @@ export default class BackgroundProcess {
 			}
 
 			send_get_item_list(viewing_category, undefined, undefined, (_, items) => {
-				let feed_items = items!.items.map(i => new FeedItem(i));
+				let feed_items = items!.items.map(i => new FeedItem(i, items!.notification_ids.includes(i.id!)));
 				feed_items = this.add_or_update_feed_items(feed_items);
 
 				if (core.view != null && core.view instanceof FeedItemsView) {
 					core.view.table.new_items(items!, feed_items);
 				}
 
-				console.log('Items:', this.feed_items);
+				console.log(items);
 
 				if (finished != null) finished();
 			});
@@ -180,14 +183,18 @@ export default class BackgroundProcess {
 	on_received_update_items(items: ModelItem[], notification_ids: number[]) {
 		// Used for notifications when receiving new items from an update.
 
-		let new_items = this.add_or_update_feed_items(items.map(i => new FeedItem(i)));
+		let new_items = this.add_or_update_feed_items(items.map(i => new FeedItem(i, notification_ids.includes(i.id!))));
 
 		// Send items to table.
 		if (core.view != null && core.view instanceof FeedItemsView) {
+			// TODO: Implement into table func.
+			core.view.table.last_req_amount += new_items.length;
+			core.view.table.last_total_items += new_items.length;
+
 			core.view.table.add_sort_render_rows(new_items);
 		}
 
-		let alertable = new_items.filter(i => notification_ids.includes(i.id));
+		let alertable = new_items.filter(i => i.alert);
 
 		if (alertable.length != 0 && this.has_notification_perms()) {
 			new Notification(`Received ${alertable.length} new items.`)

@@ -265,19 +265,25 @@ body {
 
 	.feed-item,
 	.section {
-		height: 40px;
 		width: 100%;
 
 		border-bottom: 1px solid #3c3c3c;
 	}
 
 	.section {
+		height: 40px;
 		font-weight: bold;
 	}
 
 	.feed-item {
 		cursor: pointer;
-		display: inline;
+		display: flex;
+		flex-direction: column;
+
+		&.notification {
+			border-left: 2px solid #cc0c0c;
+			border-radius: 2px;
+		}
 	}
 }
 

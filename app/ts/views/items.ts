@@ -63,17 +63,19 @@ export class Table {
 		// Set rows. (Otherwise it won't have them if the table loads after the items are grabbed.)
 		this.rows = core.process.feed_items.map(i => new TableItem(this, i));
 
-		this.container.addEventListener('scroll', e => {
-			// Bottom of page
-			if (
-				this.container.scrollTop
-				> this.container.scrollHeight
-					- window.innerHeight
-					- (TableItem.HEIGHT * 6)
-				) {
-				this.grab_new_rows(false);
-			}
-		});
+		setTimeout(() => {
+			this.container.addEventListener('scroll', e => {
+				// Bottom of page
+				if (
+					this.container.scrollTop
+					> this.container.scrollHeight
+						- window.innerHeight
+						- (TableItem.HEIGHT * 6)
+					) {
+					this.grab_new_rows(false);
+				}
+			});
+		}, 100);
 	}
 
 	public render(): HTMLDivElement {
@@ -150,24 +152,26 @@ export class Table {
 	}
 
 	public add_sort_render_rows(items: FeedItem[]) {
-		let new_items = items
-		.filter(i => this.row_ids.indexOf(i.id!) == -1)
-		.map(i => {
-			this.row_ids.push(i.id!);
-			return new TableItem(this, i);
-		});
+		let table_items = items
+			.filter(i => this.row_ids.indexOf(i.id!) == -1)
+			.map(i => {
+				this.row_ids.push(i.id!);
+				return new TableItem(this, i);
+			});
 
-		this.rows = this.rows.concat(new_items);
+		this.rows = this.rows.concat(table_items);
 
 		this.rows.sort(this.sort_item_func('date', 1));
 		this.row_ids.sort();
 
 		this.render();
 
-		return new_items;
+		return table_items;
 	}
 
 	public grab_new_rows(going_backwards: boolean) {
+		if (this.waiting_for_more_feeds) return;
+
 		this.waiting_for_more_feeds = true;
 
 		// Scrolling Upwards
@@ -190,7 +194,7 @@ export class Table {
 				return;
 			}
 
-			let feed_items = resp!.items.map(i => new FeedItem(i));
+			let feed_items = resp!.items.map(i => new FeedItem(i, resp!.notification_ids.includes(i.id!)));
 			feed_items = core.process.add_or_update_feed_items(feed_items);
 
 			this.new_items(resp!, feed_items);
@@ -248,6 +252,10 @@ export class TableItem {
 		this.feed_item = feed_item;
 
 		this.container.className = 'feed-item';
+
+		if (feed_item.alert) {
+			this.container.classList.add('notification');
+		}
 	}
 
 	public render(): HTMLDivElement {

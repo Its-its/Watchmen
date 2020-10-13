@@ -21,8 +21,10 @@ const app = {
 
 	on_connection_open() {
 		// Get Current feeds
-		this.process.refresh_feeds();
-		this.process.register_updates();
+		setTimeout(() => {
+			this.process.refresh_feeds();
+			this.process.register_updates();
+		}, 50);
 	},
 
 	open_view(newView: View) {
