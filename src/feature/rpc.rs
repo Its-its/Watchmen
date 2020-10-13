@@ -82,9 +82,9 @@ pub enum Front2CoreNotification {
 		category_id: Option<QueryId>,
 
 		#[serde(default = "default_items")]
-		items: i64,
+		item_count: i64,
 		#[serde(default)]
-		skip: i64
+		skip_count: i64
 	},
 
 	FeedList(Empty),
@@ -169,6 +169,7 @@ pub enum Core2FrontNotification {
 
 	ItemList {
 		items: Vec<FeedItem>,
+		notification_ids: Vec<QueryId>,
 
 		item_count: i64,
 		skip_count: i64,
@@ -185,8 +186,7 @@ pub enum Core2FrontNotification {
 	Updates {
 		since: i64,
 
-		new_items: i64,
-		notifications: i64
+		new_items: i64
 	},
 
 

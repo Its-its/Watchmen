@@ -5,7 +5,7 @@ use diesel::{RunQueryDsl, SqliteConnection};
 
 use crate::error::{Error, Result};
 use crate::feature::schema::{items as ItemsSchema, feeds as FeedsSchema};
-use crate::feature::models::{NewItem, Feed, NewFeed};
+use crate::feature::models::{QueryId, NewItem, Feed, NewFeed};
 
 
 pub mod rss;
@@ -114,11 +114,11 @@ impl RequestManager {
 		Ok(self.feeds.len())
 	}
 
-	pub fn create_new_feed(&self, url: String, conn: &SqliteConnection) -> Result<NewFeed> {
+	pub fn create_new_feed(&self, url: String, custom_item_id: Option<QueryId>, conn: &SqliteConnection) -> Result<NewFeed> {
 		Ok(match FeedType::from_url(&url, conn) {
 			FeedType::Rss(Ok(feed)) => rss::new_from_feed(url, feed),
 			FeedType::Atom(Ok(feed)) => atom::new_from_feed(url, feed),
-			FeedType::Custom(Ok(_)) => custom::new_from_url(url, conn)?,
+			FeedType::Custom(Ok(_)) => custom::new_from_url(url, custom_item_id, conn)?,
 
 			FeedType::Custom(Err(e))
 			| FeedType::Atom(Err(e))

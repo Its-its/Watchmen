@@ -7,7 +7,7 @@ use crate::state::CoreState;
 use crate::request::CollectedResult;
 
 use crate::Result;
-use crate::Filter;
+use crate::filter::filter_items;
 
 pub struct FeederCore(Arc<Mutex<CoreState>>);
 
@@ -95,26 +95,27 @@ impl WeakFeederCore {
 
 				let updates = Core2FrontNotification::Updates {
 					since,
-					new_items: new_count,
-					notifications: 0
+					new_items: new_count
 				};
 
 				ctx.respond_with(msg_id_opt, updates);
 			}
 
-			Front2CoreNotification::ItemList { category_id, items, skip } => {
-				let total_amount = objects::get_item_total(category_id, &conn)?;
-				let items_found = objects::get_items_in_range(category_id, items, skip, &conn)?;
+			Front2CoreNotification::ItemList { category_id, item_count, skip_count } => {
+				let total_items = objects::get_item_total(category_id, &conn)?;
+				let items = objects::get_items_in_range(category_id, item_count, skip_count, &conn)?;
 
-				// let filter = Filter::Regex("[0-9]+\\s?tb".into(), Default::default());
+				// ID's of items that should be alerted.
+				let notification_ids = filter_items(&items, conn)?.into_iter().map(|i| i.id).collect();
 
 				let list = Core2FrontNotification::ItemList {
-					items: items_found,
+					items,
 
-					item_count: items,
-					skip_count: skip,
+					item_count,
+					skip_count,
 
-					total_items: total_amount
+					total_items,
+					notification_ids
 				};
 
 				ctx.respond_with(msg_id_opt, list);
@@ -140,7 +141,7 @@ impl WeakFeederCore {
 			Front2CoreNotification::AddListener { url, custom_item_id } => {
 				use diesel::RunQueryDsl;
 
-				let feed = inner.requester.create_new_feed(url, conn)?;
+				let feed = inner.requester.create_new_feed(url, custom_item_id, conn)?;
 
 				let affected = diesel::insert_into(FeedsSchema::table)
 					.values(&feed)

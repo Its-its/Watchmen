@@ -171,8 +171,11 @@ interface EditListenerResponse {
 interface ItemListResponse {
 	item_count: number;
 	skip_count: number;
+
 	total_items: number;
+
 	items: ModelItem[];
+	notification_ids: number[];
 }
 
 interface FilterListResponse {

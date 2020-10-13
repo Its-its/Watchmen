@@ -68,7 +68,6 @@ impl Connection {
 				ignore_if_not_new  BOOL NOT NULL DEFAULT true,
 
 				global_show        BOOL NOT NULL DEFAULT true,
-				alert              INTEGER NOT NULL,
 
 				date_added         LONG NOT NULL,
 				last_called        LONG NOT NULL

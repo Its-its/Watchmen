@@ -71,6 +71,16 @@ pub fn create_custom_item(item: &NewCustomItem, conn: &SqliteConnection) -> Quer
 	diesel::insert_into(custom_item).values(item).execute(conn)
 }
 
+pub fn get_custom_item_by_id(f_id: QueryId, conn: &SqliteConnection) -> QueryResult<CustomItemBase> {
+	use self::custom_item::dsl::*;
+
+	Ok(
+		custom_item.find(f_id)
+		.get_result::<CustomItem>(conn)?
+		.into()
+	)
+}
+
 pub fn get_custom_item_from_url(f_url: Url, conn: &SqliteConnection) -> QueryResult<CustomItemBase> {
 	use self::custom_item::dsl::*;
 

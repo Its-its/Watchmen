@@ -5,10 +5,11 @@ use regex::RegexBuilder;
 use xpath::{Node, Document, Value};
 use chrono::{DateTime, FixedOffset};
 
+use crate::feature::models::QueryId;
 use crate::{Result, Error};
 use super::NewFeed;
 
-use crate::feature::objects::get_custom_item_from_url;
+use crate::feature::objects::{get_custom_item_from_url, get_custom_item_by_id};
 
 
 pub type CustomResult = Result<Vec<FoundItem>>;
@@ -153,8 +154,12 @@ impl std::ops::Deref for ParseOpts {
 
 // TODO: Impl. Title / Description scrape from webpage. Currently getting from db.
 
-pub fn new_from_url(url: String, conn: &diesel::SqliteConnection) -> Result<NewFeed> {
-	let item = get_custom_item_from_url(Url::parse(&url).unwrap(), conn)?;
+pub fn new_from_url(url: String, custom_item_id: Option<QueryId>, conn: &diesel::SqliteConnection) -> Result<NewFeed> {
+	let item = if let Some(id) = custom_item_id {
+		get_custom_item_by_id(id, conn)?
+	} else {
+		get_custom_item_from_url(Url::parse(&url).unwrap(), conn)?
+	};
 
 	Ok(NewFeed {
 		url,

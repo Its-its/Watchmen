@@ -195,11 +195,11 @@ export function send_remove_feed_from_category(cat_feed_id: number, cb?: Respons
 
 
 // items
-export function send_get_item_list(category_id: Nullable<number>, skip?: number, items?: number, cb?: ResponseFunc<ItemListResponse>) {
+export function send_get_item_list(category_id: Nullable<number>, skip_count?: number, item_count?: number, cb?: ResponseFunc<ItemListResponse>) {
 	let opts = {
-		category_id: category_id,
-		items: items,
-		skip: skip
+		category_id,
+		item_count,
+		skip_count
 	};
 
 	if (cb == null) {

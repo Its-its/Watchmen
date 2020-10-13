@@ -23,7 +23,6 @@ export class FeedListener {
 	title: string;
 	description: string;
 	generator: string;
-	alert: boolean;
 
 	constructor(opts: ModelListener) {
 		this.id = opts.id!;
@@ -37,7 +36,6 @@ export class FeedListener {
 		this.sec_interval = opts.sec_interval;
 		this.date_added = opts.date_added;
 		this.last_called = opts.last_called;
-		this.alert = opts.alert;
 	}
 }
 
@@ -107,9 +105,9 @@ export default class BackgroundProcess {
 			send_get_updates_since(this.get_newest_timestamp(), (_, update) => {
 				if (update!.new_items != 0) {
 					send_get_item_list(null, 0, update!.new_items, (_, resp) => {
-						console.log('Items:', resp);
+						console.log('Update Items:', resp);
 
-						this.on_received_update_items(resp!.items);
+						this.on_received_update_items(resp!.items, resp!.notification_ids);
 
 						if (core.view != null && core.view instanceof FeedItemsView) {
 							if (core.view.table.container.scrollTop < 40 * 4) {
@@ -179,18 +177,17 @@ export default class BackgroundProcess {
 		return this.feed_listeners.find(i => i.url == url);
 	}
 
-	on_received_update_items(items: ModelItem[]) {
+	on_received_update_items(items: ModelItem[], notification_ids: number[]) {
 		// Used for notifications when receiving new items from an update.
 
-		let new_items = items.map(i => new FeedItem(i));
-		new_items = this.add_or_update_feed_items(new_items);
+		let new_items = this.add_or_update_feed_items(items.map(i => new FeedItem(i)));
 
 		// Send items to table.
 		if (core.view != null && core.view instanceof FeedItemsView) {
 			core.view.table.add_sort_render_rows(new_items);
 		}
 
-		let alertable = new_items.filter(i => this.get_feed_by_id(i.feed_id)?.alert);
+		let alertable = new_items.filter(i => notification_ids.includes(i.id));
 
 		if (alertable.length != 0 && this.has_notification_perms()) {
 			new Notification(`Received ${alertable.length} new items.`)

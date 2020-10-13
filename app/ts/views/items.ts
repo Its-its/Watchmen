@@ -115,25 +115,26 @@ export class Table {
 		});
 
 		function get_section_from_date(timestamp: number): number {
-			let ct = Date.now();
+			const now = Date.now();
+			const day = 1000 * 60 * 60 * 24;
 
 			// Last Year
-			if (timestamp < ct - (1000 * 60 * 60 * 24 * 365 * 2)) return 6;
+			if (timestamp < now - (day * 365 * 2)) return 6;
 
 			// This Year
-			if (timestamp < ct - (1000 * 60 * 60 * 24 * 365 * 2)) return 5;
+			if (timestamp < now - (day * 365 * 2)) return 5;
 
 			// Last Month
-			if (timestamp < ct - (1000 * 60 * 60 * 24 * 30 * 2)) return 4;
+			if (timestamp < now - (day * 30 * 2)) return 4;
 
 			// This Month
-			if (timestamp < ct - (1000 * 60 * 60 * 24 * 30)) return 3;
+			if (timestamp < now - (day * 30)) return 3;
 
 			// This Week
-			if (timestamp < ct - (1000 * 60 * 60 * 24 * 7)) return 2;
+			if (timestamp < now - (day * 7)) return 2;
 
 			// Yesterday
-			if (timestamp < ct - (1000 * 60 * 60 * 24)) return 1;
+			if (timestamp < now - day) return 1;
 
 			return 0;
 		}
