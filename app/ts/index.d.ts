@@ -17,7 +17,7 @@ declare namespace rust {
 	export type EnumNone = "None";
 
 	export type ObjectType = {
-		[name: string]: Values;
+		[name: string]: EnumValue;
 	}
 
 	export type BaseEnum = {
