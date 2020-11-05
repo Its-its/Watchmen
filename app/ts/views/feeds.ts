@@ -60,7 +60,7 @@ export default class FeedsView extends View {
 		const nav_bar = createElement('div', { className: 'nav-bar' }, this.container);
 
 		const title_container = createElement('div', { className: 'title-container' }, nav_bar);
-		createElement('h1', { className: 'title', innerText: 'Feeder' }, title_container);
+		createElement('h1', { className: 'title', innerText: 'Watchmen' }, title_container);
 
 		const create_button = createElement('div', { className: 'button new-category', innerText: 'New Feed'}, nav_bar);
 

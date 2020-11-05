@@ -54,7 +54,7 @@ export default class EditorView extends View {
 
 		const title = document.createElement('h1');
 		title.className = 'title';
-		title.innerText = 'Feeder';
+		title.innerText = 'Watchmen';
 		title_container.appendChild(title);
 
 		const nav_items = document.createElement('div');
