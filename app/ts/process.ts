@@ -1,7 +1,7 @@
 // Background processing.
 
 import core from './core';
-import FeedItemsView from './views/items';
+import FeedItemsView from './views/feed/items';
 
 import {
 	send_get_item_list,

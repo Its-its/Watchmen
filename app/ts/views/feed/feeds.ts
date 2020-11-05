@@ -1,11 +1,11 @@
-import View from './index';
+import View from '../index';
 import ItemsView from './items';
 
-import { createElement } from '../util/html';
+import { createElement } from '../../util/html';
 
-import core, { create_popup, for_each } from '../core';
+import core, { create_popup, for_each } from '../../core';
 
-import { FeedListener } from '../process';
+import { FeedListener } from '../../process';
 
 import {
 	send_new_feed_filter,
@@ -16,7 +16,7 @@ import {
 	send_create_listener,
 	send_remove_listener,
 	send_edit_listener
-} from '../socket';
+} from '../../socket';
 
 
 export default class FeedsView extends View {

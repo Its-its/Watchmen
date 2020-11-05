@@ -1,12 +1,12 @@
-import core from '../core';
-import { rustify_object, RustEnum, NULL_ENUM, CompleteRustValues } from '../util/rust';
-import { parseFromString } from '../util/time';
+import core from '../../core';
+import { rustify_object, RustEnum, NULL_ENUM, CompleteRustValues } from '../../util/rust';
+import { parseFromString } from '../../util/time';
 
-import View from './index';
+import View from '../index';
 import FeedItemsView from './items';
 import FilterView from './filter';
 
-import { send_get_webpage_source, send_new_custom_item, send_get_custom_items_list } from '../socket';
+import { send_get_webpage_source, send_new_custom_item, send_get_custom_items_list } from '../../socket';
 
 
 type ItemTypes = 'items' | 'title' | 'link' | 'guid' | 'date' | 'author' | 'content';

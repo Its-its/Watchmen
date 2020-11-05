@@ -3,7 +3,7 @@ import BackgroundProcess from './process';
 import Navbar from './navbar';
 
 import View from './views/index';
-import FeedItemsView from './views/items';
+import FeedItemsView from './views/feed/items';
 
 const app = {
 	view: <Nullable<View>>null,

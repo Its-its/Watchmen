@@ -1,11 +1,11 @@
-import View from './index';
+import View from '../index';
 import EditorView from './editor';
 import FilterView from './filter';
 import FeedsView from './feeds';
 
-import core, { create_popup, for_each } from '../core';
+import core, { create_popup, for_each } from '../../core';
 
-import { FeedListener, FeedItem } from '../process';
+import { FeedListener, FeedItem } from '../../process';
 
 import {
 	send_get_item_list,
@@ -13,7 +13,7 @@ import {
 	send_get_category_list,
 	send_remove_feed_from_category,
 	send_add_feed_to_category
-} from '../socket';
+} from '../../socket';
 
 export class Table {
 	container = document.createElement('div');

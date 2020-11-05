@@ -1,16 +1,16 @@
-import View from './index';
+import View from '../index';
 import EditorView from './editor';
 import FeedView from './items';
 
-import core, { create_popup, for_each } from '../core';
+import core, { create_popup, for_each } from '../../core';
 
-import { RustEnum } from '../util/rust';
+import { RustEnum } from '../../util/rust';
 
 import {
 	send_get_filter_list,
 	send_update_filter,
 	send_new_filter
-} from '../socket';
+} from '../../socket';
 
 
 export default class FilterView extends View {
