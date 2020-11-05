@@ -341,8 +341,8 @@ export function send_get_updates_since(since_timestamp: number, cb?: ResponseFun
 	};
 
 	if (cb == null) {
-		app.socket.send_notification('updates', opts);
+		app.socket.send_notification('feed_updates', opts);
 	} else {
-		app.socket.send_response('updates', opts, cb);
+		app.socket.send_response('feed_updates', opts, cb);
 	}
 }

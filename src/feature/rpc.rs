@@ -89,7 +89,8 @@ pub enum Front2CoreNotification {
 
 	FeedList(Empty),
 
-	Updates {
+	/// Returns updates `since` time.
+	FeedUpdates {
 		since: i64
 	},
 
@@ -144,6 +145,12 @@ pub enum Front2CoreNotification {
 	RemoveFilter {
 		id: QueryId
 	},
+
+
+	// Watching
+
+
+	//
 }
 
 
@@ -183,7 +190,7 @@ pub enum Core2FrontNotification {
 
 	//
 
-	Updates {
+	FeedUpdates {
 		since: i64,
 
 		new_items: i64

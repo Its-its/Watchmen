@@ -87,13 +87,15 @@ impl WeakFeederCore {
 		let conn = inner.connection.connection();
 
 		match rpc {
-			// Read only
+			// Dashboard
 
-			// Return updates since time
-			Front2CoreNotification::Updates { since } => {
+
+			// Feed Variants
+
+			Front2CoreNotification::FeedUpdates { since } => {
 				let new_count = objects::get_item_count_since(since, &conn)?;
 
-				let updates = Core2FrontNotification::Updates {
+				let updates = Core2FrontNotification::FeedUpdates {
 					since,
 					new_items: new_count
 				};
@@ -137,7 +139,6 @@ impl WeakFeederCore {
 			}
 
 
-			// Write Only
 			Front2CoreNotification::AddListener { url, custom_item_id } => {
 				use diesel::RunQueryDsl;
 
@@ -226,8 +227,6 @@ impl WeakFeederCore {
 			}
 
 
-			// Scaper Editor
-
 			Front2CoreNotification::GetWebpage { url } => {
 				let mut content = String::new();
 
@@ -237,8 +236,6 @@ impl WeakFeederCore {
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::WebpageSource { html: content });
 			}
 
-
-			// Custom Item
 
 			Front2CoreNotification::CustomItemList(..) => {
 				let items = Core2FrontNotification::CustomItemList {
@@ -269,8 +266,6 @@ impl WeakFeederCore {
 				ctx.respond_with(msg_id_opt, new_item);
 			}
 
-
-			// Feed
 
 			Front2CoreNotification::FilterList(..) => {
 				let mut items = Vec::new();
@@ -345,8 +340,6 @@ impl WeakFeederCore {
 			}
 
 
-			// Feed Filter
-
 			Front2CoreNotification::NewFeedFilter { feed_id, filter_id } => {
 				let affected = objects::create_feed_and_filter_link(filter_id, feed_id, conn)?;
 
@@ -368,6 +361,10 @@ impl WeakFeederCore {
 					}
 				);
 			}
+
+
+
+			// Watching Variants
 		}
 
 		Ok(())
