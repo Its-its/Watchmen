@@ -28,7 +28,7 @@ pub struct WatchParserItem {
 
 	pub title: String,
 	pub description: String,
-	pub match_url: String,
+	pub match_url: String, // TODO: Ensure always lowercase. I have unique index.
 
 	pub match_opts: MatchParser
 }
@@ -222,7 +222,7 @@ pub fn request_feed(feed: Watching, conn: &SqliteConnection) -> WatcherResult {
 	let last_item = get_last_watch_history(feed.id, conn)?;
 
 	if new_item.value != last_item.value {
-		println!(" + New item Value found!");
+		println!(" | New item Value found!");
 
 		feed_res.insert = Some(NewWatchHistory {
 			watch_id: feed.id,
@@ -230,6 +230,8 @@ pub fn request_feed(feed: Watching, conn: &SqliteConnection) -> WatcherResult {
 
 			date_added: chrono::Utc::now().timestamp()
 		});
+	} else {
+		println!(" | Unchanged.");
 	}
 
 	feed_res.duration = feed_res.start_time.elapsed();

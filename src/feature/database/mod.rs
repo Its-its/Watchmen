@@ -205,6 +205,10 @@ impl Connection {
 			)"
 		)?;
 
+		self.0.execute(
+			"CREATE UNIQUE INDEX IF NOT EXISTS watch_parser_url on watch_parser ( match_url )"
+		)?;
+
 		Ok(())
 	}
 
