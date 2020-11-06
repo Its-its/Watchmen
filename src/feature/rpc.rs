@@ -14,7 +14,8 @@ use super::models::{
 	NewCategory,
 	NewFeedCategory,
 	EditCategory,
-	NewWatching, EditWatching, Watching
+	NewWatching, EditWatching, Watching,
+	WatchHistory
 };
 
 use super::objects::{
@@ -289,7 +290,7 @@ pub enum Core2FrontNotification {
 
 
 	WatcherList {
-		items: Vec<Watching>
+		items: Vec<(Watching, WatchHistory)>
 	},
 
 	NewWatcher {

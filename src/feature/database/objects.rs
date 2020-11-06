@@ -748,17 +748,26 @@ pub fn get_watching_items(conn: &SqliteConnection) -> QueryResult<Vec<WatchParse
 	)
 }
 
+
+
 // Watch History
 
 pub fn get_last_watch_history(f_watch_id: QueryId, conn: &SqliteConnection) -> QueryResult<WatchHistory> {
 	use self::watch_history::dsl::*;
 
-	Ok(
-		watch_history
-		.filter(watch_id.eq(f_watch_id))
-		.order_by(date_added.desc())
-		.get_result(conn)?
-	)
+	watch_history
+	.filter(watch_id.eq(f_watch_id))
+	.order_by(date_added.desc())
+	.get_result(conn)
+}
+
+pub fn get_last_watch_history_for(f_watch_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<WatchHistory>> {
+	use self::watch_history::dsl::*;
+
+	watch_history
+	.filter(watch_id.eq(f_watch_id))
+	.order_by(date_added.desc())
+	.get_results(conn)
 }
 
 

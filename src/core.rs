@@ -391,8 +391,16 @@ impl WeakFeederCore {
 			// Watching Variants
 
 			Front2CoreNotification::WatcherList(..) => {
+				let watchers = objects::get_watchers(conn)?
+					.into_iter()
+					.map(|w| {
+						let id = w.id;
+						(w, objects::get_last_watch_history(id, conn).unwrap())
+					})
+					.collect();
+
 				let list = Core2FrontNotification::WatcherList {
-					items: objects::get_watchers(conn)?
+					items: watchers
 				};
 
 				ctx.respond_with(msg_id_opt, list);
