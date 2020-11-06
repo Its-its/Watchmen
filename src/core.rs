@@ -4,7 +4,9 @@ use std::sync::{Arc, Mutex, MutexGuard, Weak};
 use log::info;
 
 use crate::state::CoreState;
-use crate::request::CollectedResult;
+use crate::request::feeds::CollectedResult;
+use crate::request::watcher;
+use crate::request::RequestResults;
 
 use crate::Result;
 use crate::filter::filter_items;
@@ -27,19 +29,41 @@ impl FeederCore {
 		loop {
 			{
 				let mut inner = self.to_inner();
-				let req = inner.run_all_requests();
+				let reqs = inner.run_all_requests();
 
-				if let Some(e) = req.error.as_ref() {
-					info!("Request Error: {:?}", e);
-				} else {
-					let feed_errors = req.feeds.iter()
-						.filter(|f| f.is_err())
-						.collect::<Vec<&CollectedResult>>();
+				for req in reqs {
+					match req {
+						RequestResults::Feed(req) => {
+							if let Some(e) = req.error.as_ref() {
+								info!("Request Error: {:?}", e);
+							} else {
+								let feed_errors = req.feeds.iter()
+									.filter(|f| f.is_err())
+									.collect::<Vec<&CollectedResult>>();
 
-					if !feed_errors.is_empty() {
-						info!("Feed Errors: {:#?}", feed_errors);
-					} else {
-						info!("Feeds ran without error. Took: {}s :)", req.duration.as_secs());
+								if !feed_errors.is_empty() {
+									info!("Feed Errors: {:#?}", feed_errors);
+								} else {
+									info!("Feeds ran without error. Took: {}s :)", req.duration.as_secs());
+								}
+							}
+						}
+
+						RequestResults::Watcher(req) => {
+							if let Some(e) = req.error.as_ref() {
+								info!("Request Error: {:?}", e);
+							} else {
+								let feed_errors = req.items.iter()
+									.filter(|f| f.is_err())
+									.collect::<Vec<_>>();
+
+								if !feed_errors.is_empty() {
+									info!("Feed Errors: {:#?}", feed_errors);
+								} else {
+									info!("Feeds ran without error. Took: {}s :)", req.duration.as_secs());
+								}
+							}
+						}
 					}
 				}
 			}
@@ -124,7 +148,7 @@ impl WeakFeederCore {
 			}
 
 			Front2CoreNotification::FeedList(..) => {
-				let list = Core2FrontNotification::FeedList { items: inner.requester.feeds.clone() };
+				let list = Core2FrontNotification::FeedList { items: inner.feed_requests.feeds.clone() };
 
 				ctx.respond_with(msg_id_opt, list);
 			}
@@ -142,7 +166,7 @@ impl WeakFeederCore {
 			Front2CoreNotification::AddListener { url, custom_item_id } => {
 				use diesel::RunQueryDsl;
 
-				let feed = inner.requester.create_new_feed(url, custom_item_id, conn)?;
+				let feed = inner.feed_requests.create_new_feed(url, custom_item_id, conn)?;
 
 				let affected = diesel::insert_into(FeedsSchema::table)
 					.values(&feed)
@@ -365,6 +389,79 @@ impl WeakFeederCore {
 
 
 			// Watching Variants
+
+			Front2CoreNotification::WatcherList(..) => {
+				let list = Core2FrontNotification::WatcherList {
+					items: objects::get_watchers(conn)?
+				};
+
+				ctx.respond_with(msg_id_opt, list);
+			}
+
+			Front2CoreNotification::AddWatcher { url, custom_item_id } => {
+				let watcher = inner.watcher_requests.verify_new_watcher(url, custom_item_id, conn)?;
+
+				let affected = objects::create_watcher(&watcher, conn)?;
+
+				// Cache first History Item.
+				{
+					let new_watcher = objects::get_watcher_by_url(&watcher.url, conn)?;
+
+					let new_item = watcher::get_from_url(&new_watcher.url, conn)?;
+
+					objects::create_last_watch_history(&models::NewWatchHistory {
+						watch_id: new_watcher.id,
+						value: new_item.value,
+
+						date_added: chrono::Utc::now().timestamp()
+					}, conn)?;
+				}
+
+
+				let new_feed = Core2FrontNotification::NewWatcher {
+					affected,
+					listener: watcher,
+				};
+
+				ctx.respond_with(msg_id_opt, new_feed);
+			}
+
+			Front2CoreNotification::RemoveWatcher { id, rem_stored } => {
+				let affected = objects::remove_watcher(id, rem_stored, conn)?;
+
+				ctx.respond_with(msg_id_opt, Core2FrontNotification::RemoveWatcher { affected });
+			}
+
+			Front2CoreNotification::EditWatcher { id, editing } => {
+				// TODO: Check if changed url. If so; call it and return url it gives us. Will prevent duplicates/redirects.
+
+				let affected = objects::update_watcher(id, &editing, conn)?;
+
+				ctx.respond_with(msg_id_opt, Core2FrontNotification::EditWatcher { affected, listener: editing });
+			}
+
+
+			// Front2CoreNotification::WatchingHistoryList { watch_id, item_count, skip_count } => {
+			// 	println!("WatchingItemList");
+
+			// 	let url = "https://www.bestbuy.com/site/wd-easystore-14tb-external-usb-3-0-hard-drive-black/6425303.p?skuId=6425303";
+			// 	let xpath = r#"//div[@class="priceView-hero-price priceView-customer-price"]/span[1]/text()"#;
+
+			// 	use xpath::{Node, Document, Value};
+			// 	use crate::Error;
+			// 	use crate::request::feeds::custom::{ParseOpts, Parse};
+
+			// 	let parser = crate::request::watcher::MatchParser {
+			// 		value: ParseOpts {
+			// 			xpath: xpath.to_string(),
+			// 			parse_type: Parse::None
+			// 		}
+			// 	};
+
+			// 	let result = crate::request::watcher::get_from_url_parser(url, &parser)?;
+
+			// 	println!("{:?}", result);
+			// }
 		}
 
 		Ok(())

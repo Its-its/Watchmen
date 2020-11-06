@@ -97,3 +97,52 @@ table! {
 		search_opts -> Text,
 	}
 }
+
+
+// =================
+// ==== WATCHER ====
+// =================
+
+table! {
+	watching(id) {
+		id -> Integer,
+
+		// Save favicon.ico ?
+
+		url -> Text,
+		title -> Text,
+		description -> Text,
+
+
+		sec_interval -> Integer,
+		remove_after -> Integer,
+
+		date_added -> BigInt,
+		last_called -> BigInt,
+	}
+}
+
+table! {
+	watch_history(id) {
+		id -> Integer,
+
+		watch_id -> Integer,
+
+		value -> Text,
+
+		date_added -> BigInt,
+	}
+}
+
+
+table! {
+	watch_parser(id) {
+		id -> Integer,
+
+		title -> Text,
+		match_url -> Text,
+		description -> Text,
+
+		match_opts -> Text,
+	}
+}

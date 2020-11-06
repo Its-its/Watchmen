@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 
 use crate::Filter;
-use crate::request::custom::{UpdateableCustomItem, CustomItem};
+use crate::request::feeds::custom::{UpdateableCustomItem, CustomItem};
 
 use super::models::{
 	QueryId,
@@ -14,11 +14,11 @@ use super::models::{
 	NewCategory,
 	NewFeedCategory,
 	EditCategory,
+	NewWatching, EditWatching, Watching
 };
 
 use super::objects::{
 	NewFilterModel,
-	EditFilterModel,
 	FilterGrouping
 };
 
@@ -149,8 +149,23 @@ pub enum Front2CoreNotification {
 
 	// Watching
 
+	WatcherList(Empty),
 
-	//
+	AddWatcher {
+		url: String,
+		custom_item_id: Option<i32>
+	},
+
+	RemoveWatcher {
+		id: QueryId,
+		#[serde(default = "default_true")]
+		rem_stored: bool
+	},
+
+	EditWatcher {
+		id: QueryId,
+		editing: EditWatching
+	},
 }
 
 
@@ -271,6 +286,25 @@ pub enum Core2FrontNotification {
 		item: CustomItem,
 		affected: usize
 	},
+
+
+	WatcherList {
+		items: Vec<Watching>
+	},
+
+	NewWatcher {
+		listener: NewWatching,
+		affected: usize
+	},
+
+	RemoveWatcher {
+		affected: usize
+	},
+
+	EditWatcher {
+		listener: EditWatching,
+		affected: usize
+	},
 }
 
 
@@ -278,4 +312,9 @@ pub enum Core2FrontNotification {
 
 fn default_items() -> i64 {
 	50
+}
+
+
+fn default_true() -> bool {
+	true
 }

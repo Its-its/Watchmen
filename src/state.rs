@@ -11,7 +11,11 @@ use crate::feature::TelegramCore;
 use crate::feature::Connection;
 
 use crate::core::WeakFeederCore;
-use crate::request::{RequestManager, RequestResults};
+use crate::request::{
+	RequestResults,
+	feeds::RequestManager as FeedRequestManager,
+	watcher::RequestManager as WatcherRequestManager
+};
 use crate::config::ConfigManager;
 
 
@@ -24,7 +28,8 @@ pub struct CoreState {
 	pub telegram: TelegramCore,
 
 	pub connection: Connection,
-	pub requester: RequestManager,
+	pub feed_requests: FeedRequestManager,
+	pub watcher_requests: WatcherRequestManager,
 	pub config: RwLock<ConfigManager>,
 }
 
@@ -39,7 +44,8 @@ impl CoreState {
 			telegram: TelegramCore::new(),
 
 			connection: Connection::new(),
-			requester: RequestManager::new(),
+			feed_requests: FeedRequestManager::new(),
+			watcher_requests: WatcherRequestManager::new(),
 			config: RwLock::new(ConfigManager::new()),
 		}
 	}
@@ -62,15 +68,21 @@ impl CoreState {
 
 		self.connection.init_sql().unwrap_or_else(|e| panic!("Loading Database Error: {}", e));
 
-		self.requester.init(self.connection.connection())
+		self.feed_requests.init(self.connection.connection())
 			.unwrap_or_else(|e| panic!("Requester Initiation Error: {}", e));
 	}
 
 	//
-	pub fn run_all_requests(&mut self) -> RequestResults {
-		self.requester.request_all_if_idle(
-			false,
-			self.connection.connection()
-		)
+	pub fn run_all_requests(&mut self) -> Vec<RequestResults> {
+		vec![
+			self.feed_requests.request_all_if_idle(
+				false,
+				self.connection.connection()
+			),
+			self.watcher_requests.request_all_if_idle(
+				false,
+				self.connection.connection()
+			)
+		]
 	}
 }

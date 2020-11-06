@@ -346,3 +346,68 @@ export function send_get_updates_since(since_timestamp: number, cb?: ResponseFun
 		app.socket.send_response('feed_updates', opts, cb);
 	}
 }
+
+
+
+/// WATCHING
+
+export function send_get_watching_history_list(watch_id: Nullable<number>, skip_count?: number, item_count?: number, cb?: ResponseFunc<ItemListResponse>) {
+	let opts = {
+		watch_id,
+		item_count,
+		skip_count
+	};
+
+	if (cb == null) {
+		app.socket.send_notification('watching_item_list', opts);
+	} else {
+		app.socket.send_response('watching_item_list', opts, cb);
+	}
+}
+
+export function send_get_watcher_list(cb?: ResponseFunc<WatcherListResponse>) {
+	if (cb == null) {
+		app.socket.send_notification('watcher_list');
+	} else {
+		app.socket.send_response('watcher_list', {}, cb);
+	}
+}
+
+export function send_create_watcher(url: string, custom_item_id: Nullable<number>, cb?: ResponseFunc<CreateListenerResponse>) {
+	let opts = {
+		url: url,
+		custom_item_id: custom_item_id
+	};
+
+	if (cb == null) {
+		app.socket.send_notification('add_watcher', opts);
+	} else {
+		app.socket.send_response('add_watcher', opts, cb);
+	}
+}
+
+export function send_edit_watcher(id: number, editing: ModelEditListener,  cb?: ResponseFunc<EditListenerResponse>) {
+	let opts = {
+		id: id,
+		editing: editing
+	};
+
+	if (cb == null) {
+		app.socket.send_notification('edit_watcher', opts);
+	} else {
+		app.socket.send_response('edit_watcher', opts, cb);
+	}
+}
+
+export function send_remove_watcher(id: number, rem_stored: boolean,  cb?: ResponseFunc<RemoveListenerResponse>) {
+	let opts = {
+		id: id,
+		rem_stored: rem_stored
+	};
+
+	if (cb == null) {
+		app.socket.send_notification('remove_watcher', opts);
+	} else {
+		app.socket.send_response('remove_watcher', opts, cb);
+	}
+}

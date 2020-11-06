@@ -154,6 +154,57 @@ impl Connection {
 			)"
 		)?;
 
+
+		// =================
+		// ==== WATCHER ====
+		// =================
+
+		// Watchers
+		self.0.execute(
+			"CREATE TABLE IF NOT EXISTS watching (
+				id                 INTEGER PRIMARY KEY,
+
+				url                TEXT NOT NULL,
+				title              TEXT NOT NULL,
+				description        TEXT NOT NULL,
+
+				sec_interval       INTEGER NOT NULL,
+				remove_after       INTEGER NOT NULL DEFAULT 0,
+
+				date_added         LONG NOT NULL,
+				last_called        LONG NOT NULL
+			)"
+		)?;
+
+		// History for the Matcher
+		// Keeps track of changes that have happened.
+		self.0.execute(
+			"CREATE TABLE IF NOT EXISTS watch_history (
+				id               INTEGER PRIMARY KEY,
+
+				watch_id         INTEGER NOT NULL,
+				value            TEXT NOT NULL,
+
+				date_added       LONG NOT NULL
+			)"
+		)?;
+
+		// MatchParser store for Watching Items
+		// Stores the search options for the custom url.
+		// Called by match_url or id.
+
+		self.0.execute(
+			"CREATE TABLE IF NOT EXISTS watch_parser (
+				id               INTEGER PRIMARY KEY,
+
+				title            TEXT NOT NULL,
+				match_url        TEXT NOT NULL,
+				description      TEXT NOT NULL,
+
+				match_opts      TEXT NOT NULL
+			)"
+		)?;
+
 		Ok(())
 	}
 

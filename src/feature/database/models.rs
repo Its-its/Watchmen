@@ -256,3 +256,109 @@ pub struct EditCustomItem {
 
 	pub search_opts: Option<String>
 }
+
+
+
+// =================
+// ==== WATCHER ====
+// =================
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone, Queryable, Identifiable)]
+#[table_name = "watching"]
+pub struct Watching {
+	pub id: QueryId,
+
+	pub url: String,
+	pub title: String,
+	pub description: String,
+
+	pub sec_interval: i32,
+	pub remove_after: i32,
+
+	pub date_added: i64,
+	pub last_called: i64,
+}
+
+
+#[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
+#[table_name = "watching"]
+pub struct NewWatching {
+	pub url: String,
+	pub title: String,
+	pub description: String,
+
+	pub sec_interval: i32,
+	pub remove_after: i32,
+
+	pub date_added: i64,
+	pub last_called: i64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone, AsChangeset)]
+#[table_name = "watching"]
+pub struct EditWatching {
+	pub url: Option<String>,
+	pub title: Option<String>,
+	pub description: Option<String>,
+
+	pub sec_interval: Option<i32>,
+	pub remove_after: Option<i32>,
+}
+
+
+
+
+#[derive(Serialize, Deserialize, Debug, Clone, Queryable, Identifiable)]
+#[table_name = "watch_history"]
+pub struct WatchHistory {
+	pub id: QueryId,
+
+	pub watch_id: QueryId,
+	pub value: String,
+
+	pub date_added: i64
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
+#[table_name = "watch_history"]
+pub struct NewWatchHistory {
+	pub watch_id: QueryId,
+	pub value: String,
+
+	pub date_added: i64
+}
+
+
+
+
+#[derive(Serialize, Deserialize, Debug, Clone, Queryable, Identifiable)]
+#[table_name = "watch_parser"]
+pub struct WatchParserItem {
+	pub id: QueryId,
+
+	pub title: String,
+	pub match_url: String,
+	pub description: String,
+
+	pub match_opts: String
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
+#[table_name = "watch_parser"]
+pub struct NewWatchParserItem {
+	pub title: String,
+	pub match_url: String,
+	pub description: String,
+
+	pub match_opts: String
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, AsChangeset)]
+#[table_name = "watch_parser"]
+pub struct EditWatchParserItem {
+	pub title: Option<String>,
+	pub match_url: Option<String>,
+	pub description: Option<String>,
+
+	pub match_opts: Option<String>
+}

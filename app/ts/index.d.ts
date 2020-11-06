@@ -223,3 +223,26 @@ interface CreateCustomItemResponse {
 interface CustomItemListResponse {
 	items: ModelCustomItem[];
 }
+
+
+
+//
+
+
+interface WatcherListResponse {
+	items: ModelWatcher[];
+}
+
+interface ModelWatcher {
+	id?: number;
+
+	title: string;
+	url: string;
+	description: string;
+
+	remove_after: number;
+	sec_interval: number;
+
+	last_called: number;
+	date_added: number;
+}

@@ -1,12 +1,15 @@
-// Will be used to look at neweset feeds/watches at a glance.
+import View from '../index';
+import FeedItemsView from '../feed/items';
+import DashboardView from '../dashboard';
 
-import View from './index';
-import FeedItemsView from './feed/items';
-import WatchItemsView from './watch/items';
+import core from '../../core';
 
-import core from '../core';
+import {
+	send_get_watcher_list,
+	send_create_watcher
+} from '../../socket';
 
-export default class DasboardView extends View {
+export default class WatchItemsView extends View {
 	nav_bar = document.createElement('div');
 	nav_bar_list = document.createElement('ul');
 
@@ -25,7 +28,7 @@ export default class DasboardView extends View {
 
 		let title = document.createElement('h1');
 		title.className = 'title';
-		title.innerText = 'Dashboard';
+		title.innerText = 'Watching';
 		title_container.appendChild(title);
 
 		let nav_items = document.createElement('div');
@@ -45,7 +48,10 @@ export default class DasboardView extends View {
 	}
 
 	on_connection_open() {
-		//
+		send_get_watcher_list((err, items) => {
+			console.log(err);
+			console.log(items);
+		});
 	}
 
 	on_open() {
@@ -55,20 +61,19 @@ export default class DasboardView extends View {
 
 		// Navbar buttons
 
+		let dashboard_listener = document.createElement('div');
+		dashboard_listener.className = 'button';
+		dashboard_listener.innerText = 'Dashboard';
+		core.navbar.append_left_html(dashboard_listener);
+
+		dashboard_listener.addEventListener('click', () => core.open_view(this.parent != null && this.parent instanceof DashboardView ? this.parent : new DashboardView()));
+
 		let feed_listener = document.createElement('div');
 		feed_listener.className = 'button';
 		feed_listener.innerText = 'Feeds';
 		core.navbar.append_left_html(feed_listener);
 
 		feed_listener.addEventListener('click', () => core.open_view(new FeedItemsView()));
-
-
-		let watch_listener = document.createElement('div');
-		watch_listener.className = 'button';
-		watch_listener.innerText = 'Watching';
-		core.navbar.append_left_html(watch_listener);
-
-		watch_listener.addEventListener('click', () => core.open_view(new WatchItemsView()));
 	}
 
 	on_close() {

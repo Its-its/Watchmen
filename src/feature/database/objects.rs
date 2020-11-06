@@ -20,11 +20,14 @@ use super::models::{
 	Item, NewItem,
 	Feed, EditFeed,
 	Category, NewCategory, EditCategory,
-	FeedCategory, NewFeedCategory
+	FeedCategory, NewFeedCategory,
+	Watching, NewWatching, EditWatching,
+	WatchParserItem, NewWatchParserItem,
+	WatchHistory, NewWatchHistory
 };
 use crate::state::CoreState;
-use crate::request::custom::{CustomItem as CustomItemBase, FoundItem as CustomFoundItem};
-
+use crate::request::feeds::custom::{CustomItem as CustomItemBase, FoundItem as CustomFoundItem};
+use crate::request::watcher::WatchParserItem as WatchParserItemBase;
 
 
 
@@ -527,8 +530,8 @@ pub fn get_listeners(conn: &SqliteConnection) -> QueryResult<Vec<Feed>> {
 pub fn remove_listener(f_id: QueryId, rem_stored: bool, state: &mut CoreState) -> QueryResult<usize> {
 	let conn = state.connection.connection();
 
-	if let Some(index) = state.requester.feeds.iter().position(|f| f.id == f_id) {
-		state.requester.feeds.remove(index);
+	if let Some(index) = state.feed_requests.feeds.iter().position(|f| f.id == f_id) {
+		state.feed_requests.feeds.remove(index);
 	}
 
 	if rem_stored {
@@ -549,7 +552,7 @@ pub fn remove_listener(f_id: QueryId, rem_stored: bool, state: &mut CoreState) -
 
 pub fn update_listener(f_id: QueryId, edit: &EditFeed, state: &mut CoreState) -> QueryResult<usize> {
 	{ // Update Stored Feed
-		if let Some(feed) = state.requester.feeds.iter_mut().find(|f| f.id == f_id) {
+		if let Some(feed) = state.feed_requests.feeds.iter_mut().find(|f| f.id == f_id) {
 			if let Some(i) = edit.description.as_ref() { feed.description = i.to_owned(); }
 			if let Some(i) = edit.generator.as_ref() { feed.generator = i.to_owned(); }
 			if let Some(i) = edit.title.as_ref() { feed.title = i.to_owned(); }
@@ -623,4 +626,145 @@ pub fn get_category_feeds(cat_id: QueryId, conn: &SqliteConnection) -> QueryResu
 	use self::feed_categories::dsl::*;
 
 	feed_categories.filter(category_id.eq(cat_id)).get_results(conn)
+}
+
+
+// =================
+// ==== WATCHER ====
+// =================
+
+
+// Watchers
+
+pub fn get_watchers(conn: &SqliteConnection) -> QueryResult<Vec<Watching>> {
+	self::watching::table.load(conn)
+}
+
+pub fn get_watcher_by_url(f_url: &str, conn: &SqliteConnection) -> QueryResult<Watching> {
+	use self::watching::dsl::*;
+
+	watching.filter(url.eq(f_url)).get_result(conn)
+}
+
+pub fn remove_watcher(f_id: QueryId, rem_stored: bool, conn: &SqliteConnection) -> QueryResult<usize> {
+	if rem_stored {
+		use self::watch_history::dsl::*;
+		diesel::delete(watch_history.filter(watch_id.eq(f_id))).execute(conn)?;
+	} else {
+		// TODO: If not removing everything. We need to keep the listener otherwise we can't display the items.
+	}
+
+	// { // Remove Watch Categories
+	// 	use self::feed_categories::dsl::*;
+	// 	diesel::delete(feed_categories.filter(feed_id.eq(f_id))).execute(conn)?;
+	// }
+
+	use self::watching::dsl::*;
+	diesel::delete(watching.filter(id.eq(f_id))).execute(conn)
+}
+
+pub fn update_watcher(f_id: QueryId, edit: &EditWatching, conn: &SqliteConnection) -> QueryResult<usize> {
+	use self::watching::dsl::*;
+
+	diesel::update(watching.filter(id.eq(f_id)))
+		.set(edit)
+		.execute(conn)
+}
+
+pub fn create_watcher(watcher: &NewWatching, conn: &SqliteConnection) -> QueryResult<usize> {
+	use self::watching::dsl::*;
+
+	diesel::insert_into(watching).values(watcher).execute(conn)
+}
+
+
+
+// Watch Parser
+
+impl Into<WatchParserItemBase> for WatchParserItem {
+	fn into(self) -> WatchParserItemBase {
+		WatchParserItemBase {
+			id: Some(self.id),
+			title: self.title,
+			match_url: self.match_url,
+			description: self.description,
+			match_opts: serde_json::from_str(&self.match_opts).unwrap()
+		}
+	}
+}
+
+pub fn create_watch_parser(item: &NewWatchParserItem, conn: &SqliteConnection) -> QueryResult<usize> {
+	use self::watch_parser::dsl::*;
+
+	diesel::insert_into(watch_parser).values(item).execute(conn)
+}
+
+pub fn get_watch_parser_by_id(f_id: QueryId, conn: &SqliteConnection) -> QueryResult<WatchParserItemBase> {
+	use self::watch_parser::dsl::*;
+
+	Ok(
+		watch_parser.find(f_id)
+		.get_result::<WatchParserItem>(conn)?
+		.into()
+	)
+}
+
+pub fn get_watch_parser_from_url(f_url: Url, conn: &SqliteConnection) -> QueryResult<WatchParserItemBase> {
+	use self::watch_parser::dsl::*;
+
+	let host_str = f_url.host_str().unwrap();
+
+	let period_count = host_str.bytes().filter(|v| v == &b'.').count();
+
+	let mut values = vec![host_str.to_owned()];
+
+	if period_count > 1 {
+		for (i, byte) in host_str.bytes().enumerate() {
+			if byte == b'.' {
+				values.push(format!("*{}", &host_str[i..]));
+
+				if period_count == values.len() {
+					break;
+				}
+			}
+		}
+	} else {
+		values.push(format!("*.{}", host_str));
+	}
+
+	Ok(
+		watch_parser.filter(match_url.eq_any(values))
+		.get_result::<WatchParserItem>(conn)?
+		.into()
+	)
+}
+
+pub fn get_watching_items(conn: &SqliteConnection) -> QueryResult<Vec<WatchParserItemBase>> {
+	Ok(
+		self::watch_parser::table.load::<WatchParserItem>(conn)?
+		.into_iter()
+		.map(|i| i.into())
+		.collect()
+	)
+}
+
+// Watch History
+
+pub fn get_last_watch_history(f_watch_id: QueryId, conn: &SqliteConnection) -> QueryResult<WatchHistory> {
+	use self::watch_history::dsl::*;
+
+	Ok(
+		watch_history
+		.filter(watch_id.eq(f_watch_id))
+		.order_by(date_added.desc())
+		.get_result(conn)?
+	)
+}
+
+
+
+pub fn create_last_watch_history(item: &NewWatchHistory, conn: &SqliteConnection) -> QueryResult<usize> {
+	use self::watch_history::dsl::*;
+
+	diesel::insert_into(watch_history).values(item).execute(conn)
 }
