@@ -69,7 +69,7 @@ export default class SocketManager {
 
 	//
 
-	public send_response(name: string, opts?: Obj<any>, response?: ResponseFunc<any>) {
+	public send(name: string, opts?: Obj<any>, response?: ResponseFunc<any>) {
 		let message_id = this.next_msg_id();
 
 		let method = {
@@ -115,7 +115,7 @@ export function send_create_category(name: string, cat_id: number, cb?: Response
 		position: cat_id
 	};
 
-	app.socket.send_response('add_category', opts, cb);
+	app.socket.send('add_category', opts, cb);
 }
 
 export function send_remove_category(cat_feed_id: number, cb?: ResponseFunc<AddCategoryFeedResponse>) {
@@ -123,7 +123,7 @@ export function send_remove_category(cat_feed_id: number, cb?: ResponseFunc<AddC
 		id: cat_feed_id
 	};
 
-	app.socket.send_response('remove_category', opts, cb);
+	app.socket.send('remove_category', opts, cb);
 }
 
 export function send_edit_category(id: number, editing: ModelEditCategory,  cb?: ResponseFunc<EditListenerResponse>) {
@@ -132,11 +132,11 @@ export function send_edit_category(id: number, editing: ModelEditCategory,  cb?:
 		editing: editing
 	};
 
-	app.socket.send_response('edit_category', opts, cb);
+	app.socket.send('edit_category', opts, cb);
 }
 
 export function send_get_category_list(cb?: ResponseFunc<CategoryListResponse>) {
-	app.socket.send_response('category_list', {}, cb);
+	app.socket.send('category_list', {}, cb);
 }
 
 export function send_add_feed_to_category(feed_id: number, category_id: number, cb?: ResponseFunc<AddCategoryFeedResponse>) {
@@ -145,7 +145,7 @@ export function send_add_feed_to_category(feed_id: number, category_id: number, 
 		category_id: category_id
 	};
 
-	app.socket.send_response('add_feed_category', opts, cb);
+	app.socket.send('add_feed_category', opts, cb);
 }
 
 export function send_remove_feed_from_category(cat_feed_id: number, cb?: ResponseFunc<AddCategoryFeedResponse>) {
@@ -153,7 +153,7 @@ export function send_remove_feed_from_category(cat_feed_id: number, cb?: Respons
 		id: cat_feed_id
 	};
 
-	app.socket.send_response('remove_feed_category', opts, cb);
+	app.socket.send('remove_feed_category', opts, cb);
 }
 
 
@@ -165,12 +165,12 @@ export function send_get_item_list(category_id: Nullable<number>, skip_count?: n
 		skip_count
 	};
 
-	app.socket.send_response('item_list', opts, cb);
+	app.socket.send('item_list', opts, cb);
 }
 
 // listeners
 export function send_get_feed_list(cb?: ResponseFunc<FeedListResponse>) {
-	app.socket.send_response('feed_list', {}, cb);
+	app.socket.send('feed_list', {}, cb);
 }
 
 export function send_create_listener(url: string, custom_item_id: Nullable<number>, cb?: ResponseFunc<CreateListenerResponse>) {
@@ -179,7 +179,7 @@ export function send_create_listener(url: string, custom_item_id: Nullable<numbe
 		custom_item_id: custom_item_id
 	};
 
-	app.socket.send_response('add_listener', opts, cb);
+	app.socket.send('add_listener', opts, cb);
 }
 
 export function send_edit_listener(id: number, editing: ModelEditListener,  cb?: ResponseFunc<EditListenerResponse>) {
@@ -188,7 +188,7 @@ export function send_edit_listener(id: number, editing: ModelEditListener,  cb?:
 		editing: editing
 	};
 
-	app.socket.send_response('edit_listener', opts, cb);
+	app.socket.send('edit_listener', opts, cb);
 }
 
 export function send_remove_listener(id: number, rem_stored: boolean,  cb?: ResponseFunc<RemoveListenerResponse>) {
@@ -197,20 +197,20 @@ export function send_remove_listener(id: number, rem_stored: boolean,  cb?: Resp
 		rem_stored: rem_stored
 	};
 
-	app.socket.send_response('remove_listener', opts, cb);
+	app.socket.send('remove_listener', opts, cb);
 }
 
 
 // Editor / Custom Item
 
 export function send_get_webpage_source(url: string, cb: ResponseFunc<GetWebpageResponse>) {
-	app.socket.send_response('get_webpage', { url }, cb);
+	app.socket.send('get_webpage', { url }, cb);
 }
 
 // Custom Items
 
 export function send_get_custom_items_list(cb?: ResponseFunc<CustomItemListResponse>) {
-	app.socket.send_response('custom_item_list', {}, cb);
+	app.socket.send('custom_item_list', {}, cb);
 }
 
 // export function send_update_custom_item(id: number, item: ModelCustomItem, cb: ResponseFunc<any>) {
@@ -221,7 +221,7 @@ export function send_get_custom_items_list(cb?: ResponseFunc<CustomItemListRespo
 // }
 
 export function send_new_custom_item(item: ModelCustomItem, cb: ResponseFunc<CreateCustomItemResponse>) {
-	app.socket.send_response('new_custom_item', {
+	app.socket.send('new_custom_item', {
 		item
 	}, cb);
 }
@@ -229,18 +229,18 @@ export function send_new_custom_item(item: ModelCustomItem, cb: ResponseFunc<Cre
 
 // Filters / Feed Filters
 export function send_get_filter_list(cb?: ResponseFunc<FilterListResponse>) {
-	app.socket.send_response('filter_list', {}, cb);
+	app.socket.send('filter_list', {}, cb);
 }
 
 export function send_new_filter(title: string, filter: rust.Optional<rust.EnumObject>, cb: ResponseFunc<any>) {
-	app.socket.send_response('new_filter', {
+	app.socket.send('new_filter', {
 		title,
 		filter
 	}, cb);
 }
 
 export function send_update_filter(id: number, title: string, filter: rust.Optional<rust.EnumObject>, cb: ResponseFunc<any>) {
-	app.socket.send_response('update_filter', {
+	app.socket.send('update_filter', {
 		id,
 		title,
 		filter
@@ -248,21 +248,21 @@ export function send_update_filter(id: number, title: string, filter: rust.Optio
 }
 
 export function send_remove_filter(id: number, cb: ResponseFunc<any>) {
-	app.socket.send_response('remove_filter', {
+	app.socket.send('remove_filter', {
 		id
 	}, cb);
 }
 
 
 export function send_new_feed_filter(feed_id: number, filter_id: number, cb: ResponseFunc<any>) {
-	app.socket.send_response('new_feed_filter', {
+	app.socket.send('new_feed_filter', {
 		feed_id,
 		filter_id
 	}, cb);
 }
 
 export function send_remove_feed_filter(feed_id: number, filter_id: number, cb: ResponseFunc<any>) {
-	app.socket.send_response('remove_filter', {
+	app.socket.send('remove_filter', {
 		feed_id,
 		filter_id
 	}, cb);
@@ -275,7 +275,7 @@ export function send_get_updates_since(since_timestamp: number, cb?: ResponseFun
 		since: since_timestamp
 	};
 
-	app.socket.send_response('feed_updates', opts, cb);
+	app.socket.send('feed_updates', opts, cb);
 }
 
 
@@ -289,11 +289,11 @@ export function send_get_watching_history_list(watch_id: Nullable<number>, skip_
 		skip_count
 	};
 
-	app.socket.send_response('watching_item_list', opts, cb);
+	app.socket.send('watching_item_list', opts, cb);
 }
 
 export function send_get_watcher_list(cb?: ResponseFunc<WatcherListResponse>) {
-	app.socket.send_response('watcher_list', {}, cb);
+	app.socket.send('watcher_list', {}, cb);
 }
 
 export function send_create_watcher(url: string, custom_item_id: Nullable<number>, cb?: ResponseFunc<CreateListenerResponse>) {
@@ -302,7 +302,7 @@ export function send_create_watcher(url: string, custom_item_id: Nullable<number
 		custom_item_id: custom_item_id
 	};
 
-	app.socket.send_response('add_watcher', opts, cb);
+	app.socket.send('add_watcher', opts, cb);
 }
 
 export function send_edit_watcher(id: number, editing: ModelEditListener,  cb?: ResponseFunc<EditListenerResponse>) {
@@ -311,7 +311,7 @@ export function send_edit_watcher(id: number, editing: ModelEditListener,  cb?: 
 		editing: editing
 	};
 
-	app.socket.send_response('edit_watcher', opts, cb);
+	app.socket.send('edit_watcher', opts, cb);
 }
 
 export function send_remove_watcher(id: number, rem_stored: boolean,  cb?: ResponseFunc<RemoveListenerResponse>) {
@@ -320,5 +320,5 @@ export function send_remove_watcher(id: number, rem_stored: boolean,  cb?: Respo
 		rem_stored: rem_stored
 	};
 
-	app.socket.send_response('remove_watcher', opts, cb);
+	app.socket.send('remove_watcher', opts, cb);
 }
