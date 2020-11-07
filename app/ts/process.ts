@@ -2,11 +2,13 @@
 
 import core from './core';
 import FeedItemsView from './views/feed/items';
+import WatchItemsView from './views/watch/items';
 
 import {
 	send_get_item_list,
 	send_get_feed_list,
-	send_get_updates_since
+	send_get_updates_since,
+	send_get_watcher_list
 } from './socket';
 
 
@@ -93,6 +95,8 @@ export default class BackgroundProcess {
 	feed_listeners = <FeedListener[]>[];
 	feed_items = <FeedItem[]>[];
 
+	watching_listeners = <[ModelWatcher, ModelWatchHistory][]>[];
+
 	constructor() {
 		//
 	}
@@ -103,11 +107,15 @@ export default class BackgroundProcess {
 		setInterval(() => {
 			if (core.view != null && core.view instanceof FeedItemsView) {
 				core.view.table.rows.forEach(r => r.update_date_element());
+			} else if (core.view != null && core.view instanceof WatchItemsView) {
+				core.view.table.rows.forEach(r => r.update_date_element());
 			}
 
 			send_get_updates_since(this.get_newest_timestamp(), (_, update) => {
-				if (update!.new_items != 0) {
-					send_get_item_list(null, 0, update!.new_items, (_, resp) => {
+				if (update == null) return;
+
+				if (update.new_feeds != 0) {
+					send_get_item_list(null, 0, update.new_feeds, (_, resp) => {
 						console.log('Update Items:', resp);
 
 						this.on_received_update_items(resp!.items, resp!.notification_ids);
@@ -119,10 +127,22 @@ export default class BackgroundProcess {
 						}
 					});
 				}
+
+				if (update.new_watches != 0) {
+					send_get_watcher_list((_, resp) => {
+						this.watching_listeners = resp!.items;
+						console.log('Watching:', resp);
+
+						if (core.view != null && core.view instanceof WatchItemsView) {
+							core.view.table.add_sort_render_rows();
+						}
+					});
+				}
 			});
 		}, 1000 * 30);
 	}
 
+	// Initial call when loading website.
 	refresh_feeds(finished?: () => any) {
 		console.log('Refresh Feeds');
 
@@ -153,6 +173,8 @@ export default class BackgroundProcess {
 				if (finished != null) finished();
 			});
 		});
+
+		send_get_watcher_list((_, resp) => this.watching_listeners = resp!.items);
 	}
 
 	add_or_update_feed_items(feed_items: FeedItem[]): FeedItem[] {
@@ -220,7 +242,7 @@ export default class BackgroundProcess {
 	}
 }
 
-function elapsed_to_time_ago(elapsed: number): string {
+export function elapsed_to_time_ago(elapsed: number): string {
 	let msPerMinute = 60 * 1000;
 	let msPerHour = msPerMinute * 60;
 

@@ -752,6 +752,13 @@ pub fn get_watching_items(conn: &SqliteConnection) -> QueryResult<Vec<WatchParse
 
 // Watch History
 
+pub fn get_watch_history_count_since(since: i64, conn: &SqliteConnection) -> QueryResult<i64> {
+	self::watch_history::table
+		.filter(self::watch_history::dsl::date_added.gt(since))
+		.count()
+		.get_result(conn)
+}
+
 pub fn get_last_watch_history(f_watch_id: QueryId, conn: &SqliteConnection) -> QueryResult<WatchHistory> {
 	use self::watch_history::dsl::*;
 

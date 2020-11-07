@@ -1,8 +1,11 @@
+import { elapsed_to_time_ago } from '../../process';
+import { createElement } from '../../util/html';
+
 import View from '../index';
 import FeedItemsView from '../feed/items';
 import DashboardView from '../dashboard';
 
-import core from '../../core';
+import core, { create_popup } from '../../core';
 
 import {
 	send_get_watcher_list,
@@ -12,6 +15,8 @@ import {
 export default class WatchItemsView extends View {
 	nav_bar = document.createElement('div');
 	nav_bar_list = document.createElement('ul');
+
+	table = new Table();
 
 	constructor() {
 		super();
@@ -31,6 +36,40 @@ export default class WatchItemsView extends View {
 		title.innerText = 'Watching';
 		title_container.appendChild(title);
 
+		const create_button = createElement('div', { className: 'button new-category', innerText: 'New Feed'}, this.nav_bar);
+
+		create_button.addEventListener('click', () => {
+			create_popup((container, open, close) => {
+				const form = createElement('div', { className: 'form-group' }, container);
+
+				// Feed URL
+				const cat_row = createElement('div', { className: 'form-row' }, form);
+				const cat_text = createElement('input', { placeholder: 'Feed URL', type: 'text' }, cat_row);
+
+				// Submit
+				const sub_row = createElement('div', { className: 'form-row' }, form);
+				const submit = createElement('div', { className: 'button', innerText: 'Create'}, sub_row);
+
+				submit.addEventListener('click', _ => {
+					send_create_watcher(cat_text.value, null, (err, opts) => {
+						if (err != null || opts == null) {
+							return console.error('create_watcher: ', err);
+						}
+
+						console.log('create_watcher:', opts);
+
+						if (opts.affected != 0) {
+							core.process.refresh_feeds(close);
+						}
+					});
+				});
+
+				open();
+			});
+		})
+
+		// Nav bar items
+
 		let nav_items = document.createElement('div');
 		nav_items.className = 'nav-bar-items';
 		this.nav_bar.appendChild(nav_items);
@@ -40,6 +79,8 @@ export default class WatchItemsView extends View {
 
 		this.container.appendChild(this.nav_bar);
 
+		this.container.appendChild(this.table.render());
+
 		if (core.socket.is_open()) {
 			this.on_connection_open();
 		} else {
@@ -48,10 +89,7 @@ export default class WatchItemsView extends View {
 	}
 
 	on_connection_open() {
-		send_get_watcher_list((err, items) => {
-			console.log(err);
-			console.log(items);
-		});
+		//
 	}
 
 	on_open() {
@@ -66,7 +104,7 @@ export default class WatchItemsView extends View {
 		dashboard_listener.innerText = 'Dashboard';
 		core.navbar.append_left_html(dashboard_listener);
 
-		dashboard_listener.addEventListener('click', () => core.open_view(this.parent != null && this.parent instanceof DashboardView ? this.parent : new DashboardView()));
+		dashboard_listener.addEventListener('click', () => core.open_view(new DashboardView()));
 
 		let feed_listener = document.createElement('div');
 		feed_listener.className = 'button';
@@ -79,4 +117,273 @@ export default class WatchItemsView extends View {
 	on_close() {
 		core.navbar.clear();
 	}
+}
+
+export class Table {
+	container = document.createElement('div');
+
+	showing_item_content = <Nullable<HTMLDivElement>>null;
+
+	viewing_watcher = <Nullable<number>>null;
+
+	row_ids: number[] = [];
+	rows: TableItem[] = [];
+
+	// class for infinite-scroll or page buttons
+
+	// filters = [];
+
+	current_section = -1;
+
+	// Set from get_items
+	last_req_amount = 0;
+	last_skip_amount = 0;
+	last_total_items = 0;
+
+	waiting_for_more_feeds = false;
+
+	constructor() {
+		this.container.className = 'feed-items-container';
+		this.init();
+	}
+
+	public reset() {
+		while (this.container.firstChild != null) {
+			this.container.removeChild(this.container.firstChild);
+		}
+
+		this.showing_item_content = null;
+		this.last_req_amount = 0;
+		this.last_skip_amount = 0;
+		this.last_total_items = 0;
+		this.waiting_for_more_feeds = false;
+		this.current_section = -1;
+		this.row_ids = [];
+		this.rows = [];
+	}
+
+	public init() {
+		// Set rows. (Otherwise it won't have them if the table loads after the items are grabbed.)
+		this.rows = core.process.watching_listeners.map(i => new TableItem(this, i[0], i[1]));
+	}
+
+	public render(): HTMLDivElement {
+		while (this.container.firstChild != null) {
+			this.container.firstChild.remove();
+		}
+
+		this.render_rows(this.rows);
+
+		return this.container;
+	}
+
+	public render_rows(rows: TableItem[]) {
+		let section_names = [
+			'Today',
+			'Yesterday',
+			'This Week',
+			'This Month',
+			'Last Month',
+			'This Year',
+			'Last Year'
+		];
+
+		rows.forEach(r => {
+			let section = get_section_from_date(r.history.date_added * 1000);
+
+			if (section != this.current_section) {
+				this.current_section = section;
+
+				let section_name = section_names[section];
+
+				let section_html = document.createElement('div');
+				section_html.className = 'section ' + section_name.toLowerCase().replace(' ', '-');
+				section_html.innerHTML = `<span>${section_name}</span>`;
+
+				this.container.appendChild(section_html);
+			}
+
+			this.container.appendChild(r.render());
+		});
+
+		function get_section_from_date(timestamp: number): number {
+			const now = Date.now();
+			const day = 1000 * 60 * 60 * 24;
+
+			// Last Year
+			if (timestamp < now - (day * 365 * 2)) return 6;
+
+			// This Year
+			if (timestamp < now - (day * 365 * 2)) return 5;
+
+			// Last Month
+			if (timestamp < now - (day * 30 * 2)) return 4;
+
+			// This Month
+			if (timestamp < now - (day * 30)) return 3;
+
+			// This Week
+			if (timestamp < now - (day * 7)) return 2;
+
+			// Yesterday
+			if (timestamp < now - day) return 1;
+
+			return 0;
+		}
+	}
+
+	public add_sort_render_rows() {
+		this.rows = core.process.watching_listeners.map(i => new TableItem(this, i[0], i[1]));
+
+		this.rows.sort(this.sort_item_func('date_added', 1));
+		this.row_ids.sort();
+
+		this.render();
+	}
+
+	public sort_item_func(sort_method: 'date_added', sort_order: 1 | -1): (a: TableItem, b: TableItem) => number {
+		return (a, b) => (b.history[sort_method] - a.history[sort_method]) * sort_order;
+	}
+
+	public can_continue_scroll_up(): boolean {
+		return this.last_skip_amount != 0;
+	}
+
+	public can_continue_scroll_down(): boolean {
+		return this.last_skip_amount  + this.last_req_amount < this.last_total_items;
+	}
+
+	public get_newest_timestamp(): number {
+		return core.process.get_newest_timestamp();
+	}
+}
+
+export class TableItem {
+	container = document.createElement('div');
+
+	watcher: ModelWatcher;
+	history: ModelWatchHistory;
+
+	table: Table;
+
+	// Element
+	date_element = document.createElement('span');
+
+	constructor(table: Table, watcher: ModelWatcher, history: ModelWatchHistory) {
+		this.table = table;
+		this.watcher = watcher;
+		this.history = history;
+
+		this.container.className = 'feed-item';
+
+		if (watcher.alert) {
+			this.container.classList.add('notification');
+		}
+	}
+
+	public render(): HTMLDivElement {
+		while (this.container.firstChild) {
+			this.container.removeChild(this.container.firstChild);
+		}
+
+		let list = document.createElement('ul');
+		list.className = 'list horizontal';
+		this.container.appendChild(list);
+
+
+		// Watcher Name
+		list.appendChild((() => {
+			let li = document.createElement('li');
+			li.className = 'list-item feed-name';
+
+			let span = document.createElement('a');
+			span.innerText = this.watcher.title;
+			span.title = span.innerText;
+			span.href = `/?watcher=${this.watcher.id}`;
+			li.appendChild(span);
+
+			return li;
+		})());
+
+		// Title
+		list.appendChild((() => {
+			let li = document.createElement('li');
+			li.className = 'list-item title';
+
+			let span = document.createElement('a');
+			span.className = 'default';
+			span.innerText = this.history.value;
+			span.title = span.innerText;
+
+			span.addEventListener('click', e => {
+				let showing_content = this.table.showing_item_content;
+
+				if (showing_content != null) {
+					this.container.removeChild(showing_content);
+					this.table.showing_item_content = null;
+				} else {
+					showing_content = document.createElement('div');
+					showing_content.style.padding = '10px';
+					showing_content.innerText = 'TODO';
+
+					this.container.appendChild(showing_content);
+
+					this.table.showing_item_content = showing_content;
+				}
+
+				e.preventDefault();
+				return false;
+			});
+
+			li.appendChild(span);
+
+			return li;
+		})());
+
+		// Date
+		list.appendChild((() => {
+			let li = document.createElement('li');
+			li.className = 'list-item date';
+
+			this.update_date_element();
+			this.date_element.title = new Date(this.history.date_added * 1000).toLocaleString();
+			li.appendChild(this.date_element);
+
+			return li;
+		})());
+
+		// site link
+		list.appendChild((() => {
+			let li = document.createElement('li');
+			li.className = 'list-item link';
+
+			let a_href = document.createElement('a');
+			a_href.className = 'default';
+			a_href.innerText = 'link';
+			a_href.target = '_blank';
+			a_href.href = this.watcher.url;
+			li.appendChild(a_href);
+
+			return li;
+		})());
+
+		return this.container;
+	}
+
+
+	public parse_timestamp(): string {
+		let date = this.history.date_added * 1000;
+
+		if (date + (1000 * 60 * 60 * 24) > Date.now()) {
+			return elapsed_to_time_ago(Date.now() - date);
+		} else {
+			return new Date(date).toLocaleString()
+		}
+	}
+
+	public update_date_element() {
+		this.date_element.innerText = this.parse_timestamp();
+	}
+
+	static HEIGHT = 41;
 }

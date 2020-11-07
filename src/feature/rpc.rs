@@ -209,7 +209,8 @@ pub enum Core2FrontNotification {
 	FeedUpdates {
 		since: i64,
 
-		new_items: i64
+		new_feeds: i64,
+		new_watches: i64
 	},
 
 

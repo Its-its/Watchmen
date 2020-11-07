@@ -192,7 +192,8 @@ interface CreateListenerResponse {
 }
 
 interface UpdatesResponse {
-	new_items: number;
+	new_feeds: number;
+	new_watches: number;
 	since: number;
 }
 
@@ -230,7 +231,7 @@ interface CustomItemListResponse {
 
 
 interface WatcherListResponse {
-	items: ModelWatcher[];
+	items: [ModelWatcher, ModelWatchHistory][];
 }
 
 interface ModelWatcher {
@@ -244,5 +245,16 @@ interface ModelWatcher {
 	sec_interval: number;
 
 	last_called: number;
+	date_added: number;
+
+	alert?: boolean;
+}
+
+interface ModelWatchHistory {
+	id?: number;
+
+	watch_id: number;
+	value: string;
+
 	date_added: number;
 }

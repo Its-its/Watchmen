@@ -1,7 +1,7 @@
 
 
 export default class View {
-	parent = <Nullable<View>>null;
+	parent = <Nullable<View>>null; // TODO: Remove parent in place of global vec of cached pages.
 
 	initiated = false;
 	container = document.createElement('div');

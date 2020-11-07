@@ -117,11 +117,13 @@ impl WeakFeederCore {
 			// Feed Variants
 
 			Front2CoreNotification::FeedUpdates { since } => {
-				let new_count = objects::get_item_count_since(since, &conn)?;
+				let new_feeds = objects::get_item_count_since(since, &conn)?;
+				let new_watches = objects::get_watch_history_count_since(since, &conn)?;
 
 				let updates = Core2FrontNotification::FeedUpdates {
 					since,
-					new_items: new_count
+					new_feeds,
+					new_watches
 				};
 
 				ctx.respond_with(msg_id_opt, updates);
