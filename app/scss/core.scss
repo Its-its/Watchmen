@@ -534,3 +534,93 @@ select.custom {
 		}
 	}
 }
+
+
+body > .notification-container {
+	position: absolute;
+	display: flex;
+	flex-direction: column;
+	right: 5px;
+	bottom: 5px;
+
+	> .notification {
+		display: flex;
+		flex-direction: column;
+		padding: 10px;
+
+
+		background-color: #25252b;
+		border: 1px solid #151518;
+
+		max-width: 25em;
+		min-width: 10em;
+		cursor: pointer;
+		flex-grow: 0;
+
+		&.red {
+			background-color: #531111;
+			border: 1px solid #270909;
+		}
+
+		&.yellow {
+			background-color: #534d10;
+			border: 1px solid #312e0b;
+		}
+
+		&.green {
+			background-color: #105316;
+			border: 1px solid #0b3113;
+		}
+
+		&:not(:last-child) {
+			margin-bottom: 5px;
+		}
+
+		.title-bar {
+			.title {
+				flex-grow: 1;
+				font-size: 18px;
+			}
+
+			.close-button {
+				color: #d41818;
+				padding: 3px 5px;
+
+				&:hover {
+					color: #941414;
+				}
+			}
+		}
+
+		.expansion {
+			display: none;
+
+			&.show {
+				display: flex;
+			}
+
+			> .description {
+				font-size: 13px;
+			}
+
+			> .cause {
+				font-size: 10px;
+			}
+
+			> .creation {
+				font-size: 10px;
+			}
+		}
+	}
+}
+
+
+.flex-row {
+	display: flex;
+	flex-direction: row;
+}
+
+.flex-column {
+	display: flex;
+	flex-direction: column;
+}
