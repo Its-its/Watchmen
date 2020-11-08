@@ -133,8 +133,6 @@ export class Table {
 
 	// filters = [];
 
-	current_section = -1;
-
 	// Set from get_items
 	last_req_amount = 0;
 	last_skip_amount = 0;
@@ -157,7 +155,6 @@ export class Table {
 		this.last_skip_amount = 0;
 		this.last_total_items = 0;
 		this.waiting_for_more_feeds = false;
-		this.current_section = -1;
 		this.row_ids = [];
 		this.rows = [];
 	}
@@ -172,64 +169,9 @@ export class Table {
 			this.container.firstChild.remove();
 		}
 
-		this.render_rows(this.rows);
+		this.rows.forEach(r => this.container.appendChild(r.render()));
 
 		return this.container;
-	}
-
-	public render_rows(rows: TableItem[]) {
-		let section_names = [
-			'Today',
-			'Yesterday',
-			'This Week',
-			'This Month',
-			'Last Month',
-			'This Year',
-			'Last Year'
-		];
-
-		rows.forEach(r => {
-			let section = get_section_from_date(r.history.date_added * 1000);
-
-			if (section != this.current_section) {
-				this.current_section = section;
-
-				let section_name = section_names[section];
-
-				let section_html = document.createElement('div');
-				section_html.className = 'section ' + section_name.toLowerCase().replace(' ', '-');
-				section_html.innerHTML = `<span>${section_name}</span>`;
-
-				this.container.appendChild(section_html);
-			}
-
-			this.container.appendChild(r.render());
-		});
-
-		function get_section_from_date(timestamp: number): number {
-			const now = Date.now();
-			const day = 1000 * 60 * 60 * 24;
-
-			// Last Year
-			if (timestamp < now - (day * 365 * 2)) return 6;
-
-			// This Year
-			if (timestamp < now - (day * 365 * 2)) return 5;
-
-			// Last Month
-			if (timestamp < now - (day * 30 * 2)) return 4;
-
-			// This Month
-			if (timestamp < now - (day * 30)) return 3;
-
-			// This Week
-			if (timestamp < now - (day * 7)) return 2;
-
-			// Yesterday
-			if (timestamp < now - day) return 1;
-
-			return 0;
-		}
 	}
 
 	public add_sort_render_rows() {
