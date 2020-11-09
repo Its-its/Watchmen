@@ -129,6 +129,8 @@ export default class BackgroundProcess {
 				}
 
 				if (update.new_watches != 0) {
+					new Notification(`Received ${update.new_watches} new watch update(s).`);
+
 					send_get_watcher_list((_, resp) => {
 						this.watching_listeners = resp!.items;
 						console.log('Watching:', resp);
@@ -219,7 +221,7 @@ export default class BackgroundProcess {
 		let alertable = new_items.filter(i => i.alert);
 
 		if (alertable.length != 0 && this.has_notification_perms()) {
-			new Notification(`Received ${alertable.length} new items.`)
+			new Notification(`Received ${alertable.length} new items.`);
 		}
 	}
 

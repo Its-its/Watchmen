@@ -123,14 +123,17 @@ impl TelegramState {
 					let mut since = last_grabbed.lock().unwrap();
 
 					if since.is_some() {
-						if let Ok(count) = objects::get_item_count_since(*since.as_ref().unwrap(), &conn) {
+						let mut last_ran = *since.as_ref().unwrap();
+
+						// Feed Items
+						if let Ok(count) = objects::get_item_count_since(last_ran, &conn) {
 							if count != 0 {
 								if let Ok(items) = objects::get_items_in_range(None, count, 0, &conn) {
 									{ // Update last grabbed (ensuring newest first)
 										let mut newest_time: Vec<i64> = items.iter().map(|i| i.date).collect();
 										newest_time.sort_by(|a, b| b.partial_cmp(a).unwrap());
 
-										*since = Some(newest_time[0]);
+										last_ran = newest_time[0];
 									}
 
 									let filtered = match filter_items(&items, conn) {
@@ -164,6 +167,47 @@ impl TelegramState {
 								}
 							}
 						}
+
+						// Watching Items
+						if let Ok(count) = objects::get_watch_history_count_since(last_ran, &conn) {
+							if count != 0 {
+								if let Ok(items) = objects::get_watch_history_since(None, count, 0, &conn) {
+									{ // Update last grabbed (ensuring newest first)
+										let mut newest_time: Vec<i64> = items.iter().map(|i| i.date_added).collect();
+										newest_time.sort_by(|a, b| b.partial_cmp(a).unwrap());
+
+										if last_ran < newest_time[0] {
+											last_ran = newest_time[0];
+										}
+									}
+
+									if !items.is_empty() {
+										rt.block_on(async {
+											for item in items {
+												let watcher = objects::get_watcher_by_id(item.watch_id, conn).unwrap();
+												let send = api.send(
+													SendMessage::new(
+														chat_ref.as_ref().unwrap(),
+														format!(
+															"{}\n{}\n{}",
+															watcher.title,
+															item.value,
+															watcher.url
+														)
+													)
+												).await;
+
+												if let Err(e) = send {
+													eprintln!("{:?}", e);
+												}
+											}
+										});
+									}
+								}
+							}
+						}
+
+						*since = Some(last_ran);
 					}
 				}
 
