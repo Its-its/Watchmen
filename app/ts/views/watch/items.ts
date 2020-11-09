@@ -126,12 +126,9 @@ export class Table {
 
 	viewing_watcher = <Nullable<number>>null;
 
-	row_ids: number[] = [];
 	rows: TableItem[] = [];
 
-	// class for infinite-scroll or page buttons
-
-	// filters = [];
+	current_section = -1;
 
 	// Set from get_items
 	last_req_amount = 0;
@@ -154,14 +151,14 @@ export class Table {
 		this.last_req_amount = 0;
 		this.last_skip_amount = 0;
 		this.last_total_items = 0;
+		this.current_section = -1;
 		this.waiting_for_more_feeds = false;
-		this.row_ids = [];
 		this.rows = [];
 	}
 
 	public init() {
 		// Set rows. (Otherwise it won't have them if the table loads after the items are grabbed.)
-		this.rows = core.process.watching_listeners.map(i => new TableItem(this, i[0], i[1]));
+		this.regrab();
 	}
 
 	public render(): HTMLDivElement {
@@ -169,22 +166,71 @@ export class Table {
 			this.container.firstChild.remove();
 		}
 
-		this.rows.forEach(r => this.container.appendChild(r.render()));
+		let section_names = [
+			'Today',
+			'Yesterday',
+			'This Week',
+			'This Month',
+			'Last Month',
+			'This Year',
+			'Last Year'
+		];
+
+		this.rows.forEach(r => {
+			let section = get_section_from_date(r.history.date_added * 1000);
+
+			if (section != this.current_section) {
+				this.current_section = section;
+
+				let section_name = section_names[section];
+
+				let section_html = document.createElement('div');
+				section_html.className = 'section ' + section_name.toLowerCase().replace(' ', '-');
+				section_html.innerHTML = `<span>${section_name}</span>`;
+
+				this.container.appendChild(section_html);
+			}
+
+			this.container.appendChild(r.render());
+		});
+
+		function get_section_from_date(timestamp: number): number {
+			const now = Date.now();
+			const day = 1000 * 60 * 60 * 24;
+
+			// Last Year
+			if (timestamp < now - (day * 365 * 2)) return 6;
+
+			// This Year
+			if (timestamp < now - (day * 365 * 2)) return 5;
+
+			// Last Month
+			if (timestamp < now - (day * 30 * 2)) return 4;
+
+			// This Month
+			if (timestamp < now - (day * 30)) return 3;
+
+			// This Week
+			// if (timestamp < now - (day * 7)) return 2;
+
+			// Yesterday
+			// if (timestamp < now - day) return 1;
+
+			return 2;
+		}
 
 		return this.container;
 	}
 
-	public add_sort_render_rows() {
+	public regrab() {
+		// Set rows. (Otherwise it won't have them if the table loads after the items are grabbed.)
 		this.rows = core.process.watching_listeners.map(i => new TableItem(this, i[0], i[1]));
-
-		this.rows.sort(this.sort_item_func('date_added', 1));
-		this.row_ids.sort();
-
-		this.render();
+		this.rows.sort((a, b) => b.history.date_added - a.history.date_added);
 	}
 
-	public sort_item_func(sort_method: 'date_added', sort_order: 1 | -1): (a: TableItem, b: TableItem) => number {
-		return (a, b) => (b.history[sort_method] - a.history[sort_method]) * sort_order;
+	public add_sort_render_rows() {
+		this.regrab();
+		this.render();
 	}
 
 	public can_continue_scroll_up(): boolean {

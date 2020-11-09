@@ -646,6 +646,12 @@ pub fn get_watcher_by_url(f_url: &str, conn: &SqliteConnection) -> QueryResult<W
 	watching.filter(url.eq(f_url)).get_result(conn)
 }
 
+pub fn get_watcher_by_id(f_id: QueryId, conn: &SqliteConnection) -> QueryResult<Watching> {
+	use self::watching::dsl::*;
+
+	watching.filter(id.eq(f_id)).get_result(conn)
+}
+
 pub fn remove_watcher(f_id: QueryId, rem_stored: bool, conn: &SqliteConnection) -> QueryResult<usize> {
 	if rem_stored {
 		use self::watch_history::dsl::*;
@@ -777,6 +783,28 @@ pub fn get_last_watch_history_for(f_watch_id: QueryId, conn: &SqliteConnection) 
 	.get_results(conn)
 }
 
+pub fn get_watch_history_since(f_watch_id: Option<QueryId>, item_count: i64, skip_count: i64, conn: &SqliteConnection) -> QueryResult<Vec<WatchHistory>> {
+	use self::watch_history::dsl::*;
+
+	match f_watch_id {
+		Some(f_watch_id) => {
+			self::watch_history::table
+				.filter(watch_id.eq(f_watch_id))
+				.limit(item_count)
+				.offset(skip_count)
+				.order(date_added.desc())
+				.load(conn)
+		}
+
+		None => {
+			self::watch_history::table
+				.limit(item_count)
+				.offset(skip_count)
+				.order(date_added.desc())
+				.load(conn)
+		}
+	}
+}
 
 
 pub fn create_last_watch_history(item: &NewWatchHistory, conn: &SqliteConnection) -> QueryResult<usize> {
