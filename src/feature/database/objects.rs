@@ -27,7 +27,7 @@ use super::models::{
 };
 use crate::state::CoreState;
 use crate::request::feeds::custom::{CustomItem as CustomItemBase, FoundItem as CustomFoundItem};
-use crate::request::watcher::WatchParserItem as WatchParserItemBase;
+use crate::request::watcher::{self, WatchParserItem as WatchParserItemBase};
 
 
 
@@ -757,6 +757,28 @@ pub fn get_watching_items(conn: &SqliteConnection) -> QueryResult<Vec<WatchParse
 
 
 // Watch History
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct WatchHistoryBase {
+	pub id: QueryId,
+
+	pub watch_id: QueryId,
+	pub items: Vec<watcher::FoundItem>,
+
+	pub date_added: i64
+}
+
+impl From<WatchHistory> for WatchHistoryBase {
+	fn from(history: WatchHistory) -> Self {
+		WatchHistoryBase {
+			id: history.id,
+
+			watch_id: history.watch_id,
+			items: serde_json::from_str(&history.items).unwrap(),
+
+			date_added: history.date_added
+		}
+	}
+}
 
 pub fn get_watch_history_count_since(since: i64, conn: &SqliteConnection) -> QueryResult<i64> {
 	self::watch_history::table
@@ -765,25 +787,28 @@ pub fn get_watch_history_count_since(since: i64, conn: &SqliteConnection) -> Que
 		.get_result(conn)
 }
 
-pub fn get_last_watch_history(f_watch_id: QueryId, conn: &SqliteConnection) -> QueryResult<WatchHistory> {
+pub fn get_last_watch_history(f_watch_id: QueryId, conn: &SqliteConnection) -> QueryResult<Option<WatchHistoryBase>> {
 	use self::watch_history::dsl::*;
 
 	watch_history
 	.filter(watch_id.eq(f_watch_id))
 	.order_by(date_added.desc())
-	.get_result(conn)
+	.get_result::<WatchHistory>(conn)
+	.map(WatchHistoryBase::from)
+	.optional()
 }
 
-pub fn get_last_watch_history_for(f_watch_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<WatchHistory>> {
+pub fn get_last_watch_history_for(f_watch_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<WatchHistoryBase>> {
 	use self::watch_history::dsl::*;
 
 	watch_history
 	.filter(watch_id.eq(f_watch_id))
 	.order_by(date_added.desc())
-	.get_results(conn)
+	.get_results::<WatchHistory>(conn)
+	.map(|i| i.into_iter().map(WatchHistoryBase::from).collect())
 }
 
-pub fn get_watch_history_since(f_watch_id: Option<QueryId>, item_count: i64, skip_count: i64, conn: &SqliteConnection) -> QueryResult<Vec<WatchHistory>> {
+pub fn get_watch_history_since(f_watch_id: Option<QueryId>, item_count: i64, skip_count: i64, conn: &SqliteConnection) -> QueryResult<Vec<WatchHistoryBase>> {
 	use self::watch_history::dsl::*;
 
 	match f_watch_id {
@@ -793,7 +818,8 @@ pub fn get_watch_history_since(f_watch_id: Option<QueryId>, item_count: i64, ski
 				.limit(item_count)
 				.offset(skip_count)
 				.order(date_added.desc())
-				.load(conn)
+				.load::<WatchHistory>(conn)
+				.map(|i| i.into_iter().map(WatchHistoryBase::from).collect())
 		}
 
 		None => {
@@ -801,7 +827,8 @@ pub fn get_watch_history_since(f_watch_id: Option<QueryId>, item_count: i64, ski
 				.limit(item_count)
 				.offset(skip_count)
 				.order(date_added.desc())
-				.load(conn)
+				.load::<WatchHistory>(conn)
+				.map(|i| i.into_iter().map(WatchHistoryBase::from).collect())
 		}
 	}
 }

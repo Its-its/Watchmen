@@ -36,14 +36,22 @@ pub struct WatchParserItem {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct MatchParser {
-	pub value: ParseOpts
+	pub items: String,
+
+	/// Value is used to check for changes.
+	pub value: ParseOpts,
+
+	pub title: Option<ParseOpts>,
+	pub link: Option<ParseOpts>,
 }
 
 
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct FoundItem {
-	pub value: String
+	pub value: String,
+	pub title: Option<String>,
+	pub link: Option<String>,
 }
 
 
@@ -181,7 +189,7 @@ impl RequestManager {
 
 
 
-pub fn get_from_url(url: &str, conn: &diesel::SqliteConnection) -> Result<FoundItem> {
+pub fn get_from_url(url: &str, conn: &diesel::SqliteConnection) -> Result<Vec<FoundItem>> {
 	let found = get_watch_parser_from_url(Url::parse(url).unwrap(), conn)?;
 
 	// turn found into SearchParser
@@ -189,20 +197,39 @@ pub fn get_from_url(url: &str, conn: &diesel::SqliteConnection) -> Result<FoundI
 	get_from_url_parser(url, &found.match_opts)
 }
 
-pub fn get_from_url_parser(url: &str, parser: &MatchParser) -> Result<FoundItem> {
+pub fn get_from_url_parser(url: &str, parser: &MatchParser) -> Result<Vec<FoundItem>> {
 	let mut resp = reqwest::get(url)?;
 
 	let doc = xpath::parse_doc(&mut resp);
 
-	let value = doc.evaluate(&parser.value.xpath)
-		.map(|v| v.vec_string())
-		.transpose()?
-		.and_then(|v| v.first().cloned())
-		.ok_or_else(|| Error::Other("Unable Value.".into()))?;
+	Ok(doc.evaluate(&parser.items)
+		.ok_or_else(|| Error::Other("Xpath Evaluation Error!".into()))?
+		.into_iterset()?
+		.map::<Result<FoundItem>, _>(|node| {
+			// Find value.
+			let value = parser.value.evaluate(&doc, node.clone())
+				.map(|v| v.vec_string())
+				.transpose()?
+				.and_then(|v| v.first().cloned())
+				.ok_or_else(|| Error::Other("Unable to find Value.".into()))
+				.and_then(|v| parser.value.parse(v))
+				.map(|v| v.trim().escape_default().to_string())?;
 
-	Ok(FoundItem {
-		value: parser.value.parse(value)?.trim().to_string()
-	})
+			Ok(FoundItem {
+				value: parser.value.parse(value)?.trim().to_string(),
+				title: None,
+				link: None
+			})
+		})
+		.filter_map(|i| {
+			if i.is_err() {
+				println!("EVALUATION ERROR: {:?}", i);
+			}
+
+			i.ok()
+		})
+		.collect()
+	)
 }
 
 
@@ -217,21 +244,32 @@ pub fn request_feed(feed: Watching, conn: &SqliteConnection) -> WatcherResult {
 		insert: None
 	};
 
-	let new_item = get_from_url(&feed.url, conn)?;
+	let new_items = get_from_url(&feed.url, conn)?;
 
-	let last_item = get_last_watch_history(feed.id, conn)?;
+	if let Some(last_item) = get_last_watch_history(feed.id, conn)? {
+		// Anything in the new_items is not in the last_items?
+		if new_items.iter().any(|v| !last_item.items.contains(v)) {
+			println!(" | New item Value found!");
 
-	if new_item.value != last_item.value {
-		println!(" | New item Value found!");
+			feed_res.insert = Some(NewWatchHistory {
+				watch_id: feed.id,
+				items: serde_json::to_string(&new_items).unwrap(),
 
-		feed_res.insert = Some(NewWatchHistory {
+				date_added: chrono::Utc::now().timestamp()
+			});
+		} else {
+			println!(" | Unchanged.");
+		}
+	} else {
+		// No last watch history? Create it.
+		create_last_watch_history(&NewWatchHistory {
 			watch_id: feed.id,
-			value: new_item.value,
+			items: serde_json::to_string(&new_items).unwrap(),
 
 			date_added: chrono::Utc::now().timestamp()
-		});
-	} else {
-		println!(" | Unchanged.");
+		}, conn)?;
+
+		println!("Creating watch history for feed id: {}", feed.id);
 	}
 
 	feed_res.duration = feed_res.start_time.elapsed();

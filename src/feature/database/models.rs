@@ -314,7 +314,7 @@ pub struct WatchHistory {
 	pub id: QueryId,
 
 	pub watch_id: QueryId,
-	pub value: String,
+	pub items: String,
 
 	pub date_added: i64
 }
@@ -323,7 +323,7 @@ pub struct WatchHistory {
 #[table_name = "watch_history"]
 pub struct NewWatchHistory {
 	pub watch_id: QueryId,
-	pub value: String,
+	pub items: String,
 
 	pub date_added: i64
 }

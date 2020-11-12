@@ -128,7 +128,7 @@ table! {
 
 		watch_id -> Integer,
 
-		value -> Text,
+		items -> Text,
 
 		date_added -> BigInt,
 	}

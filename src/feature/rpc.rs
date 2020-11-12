@@ -2,6 +2,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::Filter;
 use crate::request::feeds::custom::{UpdateableCustomItem, CustomItem};
+use crate::request::watcher::MatchParser;
 
 use super::models::{
 	QueryId,
@@ -14,13 +15,13 @@ use super::models::{
 	NewCategory,
 	NewFeedCategory,
 	EditCategory,
-	NewWatching, EditWatching, Watching,
-	WatchHistory
+	NewWatching, EditWatching, Watching
 };
 
 use super::objects::{
 	NewFilterModel,
-	FilterGrouping
+	FilterGrouping,
+	WatchHistoryBase
 };
 
 
@@ -147,8 +148,11 @@ pub enum Front2CoreNotification {
 		id: QueryId
 	},
 
+	// ================
+	// === Watching ===
+	// ================
 
-	// Watching
+	// Watcher
 
 	WatcherList(Empty),
 
@@ -167,6 +171,17 @@ pub enum Front2CoreNotification {
 		id: QueryId,
 		editing: EditWatching
 	},
+
+	//
+
+
+	// Tests
+
+	TestWatcher {
+		url: String,
+
+		parser: Option<MatchParser>
+	}
 }
 
 
@@ -291,7 +306,7 @@ pub enum Core2FrontNotification {
 
 
 	WatcherList {
-		items: Vec<(Watching, WatchHistory)>
+		items: Vec<(Watching, Option<WatchHistoryBase>)>
 	},
 
 	NewWatcher {

@@ -191,7 +191,13 @@ impl TelegramState {
 														format!(
 															"{}\n{}\n{}",
 															watcher.title,
-															item.value,
+															if item.items.len() == 1 {
+																item.items.first()
+																.map(|i| i.value.clone())
+																.unwrap_or_default()
+															} else {
+																format!("{} items", item.items.len())
+															},
 															watcher.url
 														)
 													)

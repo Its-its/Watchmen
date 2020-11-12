@@ -397,7 +397,7 @@ impl WeakFeederCore {
 					.into_iter()
 					.map(|w| {
 						let id = w.id;
-						(w, objects::get_last_watch_history(id, conn).unwrap())
+						(w, objects::get_last_watch_history(id, conn).ok().flatten())
 					})
 					.collect();
 
@@ -421,7 +421,7 @@ impl WeakFeederCore {
 
 					objects::create_last_watch_history(&models::NewWatchHistory {
 						watch_id: new_watcher.id,
-						value: new_item.value,
+						items: serde_json::to_string(&new_item).unwrap(),
 
 						date_added: chrono::Utc::now().timestamp()
 					}, conn)?;
@@ -450,28 +450,18 @@ impl WeakFeederCore {
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::EditWatcher { affected, listener: editing });
 			}
 
+			// Test
+			Front2CoreNotification::TestWatcher { url, parser } => {
+				if let Some(parser) = parser {
+					let result = watcher::get_from_url_parser(&url, &parser)?;
 
-			// Front2CoreNotification::WatchingHistoryList { watch_id, item_count, skip_count } => {
-			// 	println!("WatchingItemList");
+					println!("{:?}", result);
+				} else {
+					println!("No parser...");
+				}
 
-			// 	let url = "https://www.bestbuy.com/site/wd-easystore-14tb-external-usb-3-0-hard-drive-black/6425303.p?skuId=6425303";
-			// 	let xpath = r#"//div[@class="priceView-hero-price priceView-customer-price"]/span[1]/text()"#;
-
-			// 	use xpath::{Node, Document, Value};
-			// 	use crate::Error;
-			// 	use crate::request::feeds::custom::{ParseOpts, Parse};
-
-			// 	let parser = crate::request::watcher::MatchParser {
-			// 		value: ParseOpts {
-			// 			xpath: xpath.to_string(),
-			// 			parse_type: Parse::None
-			// 		}
-			// 	};
-
-			// 	let result = crate::request::watcher::get_from_url_parser(url, &parser)?;
-
-			// 	println!("{:?}", result);
-			// }
+				//
+			}
 		}
 
 		Ok(())

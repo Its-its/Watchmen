@@ -183,7 +183,7 @@ impl Connection {
 				id               INTEGER PRIMARY KEY,
 
 				watch_id         INTEGER NOT NULL,
-				value            TEXT NOT NULL,
+				items            TEXT NOT NULL,
 
 				date_added       LONG NOT NULL
 			)"
