@@ -21,8 +21,39 @@ type TypeConf = {
 	invalid: boolean
 };
 
+const ITEMS: ItemTypes[] = [ 'items', 'value', 'title', 'link' ];
+
+// TODO: Cannot use same xpath on two different searches.
 
 export default class EditorView extends View {
+	custom_url = document.createElement('input');
+	custom_name = document.createElement('input');
+	custom_desc = document.createElement('input');
+	custom_cont_url = document.createElement('input');
+
+	iframe = document.createElement('iframe');
+
+	itemValues: ItemInfoSearch[] = [];
+	mainItem: Nullable<MainItemsSearch> = null;
+
+	compiled: {
+		[name: string]: TypeConf;
+	} = {};
+
+	constructor() {
+		super();
+
+		// Create Compiled items.
+		ITEMS.forEach(i => {
+			this.compiled[i] = {
+				found: [],
+				xpath: null,
+				parseType: NULL_ENUM(),
+				invalid: false
+			};
+		});
+	}
+
 	on_init() {
 		this.render_sidebar();
 		this.render_editor();
@@ -63,7 +94,7 @@ export default class EditorView extends View {
 		nav_bar_list.className = 'tree';
 		nav_items.appendChild(nav_bar_list);
 
-		send_get_watch_parser_list((err, resp) => {
+		send_get_watch_parser_list((_, resp) => {
 			for (let i = 0; i < resp!.items.length; i++) {
 				const parser = resp!.items[i];
 
@@ -76,9 +107,7 @@ export default class EditorView extends View {
 				title.innerText = parser.title;
 				item.appendChild(title);
 
-				item.addEventListener('click', () => {
-					console.log(parser);
-				})
+				item.addEventListener('click', () => this.load(parser));
 
 				nav_bar_list.appendChild(item);
 			}
@@ -96,43 +125,12 @@ export default class EditorView extends View {
 		iframe_container.className = 'window';
 		container.appendChild(iframe_container);
 
-		const iframe = document.createElement('iframe');
-		iframe.className = 'frame';
-		iframe.setAttribute('sandbox', 'allow-same-origin');
-		iframe_container.appendChild(iframe);
+		this.iframe.className = 'frame';
+		this.iframe.setAttribute('sandbox', 'allow-same-origin');
+		iframe_container.appendChild(this.iframe);
 
 		const xpath_items = document.createElement('div');
 		container.appendChild(xpath_items);
-
-		// Multiple Feed Items Selection
-
-		const ITEMS: ItemTypes[] = [ 'items', 'value', 'title', 'link' ];
-
-		let compiled: {
-			[name: string]: TypeConf;
-		} = {};
-
-		ITEMS.forEach(i => {
-			compiled[i] = {
-				found: [],
-				xpath: null,
-				parseType: NULL_ENUM(),
-				invalid: false
-			};
-		});
-
-		function resetAll() {
-			for (let item in compiled) {
-				if (compiled.hasOwnProperty(item)) {
-					let element = compiled[item];
-
-					element.found.forEach(i => i.getElement().classList.remove('editor-border-red'));
-					element.found = [];
-					element.xpath = null;
-					element.invalid = true;
-				}
-			}
-		}
 
 		// Custom Site Info
 		let custom_cont = document.createElement('div');
@@ -145,11 +143,9 @@ export default class EditorView extends View {
 		site_url.innerText = 'Website URL';
 		custom_cont.appendChild(site_url);
 
-		let custom_url = document.createElement('input');
-		custom_url.value = 'https://www.okayamadenim.com/collections/sale';
-		custom_url.placeholder = 'URL';
-		custom_url.type = 'text';
-		custom_cont.appendChild(custom_url);
+		this.custom_url.placeholder = 'Website Test URL';
+		this.custom_url.type = 'text';
+		custom_cont.appendChild(this.custom_url);
 
 		let custom_url_preview = document.createElement('div');
 		custom_url_preview.className = 'button';
@@ -157,11 +153,11 @@ export default class EditorView extends View {
 		custom_cont.appendChild(custom_url_preview);
 
 		custom_url_preview.addEventListener('click', () => {
-			resetAll();
+			this.resetAllCompiled();
 
-			send_get_webpage_source(custom_url.value, (err, resp) => {
-				if (iframe.contentWindow != null) {
-					const iframe_doc = iframe.contentWindow.document;
+			send_get_webpage_source(this.custom_url.value, (err, resp) => {
+				if (this.iframe.contentWindow != null) {
+					const iframe_doc = this.iframe.contentWindow.document;
 
 					// Write webpage to iframe document
 					iframe_doc.write(resp!.html);
@@ -173,84 +169,46 @@ export default class EditorView extends View {
 			});
 		});
 
-
 		const site_title = document.createElement('h3');
 		site_title.style.marginTop = '5px';
 		site_title.style.marginBottom = '0';
 		site_title.innerText = 'Custom Site';
 		custom_cont.appendChild(site_title);
 
-		let custom_name = document.createElement('input');
-		custom_name.placeholder = 'Custom Website Title';
-		custom_name.type = 'text';
-		custom_cont.appendChild(custom_name);
+
+		this.custom_name.placeholder = 'Custom Website Title';
+		this.custom_name.type = 'text';
+		custom_cont.appendChild(this.custom_name);
 
 		custom_cont.appendChild(document.createElement('br'));
 
-		let custom_desc = document.createElement('input');
-		custom_desc.placeholder = 'Custom Website Desc.';
-		custom_desc.type = 'text';
-		custom_cont.appendChild(custom_desc);
+		this.custom_desc.placeholder = 'Custom Website Desc.';
+		this.custom_desc.type = 'text';
+		custom_cont.appendChild(this.custom_desc);
 
 		custom_cont.appendChild(document.createElement('br'));
 
-		let custom_cont_url = document.createElement('input');
-		custom_cont_url.placeholder = 'Contains URL';
-		custom_cont_url.type = 'text';
-		custom_cont.appendChild(custom_cont_url);
+		this.custom_cont_url.placeholder = 'Contains URL';
+		this.custom_cont_url.type = 'text';
+		custom_cont.appendChild(this.custom_cont_url);
 
-		const subItems = [
-			new ItemInfoSearch('Watching Value', 'value', iframe, compiled),
-			new ItemInfoSearch('Title', 'title', iframe, compiled),
-			new ItemInfoSearch('Link', 'link', iframe, compiled)
+		this.itemValues = [
+			new ItemInfoSearch('Watching Value', 'value', this.iframe, this.compiled),
+			new ItemInfoSearch('Title', 'title', this.iframe, this.compiled),
+			new ItemInfoSearch('Link', 'link', this.iframe, this.compiled)
 		];
 
 		// Items Search
-		const mainItem = new MainItemsSearch(subItems, iframe, compiled).render(xpath_items);
+		this.mainItem = new MainItemsSearch(this.itemValues, this.iframe, this.compiled)
+		this.mainItem.render(xpath_items);
 
 		// Item Info
 		const item_info_cont = document.createElement('div');
 		item_info_cont.setAttribute('style', 'margin-left: 40px;');
 		xpath_items.appendChild(item_info_cont);
 
-		// TODO: Cannot use same xpath on two different searches.
+		this.itemValues.forEach(i => i.render(item_info_cont));
 
-		subItems.forEach(i => i.render(item_info_cont));
-
-		function compileParser() {
-			let rustify: ModelWatchParser = {
-				title: custom_name.value,
-				description: custom_desc.value,
-				match_url: custom_cont_url.value,
-
-				match_opts: {
-					items: compiled.items.xpath!
-				}
-			};
-
-			for (let name in compiled) {
-				if (compiled.hasOwnProperty(name) && name != 'items') {
-					let values = compiled[name];
-
-					// if (values.invalid) {
-					// 	return console.log('Invalid:', values);
-					// }
-
-					if ((values.xpath == null || values.xpath == 'None') && values.parseType.name == 'None') {
-						rustify.match_opts[name] = null;
-					} else {
-						rustify.match_opts[name] = {
-							xpath: values.xpath!,
-							parse_type: values.parseType.toJSON()
-						};
-					}
-				}
-			}
-
-			return rustify;
-		}
-
-		//
 		const update_button = document.createElement('div');
 		update_button.style.float = 'left';
 		update_button.innerText = 'Update';
@@ -258,7 +216,7 @@ export default class EditorView extends View {
 		container.appendChild(update_button);
 
 		update_button.addEventListener('click', () => {
-			const rustify = compileParser();
+			const rustify = this.compileParser();
 			const obj = rustify_object(rustify);
 
 			console.log(JSON.stringify(rustify, null, 4));
@@ -278,77 +236,110 @@ export default class EditorView extends View {
 		container.appendChild(test_button);
 
 		test_button.addEventListener('click', () => {
-			const rustify = compileParser();
+			const rustify = this.compileParser();
 			const obj = rustify_object(rustify.match_opts);
 
-			send_test_watcher(custom_url.value, obj, (err, value, method) => {
+			send_test_watcher(this.custom_url.value, obj, (err, value, method) => {
 				// TODO: Popup
 				console.log(err);
 				console.log(method);
 				console.log(value);
 			});
 		});
+	}
 
-		load({
-			"title": "Okayama Denim",
-			"description": "Parser for OD..",
-			"match_url": "*.okayamadenim.com",
-			"match_opts": {
-				"items": `//div[contains(@class, "product-list")]/div/div[@class="product-wrap"]`,
-				"value": {
-					"xpath": `.//span[@class="money"]/span/text()`,
-					"parse_type": "None"
-				},
-				"title": {
-					"xpath": `.//span[@class="title"]/text()`,
-					"parse_type": "None"
-				},
-				"link": {
-					"xpath": `./a/@href`,
-					"parse_type": "None"
+	resetAllCompiled(parseType = false) {
+		for (let item in this.compiled) {
+			if (this.compiled.hasOwnProperty(item)) {
+				let element = this.compiled[item];
+
+				element.found.forEach(i => i.getElement().classList.remove('editor-border-red'));
+				element.found = [];
+				element.xpath = null;
+				element.invalid = true;
+
+				if (parseType) {
+					element.parseType = NULL_ENUM();
 				}
+			}
+		}
+	}
+
+	compileParser() {
+		let rustify: ModelWatchParser = {
+			title: this.custom_name.value,
+			description: this.custom_desc.value,
+			match_url: this.custom_cont_url.value,
+
+			match_opts: {
+				items: this.compiled.items.xpath!
+			}
+		};
+
+		for (let name in this.compiled) {
+			if (this.compiled.hasOwnProperty(name) && name != 'items') {
+				let values = this.compiled[name];
+
+				// if (values.invalid) {
+				// 	return console.log('Invalid:', values);
+				// }
+
+				if ((values.xpath == null || values.xpath == 'None') && values.parseType.name == 'None') {
+					rustify.match_opts[name] = null;
+				} else {
+					rustify.match_opts[name] = {
+						xpath: values.xpath!,
+						parse_type: values.parseType.toJSON()
+					};
+				}
+			}
+		}
+
+		return rustify;
+	}
+
+	load(opts: ModelWatchParser) {
+		this.resetAllCompiled(true);
+
+		this.custom_url.value = '';
+		this.custom_name.value = opts.title;
+		this.custom_desc.value = opts.description;
+		this.custom_cont_url.value = opts.match_url;
+
+		for (const key in opts.match_opts) {
+			if (opts.match_opts.hasOwnProperty(key)) {
+				const config = opts.match_opts[key];
+
+				// "items" is a string. Not object.
+				if (key == 'items') {
+					// @ts-ignore
+					this.mainItem.setValue(config);
+				} else {
+					let found = this.itemValues.find(i => i.config_name == key);
+
+					if (found != null) {
+						// @ts-ignore
+						found.load(config);
+					}
+				}
+
+			}
+		}
+
+		send_get_webpage_source(this.custom_url.value, (err, resp) => {
+			if (this.iframe.contentWindow != null) {
+				const iframe_doc = this.iframe.contentWindow.document;
+
+				// Write webpage to iframe document
+				iframe_doc.write(resp!.html);
+
+				let style = document.createElement('style');
+				style.innerText = CUSTOM_IFRAME_CSS;
+				iframe_doc.body.appendChild(style);
+
+				setTimeout(() => this.mainItem!.findItems(), 1000);
 			}
 		});
-
-		function load(opts: ModelWatchParser) {
-			custom_name.value = opts.title;
-			custom_desc.value = opts.description;
-			custom_cont_url.value = opts.match_url;
-
-			for (const key in opts.match_opts) {
-				if (opts.match_opts.hasOwnProperty(key)) {
-					const config = opts.match_opts[key];
-
-					if (key == 'items') {
-						// @ts-ignore
-						mainItem.setValue(config);
-					} else {
-						let found = subItems.find(i => i.config_name == key);
-
-						if (found != null) {
-							// @ts-ignore
-							found.load(config);
-						}
-					}
-
-				}
-			}
-
-			send_get_webpage_source(custom_url.value, (err, resp) => {
-				if (iframe.contentWindow != null) {
-					const iframe_doc = iframe.contentWindow.document;
-
-					// Write webpage to iframe document
-					iframe_doc.write(resp!.html);
-
-					let style = document.createElement('style');
-					style.innerText = CUSTOM_IFRAME_CSS;
-					iframe_doc.body.appendChild(style);
-
-					setTimeout(() => mainItem.findItems(), 1000);
-				}
-			});
-		}
 	}
 }
 
