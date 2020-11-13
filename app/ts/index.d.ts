@@ -234,9 +234,12 @@ interface WatcherListResponse {
 	items: [ModelWatcher, ModelWatchHistory][];
 }
 
-
 interface WatchParserListResponse {
 	items: ModelWatchParser[];
+}
+
+interface WatchHistoryListResponse {
+	items: ModelWatchHistory[];
 }
 
 interface ModelWatcher {

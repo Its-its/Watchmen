@@ -480,6 +480,14 @@ impl WeakFeederCore {
 				ctx.respond_with(msg_id_opt, new_item);
 			}
 
+
+			// History
+			Front2CoreNotification::WatchHistoryList { watch_id, item_count, skip_count } => {
+				ctx.respond_with(msg_id_opt, Core2FrontNotification::WatchHistoryList {
+					items: objects::get_watch_history_list(watch_id, item_count, skip_count, conn)?
+				});
+			}
+
 			// Test
 			Front2CoreNotification::TestWatcher { url, parser } => {
 				if let Some(parser) = parser {

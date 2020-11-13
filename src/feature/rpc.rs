@@ -180,12 +180,21 @@ pub enum Front2CoreNotification {
 		editing: EditWatching
 	},
 
+	// Parser
 	WatchParserList(Empty),
 
 	NewWatchParser {
 		item: WatchParserItem
 	},
 
+	// History
+	WatchHistoryList {
+		watch_id: Option<QueryId>,
+		#[serde(default = "default_items")]
+		item_count: i64,
+		#[serde(default)]
+		skip_count: i64
+	},
 
 	// Tests
 
@@ -335,7 +344,7 @@ pub enum Core2FrontNotification {
 		affected: usize
 	},
 
-	//
+	// Watch Parser
 	WatchParserList {
 		items: Vec<WatchParserItem>
 	},
@@ -343,6 +352,11 @@ pub enum Core2FrontNotification {
 	NewWatchParser {
 		item: WatchParserItem,
 		affected: usize
+	},
+
+	// Watch History
+	WatchHistoryList {
+		items: Vec<WatchHistoryBase>
 	},
 
 	// Test

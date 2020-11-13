@@ -798,7 +798,7 @@ pub fn get_last_watch_history(f_watch_id: QueryId, conn: &SqliteConnection) -> Q
 	.optional()
 }
 
-pub fn get_last_watch_history_for(f_watch_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<WatchHistoryBase>> {
+pub fn get_last_watch_history_list(f_watch_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<WatchHistoryBase>> {
 	use self::watch_history::dsl::*;
 
 	watch_history
@@ -808,7 +808,7 @@ pub fn get_last_watch_history_for(f_watch_id: QueryId, conn: &SqliteConnection) 
 	.map(|i| i.into_iter().map(WatchHistoryBase::from).collect())
 }
 
-pub fn get_watch_history_since(f_watch_id: Option<QueryId>, item_count: i64, skip_count: i64, conn: &SqliteConnection) -> QueryResult<Vec<WatchHistoryBase>> {
+pub fn get_watch_history_list(f_watch_id: Option<QueryId>, item_count: i64, skip_count: i64, conn: &SqliteConnection) -> QueryResult<Vec<WatchHistoryBase>> {
 	use self::watch_history::dsl::*;
 
 	match f_watch_id {

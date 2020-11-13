@@ -9,9 +9,9 @@ import EditorView from './editor';
 import core, { create_popup } from '../../core';
 
 import {
-	send_get_watcher_list,
 	send_create_watcher,
-	send_get_watch_parser_list
+	send_get_watch_parser_list,
+	send_get_watch_history_list
 } from '../../socket';
 
 export default class WatchItemsView extends View {
@@ -103,7 +103,8 @@ export default class WatchItemsView extends View {
 	}
 
 	on_connection_open() {
-		//
+		// TODO: Change on_connection_open() to activate after base processes have been processed.
+		setTimeout(() => this.table.regrab(), 1500);
 	}
 
 	on_open() {
@@ -321,17 +322,36 @@ export class TableItem {
 				let showing_content = this.table.showing_item_content;
 
 				if (showing_content != null) {
-					this.container.removeChild(showing_content);
-					this.table.showing_item_content = null;
-				} else {
-					showing_content = document.createElement('div');
-					showing_content.style.padding = '10px';
-					showing_content.innerText = 'TODO';
-
-					this.container.appendChild(showing_content);
-
-					this.table.showing_item_content = showing_content;
+					if (showing_content.parentElement != this.container) {
+						showing_content.remove();
+						this.table.showing_item_content = null;
+					} else {
+						showing_content.remove();
+						this.table.showing_item_content = null;
+						return;
+					}
 				}
+
+				showing_content = document.createElement('div');
+				showing_content.style.padding = '10px';
+				showing_content.innerText = 'Loading...';
+
+				send_get_watch_history_list(this.watcher.id!, 0, undefined, (_, resp) => {
+					// No longer showing dropdown OR clicked off item quick enough? Return.
+					if (showing_content == null || showing_content.parentElement != this.container) return;
+
+					let list = resp!.items.map(i => `[${new Date(i.date_added * 1000).toLocaleString()}]: ${i.items[0].value}`);
+
+					if (list.length == 0) {
+						showing_content!.innerText = 'None.';
+					} else {
+						showing_content!.innerText = list.join('\n');
+					}
+				});
+
+				this.container.appendChild(showing_content);
+
+				this.table.showing_item_content = showing_content;
 
 				e.preventDefault();
 				return false;

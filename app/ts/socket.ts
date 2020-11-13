@@ -282,14 +282,14 @@ export function send_get_updates_since(since_timestamp: number, cb?: ResponseFun
 
 /// WATCHING
 
-export function send_get_watching_history_list(watch_id: Nullable<number>, skip_count?: number, item_count?: number, cb?: ResponseFunc<ItemListResponse>) {
+export function send_get_watch_history_list(watch_id: Nullable<number>, skip_count: Optional<number>, item_count: Optional<number>, cb: ResponseFunc<WatchHistoryListResponse>) {
 	let opts = {
 		watch_id,
 		item_count,
 		skip_count
 	};
 
-	app.socket.send('watching_item_list', opts, cb);
+	app.socket.send('watch_history_list', opts, cb);
 }
 
 export function send_get_watcher_list(cb: ResponseFunc<WatcherListResponse>) {

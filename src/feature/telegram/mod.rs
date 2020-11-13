@@ -171,7 +171,7 @@ impl TelegramState {
 						// Watching Items
 						if let Ok(count) = objects::get_watch_history_count_since(last_ran, &conn) {
 							if count != 0 {
-								if let Ok(items) = objects::get_watch_history_since(None, count, 0, &conn) {
+								if let Ok(items) = objects::get_watch_history_list(None, count, 0, &conn) {
 									{ // Update last grabbed (ensuring newest first)
 										let mut newest_time: Vec<i64> = items.iter().map(|i| i.date_added).collect();
 										newest_time.sort_by(|a, b| b.partial_cmp(a).unwrap());
