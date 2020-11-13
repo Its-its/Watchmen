@@ -234,6 +234,11 @@ interface WatcherListResponse {
 	items: [ModelWatcher, ModelWatchHistory][];
 }
 
+
+interface WatchParserListResponse {
+	items: ModelWatchParser[];
+}
+
 interface ModelWatcher {
 	id?: number;
 

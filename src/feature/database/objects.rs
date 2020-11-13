@@ -745,7 +745,7 @@ pub fn get_watch_parser_from_url(f_url: Url, conn: &SqliteConnection) -> QueryRe
 	)
 }
 
-pub fn get_watching_items(conn: &SqliteConnection) -> QueryResult<Vec<WatchParserItemBase>> {
+pub fn get_watch_parsers(conn: &SqliteConnection) -> QueryResult<Vec<WatchParserItemBase>> {
 	Ok(
 		self::watch_parser::table.load::<WatchParserItem>(conn)?
 		.into_iter()

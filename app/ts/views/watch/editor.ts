@@ -5,7 +5,12 @@ import { parseFromString } from '../../util/time';
 import View from '../index';
 import WatcherView from './items';
 
-import { send_get_webpage_source, send_new_watch_parser, send_test_watcher } from '../../socket';
+import {
+	send_get_webpage_source,
+	send_new_watch_parser,
+	send_test_watcher,
+	send_get_watch_parser_list
+} from '../../socket';
 
 
 type ItemTypes = 'items' | 'value' | 'title' | 'link';
@@ -57,6 +62,27 @@ export default class EditorView extends View {
 		const nav_bar_list = document.createElement('ul');
 		nav_bar_list.className = 'tree';
 		nav_items.appendChild(nav_bar_list);
+
+		send_get_watch_parser_list((err, resp) => {
+			for (let i = 0; i < resp!.items.length; i++) {
+				const parser = resp!.items[i];
+
+				const item = document.createElement('div');
+				item.className = 'tree-item';
+				item.title = parser.description;
+
+				const title = document.createElement('div');
+				title.className = 'tree-item-title';
+				title.innerText = parser.title;
+				item.appendChild(title);
+
+				item.addEventListener('click', () => {
+					console.log(parser);
+				})
+
+				nav_bar_list.appendChild(item);
+			}
+		});
 
 		this.container.appendChild(nav_bar);
 	}

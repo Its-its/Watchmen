@@ -458,6 +458,12 @@ impl WeakFeederCore {
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::EditWatcher { affected, listener: editing });
 			}
 
+			Front2CoreNotification::WatchParserList(..) => {
+				ctx.respond_with(msg_id_opt, Core2FrontNotification::WatchParserList {
+					items: objects::get_watch_parsers(conn)?
+				});
+			}
+
 			Front2CoreNotification::NewWatchParser { item } => {
 				println!("NewWatchParser");
 				println!("{:#?}", item);

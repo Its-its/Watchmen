@@ -180,6 +180,8 @@ pub enum Front2CoreNotification {
 		editing: EditWatching
 	},
 
+	WatchParserList(Empty),
+
 	NewWatchParser {
 		item: WatchParserItem
 	},
@@ -334,6 +336,10 @@ pub enum Core2FrontNotification {
 	},
 
 	//
+	WatchParserList {
+		items: Vec<WatchParserItem>
+	},
+
 	NewWatchParser {
 		item: WatchParserItem,
 		affected: usize

@@ -337,3 +337,7 @@ export function send_new_watch_parser(item: ModelWatchParser, cb: ResponseFunc<C
 		item
 	}, cb);
 }
+
+export function send_get_watch_parser_list(cb: ResponseFunc<WatchParserListResponse>) {
+	app.socket.send('watch_parser_list', {}, cb);
+}
