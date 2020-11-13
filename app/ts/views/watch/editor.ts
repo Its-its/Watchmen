@@ -191,14 +191,7 @@ export default class EditorView extends View {
 
 		subItems.forEach(i => i.render(item_info_cont));
 
-		//
-		const update_button = document.createElement('div');
-		update_button.style.float = 'left';
-		update_button.innerText = 'Update';
-		update_button.className = 'button success';
-		container.appendChild(update_button);
-
-		update_button.addEventListener('click', () => {
+		function compileParser() {
 			let rustify: ModelWatchParser = {
 				title: custom_name.value,
 				description: custom_desc.value,
@@ -228,9 +221,21 @@ export default class EditorView extends View {
 				}
 			}
 
-			console.log(JSON.stringify(rustify, null, 4));
+			return rustify;
+		}
 
-			let obj = rustify_object(rustify);
+		//
+		const update_button = document.createElement('div');
+		update_button.style.float = 'left';
+		update_button.innerText = 'Update';
+		update_button.className = 'button success';
+		container.appendChild(update_button);
+
+		update_button.addEventListener('click', () => {
+			const rustify = compileParser();
+			const obj = rustify_object(rustify);
+
+			console.log(JSON.stringify(rustify, null, 4));
 
 			send_new_watch_parser(obj, (err, value, method) => {
 				// TODO: Notification
@@ -247,35 +252,7 @@ export default class EditorView extends View {
 		container.appendChild(test_button);
 
 		test_button.addEventListener('click', () => {
-			let rustify: ModelWatchParser = {
-				title: custom_name.value,
-				description: custom_desc.value,
-				match_url: custom_cont_url.value,
-
-				match_opts: {
-					items: compiled.items.xpath!
-				}
-			};
-
-			for (let name in compiled) {
-				if (compiled.hasOwnProperty(name) && name != 'items') {
-					let values = compiled[name];
-
-					// if (values.invalid) {
-					// 	return console.log('Invalid:', values);
-					// }
-
-					if ((values.xpath == null || values.xpath == 'None') && values.parseType.name == 'None') {
-						rustify.match_opts[name] = null;
-					} else {
-						rustify.match_opts[name] = {
-							xpath: values.xpath!,
-							parse_type: values.parseType.toJSON()
-						};
-					}
-				}
-			}
-
+			const rustify = compileParser();
 			const obj = rustify_object(rustify.match_opts);
 
 			send_test_watcher(custom_url.value, obj, (err, value, method) => {
