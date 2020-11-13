@@ -11,7 +11,7 @@ import core, { create_popup } from '../../core';
 import {
 	send_get_watcher_list,
 	send_create_watcher,
-	send_test_watcher
+	send_get_watch_parser_list
 } from '../../socket';
 
 export default class WatchItemsView extends View {
@@ -38,7 +38,9 @@ export default class WatchItemsView extends View {
 		title.innerText = 'Watching';
 		title_container.appendChild(title);
 
-		const create_button = createElement('div', { className: 'button new-category', innerText: 'New Feed'}, this.nav_bar);
+		console.log('Testing');
+
+		const create_button = createElement('div', { className: 'button new-category', innerText: 'New Watcher'}, this.nav_bar);
 
 		create_button.addEventListener('click', () => {
 			create_popup((container, open, close) => {
@@ -52,8 +54,24 @@ export default class WatchItemsView extends View {
 				const sub_row = createElement('div', { className: 'form-row' }, form);
 				const submit = createElement('div', { className: 'button', innerText: 'Create'}, sub_row);
 
+				// Parser ID
+				const parser_row = createElement('div', { className: 'form-row' }, form);
+				const parser_item_sel = createElement('select', { name: 'custom_item' }, parser_row);
+
+				createElement('option', { innerText: 'Pick a Watch Parser', value: '', disabled: true, selected: true }, parser_item_sel);
+
+				send_get_watch_parser_list((_, resp) => {
+					if (resp != null) {
+						resp.items.forEach(item => {
+							createElement('option', { innerText: item.title, title: item.description, value: '' + item.id }, parser_item_sel);
+						});
+					}
+				})
+
 				submit.addEventListener('click', _ => {
-					send_create_watcher(cat_text.value, null, (err, opts) => {
+					if (parser_item_sel.value.length == 0) return;
+
+					send_create_watcher(cat_text.value, parseInt(parser_item_sel.value), (err, opts) => {
 						if (err != null || opts == null) {
 							return console.error('create_watcher: ', err);
 						}
@@ -68,7 +86,7 @@ export default class WatchItemsView extends View {
 
 				open();
 			});
-		})
+		});
 
 		// Nav bar items
 
