@@ -30,10 +30,6 @@ const app = {
 	open_view(newView: View) {
 		if (this.view != null) {
 			this.view.close();
-
-			if (newView.parent == null) {
-				newView.parent = this.view;
-			}
 		}
 
 		this.view = newView;

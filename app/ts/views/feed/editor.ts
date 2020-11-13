@@ -31,13 +31,7 @@ export default class EditorView extends View {
 		open_editor.innerText = 'Feed Viewer';
 		core.navbar.append_left_html(open_editor);
 
-		open_editor.addEventListener('click', () => {
-			if (this.parent != null) {
-				core.open_view(this.parent);
-			} else {
-				core.open_view(new FeedItemsView());
-			}
-		});
+		open_editor.addEventListener('click', () => core.open_view(new FeedItemsView()));
 	}
 
 	on_close() {

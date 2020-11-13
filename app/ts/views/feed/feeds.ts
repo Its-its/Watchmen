@@ -43,13 +43,7 @@ export default class FeedsView extends View {
 
 		core.navbar.append_left_html(open_editor);
 
-		open_editor.addEventListener('click', () => {
-			if (this.parent != null) {
-				core.open_view(this.parent);
-			} else {
-				core.open_view(new ItemsView());
-			}
-		});
+		open_editor.addEventListener('click', () => core.open_view(new ItemsView()));
 	}
 
 	on_close() {

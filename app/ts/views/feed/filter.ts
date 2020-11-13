@@ -35,13 +35,7 @@ export default class FilterView extends View {
 		open_editor.innerText = 'Feed Viewer';
 		core.navbar.append_left_html(open_editor);
 
-		open_editor.addEventListener('click', () => {
-			if (this.parent != null) {
-				core.open_view(this.parent);
-			} else {
-				core.open_view(new FeedView());
-			}
-		});
+		open_editor.addEventListener('click', () => core.open_view(new FeedView()));
 	}
 
 	on_close() {
