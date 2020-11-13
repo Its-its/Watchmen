@@ -259,10 +259,19 @@ interface ModelWatchHistory {
 	id?: number;
 
 	watch_id: number;
-	value: string;
+
+	items: WatchHistoryItem[];
 
 	date_added: number;
 }
+
+interface WatchHistoryItem {
+	value: string;
+	link: Nullable<string>;
+	title: Nullable<string>;
+	unique_id: Nullable<string>;
+}
+
 
 interface ModelWatchParser {
 	id?: number;

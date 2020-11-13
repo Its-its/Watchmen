@@ -38,8 +38,6 @@ export default class WatchItemsView extends View {
 		title.innerText = 'Watching';
 		title_container.appendChild(title);
 
-		console.log('Testing');
-
 		const create_button = createElement('div', { className: 'button new-category', innerText: 'New Watcher'}, this.nav_bar);
 
 		create_button.addEventListener('click', () => {
@@ -292,6 +290,8 @@ export class TableItem {
 			this.container.removeChild(this.container.firstChild);
 		}
 
+		console.log(this);
+
 		let list = document.createElement('ul');
 		list.className = 'list horizontal';
 		this.container.appendChild(list);
@@ -318,7 +318,7 @@ export class TableItem {
 
 			let span = document.createElement('a');
 			span.className = 'default';
-			span.innerText = this.history.value;
+			span.innerText = this.history.items[0].value;
 			span.title = span.innerText;
 
 			span.addEventListener('click', e => {
