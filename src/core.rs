@@ -450,17 +450,21 @@ impl WeakFeederCore {
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::EditWatcher { affected, listener: editing });
 			}
 
+			Front2CoreNotification::NewWatchParser { item } => {
+				println!("{:#?}", item);
+			}
+
 			// Test
 			Front2CoreNotification::TestWatcher { url, parser } => {
 				if let Some(parser) = parser {
-					let result = watcher::get_from_url_parser(&url, &parser)?;
+					let items = watcher::get_from_url_parser(&url, &parser)?;
 
-					println!("{:?}", result);
+					ctx.respond_with(msg_id_opt, Core2FrontNotification::TestWatcher { success: true, items });
 				} else {
+					// TODO: Get parser based on url.
 					println!("No parser...");
+					ctx.respond_with(msg_id_opt, Core2FrontNotification::TestWatcher { success: false, items: Vec::new() });
 				}
-
-				//
 			}
 		}
 

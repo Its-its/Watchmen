@@ -1,8 +1,16 @@
 use serde::{Serialize, Deserialize};
 
 use crate::Filter;
-use crate::request::feeds::custom::{UpdateableCustomItem, CustomItem};
-use crate::request::watcher::MatchParser;
+use crate::request::feeds::custom::{
+	UpdateableCustomItem,
+	CustomItem
+};
+
+use crate::request::watcher::{
+	WatchParserItem,
+	MatchParser,
+	FoundItem
+};
 
 use super::models::{
 	QueryId,
@@ -172,7 +180,9 @@ pub enum Front2CoreNotification {
 		editing: EditWatching
 	},
 
-	//
+	NewWatchParser {
+		item: WatchParserItem
+	},
 
 
 	// Tests
@@ -322,6 +332,12 @@ pub enum Core2FrontNotification {
 		listener: EditWatching,
 		affected: usize
 	},
+
+	// Test
+	TestWatcher {
+		success: bool,
+		items: Vec<FoundItem>
+	}
 }
 
 

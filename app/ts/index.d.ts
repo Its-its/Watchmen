@@ -258,3 +258,18 @@ interface ModelWatchHistory {
 
 	date_added: number;
 }
+
+interface ModelWatchParser {
+	id?: number;
+
+	title: string;
+	description: string;
+	match_url: string;
+
+	match_opts: {
+		[name: string]: Nullable<string | {
+			xpath: string
+			parse_type: rust.EnumNone | rust.EnumObject
+		} | rust.EnumNone>;
+	}
+}

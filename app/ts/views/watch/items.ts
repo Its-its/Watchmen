@@ -4,12 +4,14 @@ import { createElement } from '../../util/html';
 import View from '../index';
 import FeedItemsView from '../feed/items';
 import DashboardView from '../dashboard';
+import EditorView from './editor';
 
 import core, { create_popup } from '../../core';
 
 import {
 	send_get_watcher_list,
-	send_create_watcher
+	send_create_watcher,
+	send_test_watcher
 } from '../../socket';
 
 export default class WatchItemsView extends View {
@@ -95,8 +97,6 @@ export default class WatchItemsView extends View {
 	on_open() {
 		console.log('open');
 
-		const url_params = new URLSearchParams(location.search.slice(1));
-
 		// Navbar buttons
 
 		let dashboard_listener = document.createElement('div');
@@ -106,12 +106,12 @@ export default class WatchItemsView extends View {
 
 		dashboard_listener.addEventListener('click', () => core.open_view(new DashboardView()));
 
-		let feed_listener = document.createElement('div');
-		feed_listener.className = 'button';
-		feed_listener.innerText = 'Feeds';
-		core.navbar.append_left_html(feed_listener);
+		let editor_listener = document.createElement('div');
+		editor_listener.className = 'button';
+		editor_listener.innerText = 'Editor';
+		core.navbar.append_left_html(editor_listener);
 
-		feed_listener.addEventListener('click', () => core.open_view(new FeedItemsView()));
+		editor_listener.addEventListener('click', () => core.open_view(new EditorView()));
 	}
 
 	on_close() {

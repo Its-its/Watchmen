@@ -292,7 +292,7 @@ export function send_get_watching_history_list(watch_id: Nullable<number>, skip_
 	app.socket.send('watching_item_list', opts, cb);
 }
 
-export function send_get_watcher_list(cb?: ResponseFunc<WatcherListResponse>) {
+export function send_get_watcher_list(cb: ResponseFunc<WatcherListResponse>) {
 	app.socket.send('watcher_list', {}, cb);
 }
 
@@ -321,4 +321,19 @@ export function send_remove_watcher(id: number, rem_stored: boolean,  cb?: Respo
 	};
 
 	app.socket.send('remove_watcher', opts, cb);
+}
+
+export function send_test_watcher(url: string, parser: Nullable<any>, cb: ResponseFunc<CreateListenerResponse>) {
+	let opts = {
+		url,
+		parser
+	};
+
+	app.socket.send('test_watcher', opts, cb);
+}
+
+export function send_new_watch_parser(item: ModelWatchParser, cb: ResponseFunc<CreateCustomItemResponse>) {
+	app.socket.send('new_watch_parser', {
+		item
+	}, cb);
 }
