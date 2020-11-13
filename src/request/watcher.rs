@@ -57,6 +57,9 @@ pub struct MatchParser {
 	/// Value is used to check for changes.
 	pub value: ParseOpts,
 
+	// Used for watching list of items.
+	pub unique_id: Option<ParseOpts>,
+
 	pub title: Option<ParseOpts>,
 	pub link: Option<ParseOpts>,
 }
@@ -66,6 +69,7 @@ pub struct MatchParser {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct FoundItem {
 	pub value: String,
+	pub unique_id: Option<String>,
 	pub title: Option<String>,
 	pub link: Option<String>,
 }
@@ -243,8 +247,19 @@ pub fn get_from_url_parser(url: &str, parser: &MatchParser) -> Result<Vec<FoundI
 				.transpose()?
 				.map(|v| v.trim().escape_default().to_string());
 
+			// Unique ID
+			let unique_id = parser.unique_id.as_ref()
+				.and_then(|v| v.evaluate(&doc, node.clone()))
+				.map(|v| v.vec_string())
+				.transpose()?
+				.and_then(|v| v.first().cloned())
+				.map(|v| parser.unique_id.as_ref().unwrap().parse(v))
+				.transpose()?
+				.map(|v| v.trim().escape_default().to_string());
+
 			Ok(FoundItem {
 				value,
+				unique_id,
 				title,
 				link
 			})
