@@ -19,6 +19,12 @@ type TypeConf = {
 
 
 export default class EditorView extends View {
+	static path = 'feeds-edit-custom';
+
+	constructor() {
+		super(EditorView.path)
+	}
+
 	on_init() {
 		this.render_sidebar();
 		this.render_editor();

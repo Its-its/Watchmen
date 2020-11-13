@@ -3,7 +3,29 @@ import BackgroundProcess from './process';
 import Navbar from './navbar';
 
 import View from './views/index';
+
+// Views
 import DashboardView from './views/dashboard';
+
+import FeedEditorView from './views/feed/editor';
+import FeedView from './views/feed/feeds';
+import FeedFilterView from './views/feed/filter';
+import FeedItemsView from './views/feed/items';
+
+import WatcherEditorView from './views/watch/editor';
+import WatcherItemsView from './views/watch/items';
+
+function paths() {
+	return {
+		[DashboardView.path]: DashboardView,
+		[FeedEditorView.path]: FeedEditorView,
+		[FeedView.path]: FeedView,
+		[FeedFilterView.path]: FeedFilterView,
+		[FeedItemsView.path]: FeedItemsView,
+		[WatcherEditorView.path]: WatcherEditorView,
+		[WatcherItemsView.path]: WatcherItemsView,
+	};
+}
 
 const app = {
 	view: <Nullable<View>>null,
@@ -16,21 +38,41 @@ const app = {
 
 	init() {
 		this.navbar.render();
+
+		const url_params = new URLSearchParams(location.search.slice(1));
+
+		if (url_params.has('view')) {
+			let View = paths()[url_params.get('view')!];
+
+			if (View != null) {
+				return this.open_view(new View());
+			}
+		}
+
 		this.open_view(new DashboardView());
 	},
 
 	on_connection_open() {
 		// Get Current feeds
-		setTimeout(() => {
-			this.process.refresh_feeds();
-			this.process.register_updates();
-		}, 50);
+		this.process.refresh_feeds();
+		this.process.register_updates();
 	},
 
 	open_view(newView: View) {
 		if (this.view != null) {
 			this.view.close();
 		}
+
+		const url_params = new URLSearchParams(location.search.slice(1));
+		url_params.set('view', newView.path);
+
+		if (newView.path.length == 0) {
+			url_params.delete('view');
+		}
+
+		let str = url_params.toString();
+
+		window.history.replaceState(null, 'Page Change', str.length == 0 ? '/' : `/?${str}`);
 
 		this.view = newView;
 

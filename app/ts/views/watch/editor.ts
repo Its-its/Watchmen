@@ -40,8 +40,10 @@ export default class EditorView extends View {
 		[name: string]: TypeConf;
 	} = {};
 
+	static path = 'watcher-parser-edit';
+
 	constructor() {
-		super();
+		super(EditorView.path);
 
 		// Create Compiled items.
 		ITEMS.forEach(i => {

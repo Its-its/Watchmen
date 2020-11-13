@@ -370,8 +370,10 @@ export default class FeedView extends View {
 
 	categories = <SidebarItem[]>[];
 
+	static path = 'feeds';
+
 	constructor() {
-		super();
+		super(FeedView.path);
 	}
 
 
@@ -398,12 +400,6 @@ export default class FeedView extends View {
 		this.container.appendChild(this.nav_bar);
 
 		this.container.appendChild(this.table.render());
-
-		if (core.socket.is_open()) {
-			this.on_connection_open();
-		} else {
-			core.socket.socket.addEventListener('open', _ => this.on_connection_open());
-		}
 	}
 
 	on_connection_open() {

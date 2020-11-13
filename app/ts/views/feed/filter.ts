@@ -19,8 +19,10 @@ export default class FilterView extends View {
 	filter_container = document.createElement('div');
 	nav_bar_list = document.createElement('ul');
 
+	static path = 'feeds-edit-filter';
+
 	constructor() {
-		super();
+		super(FilterView.path);
 	}
 
 	on_init() {

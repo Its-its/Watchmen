@@ -22,8 +22,10 @@ import {
 export default class FeedsView extends View {
 	table = new FeedTable();
 
+	static path = 'feeds-list';
+
 	constructor() {
-		super();
+		super(FeedsView.path);
 	}
 
 	on_init() {

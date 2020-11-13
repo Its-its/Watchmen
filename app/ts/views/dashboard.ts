@@ -10,8 +10,10 @@ export default class DasboardView extends View {
 	nav_bar = document.createElement('div');
 	nav_bar_list = document.createElement('ul');
 
+	static path = '';
+
 	constructor() {
-		super();
+		super(DasboardView.path);
 	}
 
 
@@ -36,12 +38,6 @@ export default class DasboardView extends View {
 		nav_items.appendChild(this.nav_bar_list);
 
 		this.container.appendChild(this.nav_bar);
-
-		if (core.socket.is_open()) {
-			this.on_connection_open();
-		} else {
-			core.socket.socket.addEventListener('open', _ => this.on_connection_open());
-		}
 	}
 
 	on_connection_open() {

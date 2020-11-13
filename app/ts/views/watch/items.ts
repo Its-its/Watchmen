@@ -20,8 +20,10 @@ export default class WatchItemsView extends View {
 
 	table = new Table();
 
+	static path = 'watcher';
+
 	constructor() {
-		super();
+		super(WatchItemsView.path);
 	}
 
 
@@ -98,12 +100,6 @@ export default class WatchItemsView extends View {
 		this.container.appendChild(this.nav_bar);
 
 		this.container.appendChild(this.table.render());
-
-		if (core.socket.is_open()) {
-			this.on_connection_open();
-		} else {
-			core.socket.socket.addEventListener('open', _ => this.on_connection_open());
-		}
 	}
 
 	on_connection_open() {
