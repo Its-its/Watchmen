@@ -228,13 +228,11 @@ export default class BackgroundProcess {
 	get_newest_timestamp(): number {
 		let timestamp = 0;
 
-		for (let i = 0; i < this.feed_items.length; i++) {
-			let row = this.feed_items[i];
+		this.feed_items.forEach(f => { if (f.date > timestamp) { timestamp = f.date; } });
 
-			if (row.date > timestamp) {
-				timestamp = row.date;
-			}
-		}
+		this.watching_listeners.forEach(f => {
+			if (f[1] != null && f[1].date_added > timestamp) { timestamp = f[1].date_added; }
+		});
 
 		return timestamp;
 	}
