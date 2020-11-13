@@ -164,6 +164,8 @@ impl Connection {
 			"CREATE TABLE IF NOT EXISTS watching (
 				id                 INTEGER PRIMARY KEY,
 
+				parser_id          INTEGER,
+
 				url                TEXT NOT NULL,
 				title              TEXT NOT NULL,
 				description        TEXT NOT NULL,
@@ -203,10 +205,6 @@ impl Connection {
 
 				match_opts      TEXT NOT NULL
 			)"
-		)?;
-
-		self.0.execute(
-			"CREATE UNIQUE INDEX IF NOT EXISTS watch_parser_url on watch_parser ( match_url )"
 		)?;
 
 		Ok(())

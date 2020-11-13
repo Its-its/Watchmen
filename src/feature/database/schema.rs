@@ -107,6 +107,8 @@ table! {
 	watching(id) {
 		id -> Integer,
 
+		parser_id -> Nullable<Integer>,
+
 		// Save favicon.ico ?
 
 		url -> Text,

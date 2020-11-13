@@ -333,6 +333,12 @@ pub enum Core2FrontNotification {
 		affected: usize
 	},
 
+	//
+	NewWatchParser {
+		item: WatchParserItem,
+		affected: usize
+	},
+
 	// Test
 	TestWatcher {
 		success: bool,

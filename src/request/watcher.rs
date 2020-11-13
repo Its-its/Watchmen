@@ -6,7 +6,12 @@ use diesel::SqliteConnection;
 
 
 use crate::feature::schema::{watching as WatchingSchema};
-use crate::feature::models::{QueryId, Watching, NewWatching, NewWatchHistory};
+use crate::feature::models::{
+	QueryId,
+	Watching, NewWatching,
+	NewWatchHistory,
+	NewWatchParserItem
+};
 use crate::{Result, Error};
 use super::feeds::custom::ParseOpts;
 use super::RequestResults;
@@ -31,6 +36,17 @@ pub struct WatchParserItem {
 	pub match_url: String, // TODO: Ensure always lowercase. I have unique index.
 
 	pub match_opts: MatchParser
+}
+
+impl Into<NewWatchParserItem> for WatchParserItem {
+	fn into(self) -> NewWatchParserItem {
+		NewWatchParserItem {
+			title: self.title,
+			description: self.description,
+			match_url: self.match_url,
+			match_opts: serde_json::to_string(&self.match_opts).unwrap()
+		}
+	}
 }
 
 
@@ -87,14 +103,16 @@ impl RequestManager {
 		}
 	}
 
-	pub fn verify_new_watcher(&self, url: String, custom_item_id: Option<QueryId>, conn: &SqliteConnection) -> Result<NewWatching> {
-		let item = if let Some(id) = custom_item_id {
+	pub fn verify_new_watcher(&self, url: String, parser_id: Option<QueryId>, conn: &SqliteConnection) -> Result<NewWatching> {
+		let item = if let Some(id) = parser_id {
 			get_watch_parser_by_id(id, conn)?
 		} else {
 			get_watch_parser_from_url(Url::parse(&url).unwrap(), conn)?
 		};
 
 		let watcher = NewWatching {
+			parser_id: item.id,
+
 			url,
 
 			title: item.title,
@@ -187,16 +205,6 @@ impl RequestManager {
 }
 
 
-
-
-pub fn get_from_url(url: &str, conn: &diesel::SqliteConnection) -> Result<Vec<FoundItem>> {
-	let found = get_watch_parser_from_url(Url::parse(url).unwrap(), conn)?;
-
-	// turn found into SearchParser
-
-	get_from_url_parser(url, &found.match_opts)
-}
-
 pub fn get_from_url_parser(url: &str, parser: &MatchParser) -> Result<Vec<FoundItem>> {
 	let mut resp = reqwest::get(url)?;
 
@@ -215,10 +223,30 @@ pub fn get_from_url_parser(url: &str, parser: &MatchParser) -> Result<Vec<FoundI
 				.and_then(|v| parser.value.parse(v))
 				.map(|v| v.trim().escape_default().to_string())?;
 
+			// Find title.
+			let title = parser.title.as_ref()
+				.and_then(|v| v.evaluate(&doc, node.clone()))
+				.map(|v| v.vec_string())
+				.transpose()?
+				.and_then(|v| v.first().cloned())
+				.map(|v| parser.title.as_ref().unwrap().parse(v))
+				.transpose()?
+				.map(|v| v.trim().escape_default().to_string());
+
+			// Find link.
+			let link = parser.link.as_ref()
+				.and_then(|v| v.evaluate(&doc, node.clone()))
+				.map(|v| v.vec_string())
+				.transpose()?
+				.and_then(|v| v.first().cloned())
+				.map(|v| parser.link.as_ref().unwrap().parse(v))
+				.transpose()?
+				.map(|v| v.trim().escape_default().to_string());
+
 			Ok(FoundItem {
-				value: parser.value.parse(value)?.trim().to_string(),
-				title: None,
-				link: None
+				value,
+				title,
+				link
 			})
 		})
 		.filter_map(|i| {
@@ -244,7 +272,13 @@ pub fn request_feed(feed: Watching, conn: &SqliteConnection) -> WatcherResult {
 		insert: None
 	};
 
-	let new_items = get_from_url(&feed.url, conn)?;
+	let parser = if let Some(parser_id) = feed.parser_id {
+		get_watch_parser_by_id(parser_id, conn)?
+	} else {
+		get_watch_parser_from_url(Url::parse(&feed.url).unwrap(), conn)?
+	};
+
+	let new_items = get_from_url_parser(&feed.url, &parser.match_opts)?;
 
 	if let Some(last_item) = get_last_watch_history(feed.id, conn)? {
 		// Anything in the new_items is not in the last_items?

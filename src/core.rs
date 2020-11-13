@@ -1,6 +1,7 @@
 use std::io::Read;
 use std::sync::{Arc, Mutex, MutexGuard, Weak};
 
+use url::Url;
 use log::info;
 
 use crate::state::CoreState;
@@ -415,13 +416,20 @@ impl WeakFeederCore {
 
 				// Cache first History Item.
 				{
+					let parser = if let Some(parser_id) = custom_item_id {
+						objects::get_watch_parser_by_id(parser_id, conn)?
+					} else {
+						objects::get_watch_parser_from_url(Url::parse(&watcher.url).unwrap(), conn)?
+					};
+
 					let new_watcher = objects::get_watcher_by_url(&watcher.url, conn)?;
 
-					let new_item = watcher::get_from_url(&new_watcher.url, conn)?;
+					// let new_item = watcher::get_from_url(&new_watcher.url, conn)?;
+					let new_items = watcher::get_from_url_parser(&new_watcher.url, &parser.match_opts)?;
 
 					objects::create_last_watch_history(&models::NewWatchHistory {
 						watch_id: new_watcher.id,
-						items: serde_json::to_string(&new_item).unwrap(),
+						items: serde_json::to_string(&new_items).unwrap(),
 
 						date_added: chrono::Utc::now().timestamp()
 					}, conn)?;
@@ -451,7 +459,19 @@ impl WeakFeederCore {
 			}
 
 			Front2CoreNotification::NewWatchParser { item } => {
+				println!("NewWatchParser");
 				println!("{:#?}", item);
+
+				let model = item.clone().into();
+
+				let affected = objects::create_watch_parser(&model, conn)?;
+
+				let new_item = Core2FrontNotification::NewWatchParser {
+					affected,
+					item,
+				};
+
+				ctx.respond_with(msg_id_opt, new_item);
 			}
 
 			// Test

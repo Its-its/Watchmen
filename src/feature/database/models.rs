@@ -268,6 +268,8 @@ pub struct EditCustomItem {
 pub struct Watching {
 	pub id: QueryId,
 
+	pub parser_id: Option<QueryId>,
+
 	pub url: String,
 	pub title: String,
 	pub description: String,
@@ -283,6 +285,8 @@ pub struct Watching {
 #[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
 #[table_name = "watching"]
 pub struct NewWatching {
+	pub parser_id: Option<QueryId>,
+
 	pub url: String,
 	pub title: String,
 	pub description: String,
@@ -297,6 +301,8 @@ pub struct NewWatching {
 #[derive(Serialize, Deserialize, Debug, Default, Clone, AsChangeset)]
 #[table_name = "watching"]
 pub struct EditWatching {
+	pub parser_id: Option<QueryId>,
+
 	pub url: Option<String>,
 	pub title: Option<String>,
 	pub description: Option<String>,
