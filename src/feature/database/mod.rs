@@ -5,6 +5,9 @@ use diesel::prelude::*;
 pub mod models;
 pub mod schema;
 pub mod objects;
+pub mod analytics;
+
+pub use models::QueryId;
 
 
 pub struct Connection(pub SqliteConnection);
@@ -206,6 +209,21 @@ impl Connection {
 				match_opts      TEXT NOT NULL
 			)"
 		)?;
+
+
+
+		// Analytics
+		// self.0.execute(
+		// 	"CREATE TABLE IF NOT EXISTS watch_parser (
+		// 		id               INTEGER PRIMARY KEY,
+
+		// 		title            TEXT NOT NULL,
+		// 		match_url        TEXT NOT NULL,
+		// 		description      TEXT NOT NULL,
+
+		// 		created_at      LONG NOT NULL
+		// 	)"
+		// )?;
 
 		Ok(())
 	}
