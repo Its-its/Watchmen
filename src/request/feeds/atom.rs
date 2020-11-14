@@ -2,14 +2,14 @@ use std::io::Read;
 
 use crate::Result;
 
-use super::NewFeed;
+use super::NewFeedModel;
 
 
 pub type FeedResult = Result<atom_syndication::Feed>;
 
 
-pub fn new_from_feed(url: String, feed: atom_syndication::Feed) -> NewFeed {
-	NewFeed {
+pub fn new_from_feed(url: String, feed: atom_syndication::Feed) -> NewFeedModel {
+	NewFeedModel {
 		url,
 
 		title: feed.title().to_string(),

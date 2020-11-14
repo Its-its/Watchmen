@@ -201,7 +201,7 @@ impl WeakFeederCore {
 			Front2CoreNotification::AddCategory { name, position } => {
 				// TODO: count categories, set position based on that.
 
-				let cat = models::NewCategory {
+				let cat = models::NewCategoryModel {
 					name_lowercase: name.to_lowercase(),
 					date_added: chrono::Utc::now().timestamp(),
 					position,
@@ -232,7 +232,7 @@ impl WeakFeederCore {
 
 
 			Front2CoreNotification::AddFeedCategory { feed_id, category_id } => {
-				let cat = models::NewFeedCategory {
+				let cat = models::NewFeedCategoryModel {
 					feed_id,
 					category_id
 				};
@@ -317,7 +317,7 @@ impl WeakFeederCore {
 			}
 
 			Front2CoreNotification::NewFilter { title , filter } => {
-				let new_filter = objects::NewFilterModel {
+				let new_filter = objects::NewFilter {
 					title,
 					filter
 				};
@@ -339,7 +339,7 @@ impl WeakFeederCore {
 			Front2CoreNotification::UpdateFilter { id, title , filter } => {
 				let affected = objects::update_filter(
 					id,
-					objects::EditFilterModel {
+					objects::EditFilter {
 						title: Some(title),
 						filter: Some(filter)
 					},
@@ -427,7 +427,7 @@ impl WeakFeederCore {
 					// let new_item = watcher::get_from_url(&new_watcher.url, conn)?;
 					let new_items = watcher::get_from_url_parser(&new_watcher.url, &parser.match_opts)?;
 
-					objects::create_last_watch_history(&models::NewWatchHistory {
+					objects::create_last_watch_history(&models::NewWatchHistoryModel {
 						watch_id: new_watcher.id,
 						items: serde_json::to_string(&new_items).unwrap(),
 

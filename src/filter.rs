@@ -3,12 +3,12 @@ use regex::RegexBuilder;
 use diesel::SqliteConnection;
 
 use crate::Result;
-use crate::feature::models::Item;
+use crate::feature::models::FeedItemModel;
 use crate::feature::objects::{get_filters, get_feed_filters};
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Filter {
+pub enum FilterType {
 	//    regex, opts
 	Regex(String, RegexOpts),
 
@@ -21,8 +21,8 @@ pub enum Filter {
 	//         items, sensitive
 	EndsWith(String, bool),
 
-	And(Vec<Filter>),
-	Or(Vec<Filter>)
+	And(Vec<FilterType>),
+	Or(Vec<FilterType>)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,19 +51,19 @@ impl Default for RegexOpts {
 }
 
 
-impl Filter {
+impl FilterType {
 	pub fn is_and(&self) -> bool {
-		matches!(self, Filter::And(_))
+		matches!(self, FilterType::And(_))
 	}
 
 	pub fn is_or(&self) -> bool {
-		matches!(self, Filter::Or(_))
+		matches!(self, FilterType::Or(_))
 	}
 
 
-	pub fn filter(&self, item: &Item) -> bool {
+	pub fn filter(&self, item: &FeedItemModel) -> bool {
 		match self {
-			Filter::Regex(regex, opts) => {
+			FilterType::Regex(regex, opts) => {
 				let mut builder = RegexBuilder::new(&regex);
 
 				builder.case_insensitive(opts.case_insensitive);
@@ -79,7 +79,7 @@ impl Filter {
 				build.is_match(&item.title)
 			}
 
-			Filter::Contains(value, case_sensitive) => {
+			FilterType::Contains(value, case_sensitive) => {
 				if *case_sensitive {
 					item.title.contains(value.as_str())
 				} else {
@@ -87,7 +87,7 @@ impl Filter {
 				}
 			}
 
-			Filter::StartsWith(value, case_sensitive) => {
+			FilterType::StartsWith(value, case_sensitive) => {
 				if *case_sensitive {
 					item.title.starts_with(value.as_str())
 				} else {
@@ -95,7 +95,7 @@ impl Filter {
 				}
 			}
 
-			Filter::EndsWith(value, case_sensitive) => {
+			FilterType::EndsWith(value, case_sensitive) => {
 				if *case_sensitive {
 					item.title.ends_with(value.as_str())
 				} else {
@@ -103,29 +103,29 @@ impl Filter {
 				}
 			}
 
-			Filter::And(filters) => filters.iter().all(|f| f.filter(item)),
-			Filter::Or(filters) => filters.iter().any(|f| f.filter(item)),
+			FilterType::And(filters) => filters.iter().all(|f| f.filter(item)),
+			FilterType::Or(filters) => filters.iter().any(|f| f.filter(item)),
 		}
 	}
 
 	// Display showing why said item is being filtered in or out. (new enum FilterDisplay ??)
-	pub fn display(&self, _item: &Item) {
+	pub fn display(&self, _item: &FeedItemModel) {
 		//
 	}
 
 
-	pub fn add(&mut self, filter: Filter) {
+	pub fn add(&mut self, filter: FilterType) {
 		match self {
-			Filter::And(vec) |
-			Filter::Or(vec) => vec.push(filter),
+			FilterType::And(vec) |
+			FilterType::Or(vec) => vec.push(filter),
 			_ => ()
 		}
 	}
 
 	pub fn remove(&mut self, index: usize) {
 		match self {
-			Filter::And(vec) |
-			Filter::Or(vec) => { vec.remove(index); }
+			FilterType::And(vec) |
+			FilterType::Or(vec) => { vec.remove(index); }
 			_ => ()
 		}
 	}
@@ -142,7 +142,7 @@ impl Filter {
 			return other;
 		}
 
-		Filter::And(vec![self, other])
+		FilterType::And(vec![self, other])
 	}
 
 	/// If one of the filters in an OR add to it. Otherwise make one and add both to it.
@@ -157,12 +157,12 @@ impl Filter {
 			return other;
 		}
 
-		Filter::Or(vec![self, other])
+		FilterType::Or(vec![self, other])
 	}
 }
 
 
-pub fn filter_items<'a>(items: &'a [Item], conn: &SqliteConnection) -> Result<Vec<&'a Item>> {
+pub fn filter_items<'a>(items: &'a [FeedItemModel], conn: &SqliteConnection) -> Result<Vec<&'a FeedItemModel>> {
 	let feed_filters = get_feed_filters(conn)?;
 	let filter_models = get_filters(conn)?;
 

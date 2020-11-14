@@ -20,7 +20,7 @@ pub mod state;
 pub mod request;
 
 
-pub use filter::{Filter, RegexOpts};
+pub use filter::{FilterType, RegexOpts};
 pub use error::{Result, Error};
 
 fn main() -> std::io::Result<()> {

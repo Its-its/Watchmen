@@ -2,14 +2,14 @@ use std::io::Read;
 
 use crate::Result;
 
-use super::NewFeed;
+use super::NewFeedModel;
 
 
 pub type FeedResult = Result<rss::Channel>;
 
 
-pub fn new_from_feed(url: String, feed: rss::Channel) -> NewFeed {
-	NewFeed {
+pub fn new_from_feed(url: String, feed: rss::Channel) -> NewFeedModel {
+	NewFeedModel {
 		url,
 
 		title: feed.title().to_string(),

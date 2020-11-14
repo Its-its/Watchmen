@@ -5,7 +5,7 @@ use diesel::{RunQueryDsl, SqliteConnection};
 
 use crate::error::{Error, Result};
 use crate::feature::schema::{items as ItemsSchema, feeds as FeedsSchema};
-use crate::feature::models::{QueryId, NewItem, Feed, NewFeed};
+use crate::feature::models::{QueryId, NewFeedItemModel, FeedModel, NewFeedModel};
 use super::RequestResults;
 
 pub mod rss;
@@ -88,7 +88,7 @@ impl FeedType {
 
 
 pub struct RequestManager {
-	pub feeds: Vec<Feed>,
+	pub feeds: Vec<FeedModel>,
 	pub is_idle: bool,
 	pub concurrency: i32,
 }
@@ -107,14 +107,14 @@ impl RequestManager {
 		use diesel::prelude::*;
 		use FeedsSchema::dsl::*;
 
-		let found = feeds.filter(id.ne(0)).load::<Feed>(connection)?;
+		let found = feeds.filter(id.ne(0)).load::<FeedModel>(connection)?;
 
 		self.feeds = found;
 
 		Ok(self.feeds.len())
 	}
 
-	pub fn create_new_feed(&self, url: String, custom_item_id: Option<QueryId>, conn: &SqliteConnection) -> Result<NewFeed> {
+	pub fn create_new_feed(&self, url: String, custom_item_id: Option<QueryId>, conn: &SqliteConnection) -> Result<NewFeedModel> {
 		Ok(match FeedType::from_url(&url, conn) {
 			FeedType::Rss(Ok(feed)) => rss::new_from_feed(url, feed),
 			FeedType::Atom(Ok(feed)) => atom::new_from_feed(url, feed),
@@ -139,11 +139,11 @@ impl RequestManager {
 		};
 
 
-		let feeds: Vec<&mut Feed> = {
+		let feeds: Vec<&mut FeedModel> = {
 			let timestamp = chrono::Utc::now().timestamp();
 
 			self.feeds.iter_mut()
-			.filter(|i: &&mut Feed| timestamp - i.last_called - i.sec_interval as i64 > 0)
+			.filter(|i: &&mut FeedModel| timestamp - i.last_called - i.sec_interval as i64 > 0)
 			.collect()
 		};
 
@@ -197,7 +197,7 @@ impl RequestManager {
 }
 
 
-pub fn request_feed(feed: Feed, conn: &SqliteConnection) -> CollectedResult {
+pub fn request_feed(feed: FeedModel, conn: &SqliteConnection) -> CollectedResult {
 	info!(" - Requesting: {}", feed.url);
 
 	let mut feed_res = RequestFeedResults {
@@ -213,7 +213,7 @@ pub fn request_feed(feed: Feed, conn: &SqliteConnection) -> CollectedResult {
 			feed_res.to_insert = channel.items()
 			.iter()
 			.map(|i| {
-				let mut item: NewItem = i.into();
+				let mut item: NewFeedItemModel = i.into();
 				item.feed_id = feed.id;
 				item
 			})
@@ -224,7 +224,7 @@ pub fn request_feed(feed: Feed, conn: &SqliteConnection) -> CollectedResult {
 			feed_res.to_insert = atom_feed.entries()
 			.iter()
 			.map(|i| {
-				let mut item: NewItem = i.into();
+				let mut item: NewFeedItemModel = i.into();
 				item.feed_id = feed.id;
 				item
 			})
@@ -235,7 +235,7 @@ pub fn request_feed(feed: Feed, conn: &SqliteConnection) -> CollectedResult {
 			feed_res.to_insert = custom_feed_items
 			.into_iter()
 			.map(|i| {
-				let mut item: NewItem = i.into();
+				let mut item: NewFeedItemModel = i.into();
 				item.feed_id = feed.id;
 				item
 			})
@@ -255,7 +255,7 @@ pub fn request_feed(feed: Feed, conn: &SqliteConnection) -> CollectedResult {
 }
 
 
-pub fn update_feed_last_called_db(set_last_called: i64, feeds_arr: Vec<&mut Feed>, connection: &SqliteConnection) {
+pub fn update_feed_last_called_db(set_last_called: i64, feeds_arr: Vec<&mut FeedModel>, connection: &SqliteConnection) {
 	use diesel::prelude::*;
 	use FeedsSchema::dsl::*;
 
@@ -286,5 +286,5 @@ pub struct RequestFeedResults {
 	pub duration: Duration,
 	pub new_item_count: usize,
 	pub item_count: i32,
-	pub to_insert: Vec<NewItem>
+	pub to_insert: Vec<NewFeedItemModel>
 }

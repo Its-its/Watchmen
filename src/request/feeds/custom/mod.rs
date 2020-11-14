@@ -7,7 +7,7 @@ use chrono::{DateTime, FixedOffset};
 
 use crate::feature::models::QueryId;
 use crate::{Result, Error};
-use super::NewFeed;
+use super::NewFeedModel;
 
 use crate::feature::objects::{get_custom_item_from_url, get_custom_item_by_id};
 
@@ -154,14 +154,14 @@ impl std::ops::Deref for ParseOpts {
 
 // TODO: Impl. Title / Description scrape from webpage. Currently getting from db.
 
-pub fn new_from_url(url: String, custom_item_id: Option<QueryId>, conn: &diesel::SqliteConnection) -> Result<NewFeed> {
+pub fn new_from_url(url: String, custom_item_id: Option<QueryId>, conn: &diesel::SqliteConnection) -> Result<NewFeedModel> {
 	let item = if let Some(id) = custom_item_id {
 		get_custom_item_by_id(id, conn)?
 	} else {
 		get_custom_item_from_url(Url::parse(&url).unwrap(), conn)?
 	};
 
-	Ok(NewFeed {
+	Ok(NewFeedModel {
 		url,
 
 		title: item.title,
@@ -181,8 +181,8 @@ pub fn new_from_url(url: String, custom_item_id: Option<QueryId>, conn: &diesel:
 	})
 }
 
-pub fn new_from_feed(url: String, feed: CustomItem) -> NewFeed {
-	NewFeed {
+pub fn new_from_feed(url: String, feed: CustomItem) -> NewFeedModel {
+	NewFeedModel {
 		url,
 
 		title: feed.title,

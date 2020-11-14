@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use crate::Filter;
+use crate::FilterType;
 use crate::request::feeds::custom::{
 	UpdateableCustomItem,
 	CustomItem
@@ -14,20 +14,20 @@ use crate::request::watcher::{
 
 use super::models::{
 	QueryId,
-	Item as FeedItem,
-	Feed,
-	NewFeed,
-	EditFeed,
-	Category,
-	FeedCategory,
-	NewCategory,
-	NewFeedCategory,
-	EditCategory,
-	NewWatching, EditWatching, Watching
+	FeedItemModel,
+	FeedModel,
+	NewFeedModel,
+	EditFeedModel,
+	CategoryModel,
+	FeedCategoryModel,
+	NewCategoryModel,
+	NewFeedCategoryModel,
+	EditCategoryModel,
+	NewWatchingModel, EditWatchingModel, WatchingModel
 };
 
 use super::objects::{
-	NewFilterModel,
+	NewFilter,
 	FilterGrouping,
 	WatchHistoryBase
 };
@@ -56,7 +56,7 @@ pub enum Front2CoreNotification {
 
 	EditListener {
 		id: QueryId,
-		editing: EditFeed
+		editing: EditFeedModel
 	},
 
 	//
@@ -74,7 +74,7 @@ pub enum Front2CoreNotification {
 
 	EditCategory {
 		id: QueryId,
-		editing: EditCategory
+		editing: EditCategoryModel
 	},
 
 
@@ -144,12 +144,12 @@ pub enum Front2CoreNotification {
 	UpdateFilter {
 		id: QueryId,
 		title: String,
-		filter: Filter
+		filter: FilterType
 	},
 
 	NewFilter {
 		title: String,
-		filter: Filter
+		filter: FilterType
 	},
 
 	RemoveFilter {
@@ -177,7 +177,7 @@ pub enum Front2CoreNotification {
 
 	EditWatcher {
 		id: QueryId,
-		editing: EditWatching
+		editing: EditWatchingModel
 	},
 
 	// Parser
@@ -212,7 +212,7 @@ pub enum Front2CoreNotification {
 #[serde(tag = "method", content = "params")]
 pub enum Core2FrontNotification {
 	NewListener {
-		listener: NewFeed,
+		listener: NewFeedModel,
 		affected: usize
 	},
 
@@ -221,13 +221,13 @@ pub enum Core2FrontNotification {
 	},
 
 	EditListener {
-		listener: EditFeed,
+		listener: EditFeedModel,
 		affected: usize
 	},
 
 
 	ItemList {
-		items: Vec<FeedItem>,
+		items: Vec<FeedItemModel>,
 		notification_ids: Vec<QueryId>,
 
 		item_count: i64,
@@ -237,7 +237,7 @@ pub enum Core2FrontNotification {
 	},
 
 	FeedList {
-		items: Vec<Feed>
+		items: Vec<FeedModel>
 	},
 
 	//
@@ -251,12 +251,12 @@ pub enum Core2FrontNotification {
 
 
 	CategoryList {
-		categories: Vec<Category>,
-		category_feeds: Vec<FeedCategory>
+		categories: Vec<CategoryModel>,
+		category_feeds: Vec<FeedCategoryModel>
 	},
 
 	NewCategory {
-		category: NewCategory,
+		category: NewCategoryModel,
 		affected: usize
 	},
 
@@ -265,13 +265,13 @@ pub enum Core2FrontNotification {
 	},
 
 	EditCategory {
-		category: EditCategory,
+		category: EditCategoryModel,
 		affected: usize
 	},
 
 
 	NewFeedCategory {
-		category: NewFeedCategory,
+		category: NewFeedCategoryModel,
 		affected: usize
 	},
 
@@ -289,7 +289,7 @@ pub enum Core2FrontNotification {
 	},
 
 	NewFilter {
-		filter: NewFilterModel,
+		filter: NewFilter,
 		affected: usize
 	},
 
@@ -327,11 +327,11 @@ pub enum Core2FrontNotification {
 
 
 	WatcherList {
-		items: Vec<(Watching, Option<WatchHistoryBase>)>
+		items: Vec<(WatchingModel, Option<WatchHistoryBase>)>
 	},
 
 	NewWatcher {
-		listener: NewWatching,
+		listener: NewWatchingModel,
 		affected: usize
 	},
 
@@ -340,7 +340,7 @@ pub enum Core2FrontNotification {
 	},
 
 	EditWatcher {
-		listener: EditWatching,
+		listener: EditWatchingModel,
 		affected: usize
 	},
 

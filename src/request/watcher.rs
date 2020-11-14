@@ -8,9 +8,9 @@ use diesel::SqliteConnection;
 use crate::feature::schema::{watching as WatchingSchema};
 use crate::feature::models::{
 	QueryId,
-	Watching, NewWatching,
-	NewWatchHistory,
-	NewWatchParserItem
+	WatchingModel, NewWatchingModel,
+	NewWatchHistoryModel,
+	NewWatchParserItemModel
 };
 use crate::{Result, Error};
 use super::feeds::custom::ParseOpts;
@@ -38,9 +38,9 @@ pub struct WatchParserItem {
 	pub match_opts: MatchParser
 }
 
-impl Into<NewWatchParserItem> for WatchParserItem {
-	fn into(self) -> NewWatchParserItem {
-		NewWatchParserItem {
+impl Into<NewWatchParserItemModel> for WatchParserItem {
+	fn into(self) -> NewWatchParserItemModel {
+		NewWatchParserItemModel {
 			title: self.title,
 			description: self.description,
 			match_url: self.match_url,
@@ -91,7 +91,7 @@ pub struct RequestWatcherResults {
 	pub duration: Duration,
 	pub new_item_count: usize,
 	pub item_count: i32,
-	pub insert: Option<NewWatchHistory>
+	pub insert: Option<NewWatchHistoryModel>
 }
 
 pub struct RequestManager {
@@ -107,14 +107,14 @@ impl RequestManager {
 		}
 	}
 
-	pub fn verify_new_watcher(&self, url: String, parser_id: Option<QueryId>, conn: &SqliteConnection) -> Result<NewWatching> {
+	pub fn verify_new_watcher(&self, url: String, parser_id: Option<QueryId>, conn: &SqliteConnection) -> Result<NewWatchingModel> {
 		let item = if let Some(id) = parser_id {
 			get_watch_parser_by_id(id, conn)?
 		} else {
 			get_watch_parser_from_url(Url::parse(&url).unwrap(), conn)?
 		};
 
-		let watcher = NewWatching {
+		let watcher = NewWatchingModel {
 			parser_id: item.id,
 
 			url,
@@ -276,7 +276,7 @@ pub fn get_from_url_parser(url: &str, parser: &MatchParser) -> Result<Vec<FoundI
 }
 
 
-pub fn request_feed(feed: Watching, conn: &SqliteConnection) -> WatcherResult {
+pub fn request_feed(feed: WatchingModel, conn: &SqliteConnection) -> WatcherResult {
 	info!(" - Requesting: {}", feed.url);
 
 	let mut feed_res = RequestWatcherResults {
@@ -300,7 +300,7 @@ pub fn request_feed(feed: Watching, conn: &SqliteConnection) -> WatcherResult {
 		if new_items.iter().any(|v| !last_item.items.contains(v)) {
 			println!(" | New item Value found!");
 
-			feed_res.insert = Some(NewWatchHistory {
+			feed_res.insert = Some(NewWatchHistoryModel {
 				watch_id: feed.id,
 				items: serde_json::to_string(&new_items).unwrap(),
 
@@ -311,7 +311,7 @@ pub fn request_feed(feed: Watching, conn: &SqliteConnection) -> WatcherResult {
 		}
 	} else {
 		// No last watch history? Create it.
-		create_last_watch_history(&NewWatchHistory {
+		create_last_watch_history(&NewWatchHistoryModel {
 			watch_id: feed.id,
 			items: serde_json::to_string(&new_items).unwrap(),
 
@@ -327,7 +327,7 @@ pub fn request_feed(feed: Watching, conn: &SqliteConnection) -> WatcherResult {
 }
 
 
-pub fn update_last_called_db(set_last_called: i64, feeds_arr: Vec<Watching>, connection: &SqliteConnection) {
+pub fn update_last_called_db(set_last_called: i64, feeds_arr: Vec<WatchingModel>, connection: &SqliteConnection) {
 	use diesel::prelude::*;
 	use WatchingSchema::dsl::*;
 

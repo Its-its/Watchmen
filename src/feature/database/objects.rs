@@ -10,20 +10,20 @@ use atom_syndication::Entry as AtomItem;
 use diesel::{SqliteConnection, QueryResult};
 use diesel::prelude::*;
 
-use crate::Filter;
+use crate::FilterType;
 use super::schema::*;
 use super::models::{
 	QueryId,
-	CustomItem, NewCustomItem, EditCustomItem,
-	FilterDB, NewFilterDB, EditFilterDB,
-	FeedFilterDB, NewFeedFilter,
-	Item, NewItem,
-	Feed, EditFeed,
-	Category, NewCategory, EditCategory,
-	FeedCategory, NewFeedCategory,
-	Watching, NewWatching, EditWatching,
-	WatchParserItem, NewWatchParserItem,
-	WatchHistory, NewWatchHistory
+	CustomItemModel, NewCustomItemModel, EditCustomItemModel,
+	FilterModel, NewFilterModel, EditFilterModel,
+	FeedFilterModel, NewFeedFilterModel,
+	FeedItemModel, NewFeedItemModel,
+	FeedModel, EditFeedModel,
+	CategoryModel, NewCategoryModel, EditCategoryModel,
+	FeedCategoryModel, NewFeedCategoryModel,
+	WatchingModel, NewWatchingModel, EditWatchingModel,
+	WatchParserItemModel, NewWatchParserItemModel,
+	WatchHistoryModel, NewWatchHistoryModel
 };
 use crate::state::CoreState;
 use crate::request::feeds::custom::{CustomItem as CustomItemBase, FoundItem as CustomFoundItem};
@@ -33,7 +33,7 @@ use crate::request::watcher::{self, WatchParserItem as WatchParserItemBase};
 
 // Custom Item
 
-impl Into<CustomItemBase> for CustomItem {
+impl Into<CustomItemBase> for CustomItemModel {
 	fn into(self) -> CustomItemBase {
 		CustomItemBase {
 			id: Some(self.id),
@@ -45,7 +45,7 @@ impl Into<CustomItemBase> for CustomItem {
 	}
 }
 
-impl From<CustomItemBase> for NewCustomItem {
+impl From<CustomItemBase> for NewCustomItemModel {
 	fn from(item: CustomItemBase) -> Self {
 		Self {
 			title: item.title,
@@ -56,7 +56,7 @@ impl From<CustomItemBase> for NewCustomItem {
 	}
 }
 
-impl From<CustomItemBase> for EditCustomItem {
+impl From<CustomItemBase> for EditCustomItemModel {
 	fn from(item: CustomItemBase) -> Self {
 		Self {
 			title: Some(item.title),
@@ -68,7 +68,7 @@ impl From<CustomItemBase> for EditCustomItem {
 }
 
 
-pub fn create_custom_item(item: &NewCustomItem, conn: &SqliteConnection) -> QueryResult<usize> {
+pub fn create_custom_item(item: &NewCustomItemModel, conn: &SqliteConnection) -> QueryResult<usize> {
 	use self::custom_item::dsl::*;
 
 	diesel::insert_into(custom_item).values(item).execute(conn)
@@ -79,7 +79,7 @@ pub fn get_custom_item_by_id(f_id: QueryId, conn: &SqliteConnection) -> QueryRes
 
 	Ok(
 		custom_item.find(f_id)
-		.get_result::<CustomItem>(conn)?
+		.get_result::<CustomItemModel>(conn)?
 		.into()
 	)
 }
@@ -109,14 +109,14 @@ pub fn get_custom_item_from_url(f_url: Url, conn: &SqliteConnection) -> QueryRes
 
 	Ok(
 		custom_item.filter(match_url.eq_any(values))
-		.get_result::<CustomItem>(conn)?
+		.get_result::<CustomItemModel>(conn)?
 		.into()
 	)
 }
 
 pub fn get_custom_items(conn: &SqliteConnection) -> QueryResult<Vec<CustomItemBase>> {
 	Ok(
-		self::custom_item::table.load::<CustomItem>(conn)?
+		self::custom_item::table.load::<CustomItemModel>(conn)?
 		.into_iter()
 		.map(|i| i.into())
 		.collect()
@@ -127,7 +127,7 @@ pub fn get_custom_items(conn: &SqliteConnection) -> QueryResult<Vec<CustomItemBa
 // Grouped Filter
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FilterGrouping {
-	pub filter: FilterModel,
+	pub filter: Filter,
 	pub feeds: Vec<QueryId>
 }
 
@@ -135,45 +135,45 @@ pub struct FilterGrouping {
 // Filters
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct FilterModel {
+pub struct Filter {
 	pub id: QueryId,
 	pub title: String,
-	pub filter: Filter
+	pub filter: FilterType
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct NewFilterModel {
+pub struct NewFilter {
 	pub title: String,
-	pub filter: Filter
+	pub filter: FilterType
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct EditFilterModel {
+pub struct EditFilter {
 	pub title: Option<String>,
-	pub filter: Option<Filter>
+	pub filter: Option<FilterType>
 }
 
-impl From<EditFilterModel> for EditFilterDB {
-	fn from(filter: EditFilterModel) -> Self {
-		EditFilterDB {
+impl From<EditFilter> for EditFilterModel {
+	fn from(filter: EditFilter) -> Self {
+		EditFilterModel {
 			title: filter.title,
 			filter: filter.filter.map(|v| serde_json::to_string(&v).unwrap())
 		}
 	}
 }
 
-impl From<NewFilterModel> for NewFilterDB {
-	fn from(filter: NewFilterModel) -> Self {
-		NewFilterDB {
+impl From<NewFilter> for NewFilterModel {
+	fn from(filter: NewFilter) -> Self {
+		NewFilterModel {
 			title: filter.title,
 			filter: serde_json::to_string(&filter.filter).unwrap()
 		}
 	}
 }
 
-impl From<FilterDB> for FilterModel {
-	fn from(filter: FilterDB) -> Self {
-		FilterModel {
+impl From<FilterModel> for Filter {
+	fn from(filter: FilterModel) -> Self {
+		Filter {
 			id: filter.id,
 			title: filter.title,
 			filter: serde_json::from_str(&filter.filter).unwrap()
@@ -182,19 +182,19 @@ impl From<FilterDB> for FilterModel {
 }
 
 
-pub fn create_filter(f_filter: NewFilterModel, conn: &SqliteConnection) -> QueryResult<usize> {
+pub fn create_filter(f_filter: NewFilter, conn: &SqliteConnection) -> QueryResult<usize> {
 	use self::filters::dsl::*;
 
 	diesel::insert_into(filters)
-	.values(NewFilterDB::from(f_filter))
+	.values(NewFilterModel::from(f_filter))
 	.execute(conn)
 }
 
-pub fn update_filter(f_id: QueryId, f_feed: EditFilterModel, conn: &SqliteConnection) -> QueryResult<usize> {
+pub fn update_filter(f_id: QueryId, f_feed: EditFilter, conn: &SqliteConnection) -> QueryResult<usize> {
 	use self::filters::dsl::*;
 
 	diesel::update(self::filters::table.filter(id.eq(f_id)))
-	.set(EditFilterDB::from(f_feed))
+	.set(EditFilterModel::from(f_feed))
 	.execute(conn)
 }
 
@@ -212,7 +212,7 @@ pub fn remove_filter(f_filter_id: QueryId, conn: &SqliteConnection) -> QueryResu
 	Ok((amount, ff_amount))
 }
 
-pub fn get_filters_for_feed(f_feed_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<FilterModel>> {
+pub fn get_filters_for_feed(f_feed_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<Filter>> {
 	use self::filters::dsl::*;
 
 	let filter_ids: Vec<QueryId> = get_filters_from_feed_id(f_feed_id, conn)?
@@ -221,43 +221,43 @@ pub fn get_filters_for_feed(f_feed_id: QueryId, conn: &SqliteConnection) -> Quer
 		.collect();
 
 	filters.filter(id.eq_any(filter_ids))
-		.get_results::<FilterDB>(conn)
-		.map(|f| f.into_iter().map(FilterModel::from).collect())
+		.get_results::<FilterModel>(conn)
+		.map(|f| f.into_iter().map(Filter::from).collect())
 }
 
-pub fn get_filter(f_filter_id: QueryId, conn: &SqliteConnection) -> QueryResult<FilterModel> {
+pub fn get_filter(f_filter_id: QueryId, conn: &SqliteConnection) -> QueryResult<Filter> {
 	use self::filters::dsl::*;
 
 	filters.filter(id.eq(f_filter_id))
-	.get_result::<FilterDB>(conn)
-	.map(FilterModel::from)
+		.get_result::<FilterModel>(conn)
+		.map(Filter::from)
 }
 
-pub fn get_filters(conn: &SqliteConnection) -> QueryResult<Vec<FilterModel>> {
+pub fn get_filters(conn: &SqliteConnection) -> QueryResult<Vec<Filter>> {
 	use self::filters::dsl::*;
 
 	filters.filter(id.ne(0))
-	.get_results::<FilterDB>(conn)
-	.map(|v| v.into_iter().map(FilterModel::from).collect())
+		.get_results::<FilterModel>(conn)
+		.map(|v| v.into_iter().map(Filter::from).collect())
 }
 
 
 
 // Feed Filter Listeners.
 
-pub fn get_feed_filters(conn: &SqliteConnection) -> QueryResult<Vec<FeedFilterDB>> {
+pub fn get_feed_filters(conn: &SqliteConnection) -> QueryResult<Vec<FeedFilterModel>> {
 	use self::feed_filters::dsl::*;
 
 	feed_filters.filter(id.ne(0)).get_results(conn)
 }
 
-pub fn get_filters_from_feed_id(f_feed_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<FeedFilterDB>> {
+pub fn get_filters_from_feed_id(f_feed_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<FeedFilterModel>> {
 	use self::feed_filters::dsl::*;
 
 	feed_filters.filter(feed_id.eq(f_feed_id)).get_results(conn)
 }
 
-pub fn get_filters_from_filter_id(f_filter_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<FeedFilterDB>> {
+pub fn get_filters_from_filter_id(f_filter_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<FeedFilterModel>> {
 	use self::feed_filters::dsl::*;
 
 	feed_filters.filter(filter_id.eq(f_filter_id)).get_results(conn)
@@ -274,7 +274,7 @@ pub fn create_feed_and_filter_link(f_filter_id: QueryId, f_feed_id: QueryId, con
 
 	if found == 0 {
 		diesel::insert_into(feed_filters)
-		.values(NewFeedFilter {
+		.values(NewFeedFilterModel {
 			filter_id: f_filter_id,
 			feed_id: f_feed_id
 		})
@@ -318,7 +318,7 @@ pub fn get_item_total(category_id: Option<QueryId>, conn: &SqliteConnection) -> 
 	}
 }
 
-pub fn get_items_in_range(category_id: Option<QueryId>, item_count: i64, skip_count: i64, conn: &SqliteConnection) -> QueryResult<Vec<Item>> {
+pub fn get_items_in_range(category_id: Option<QueryId>, item_count: i64, skip_count: i64, conn: &SqliteConnection) -> QueryResult<Vec<FeedItemModel>> {
 	use self::items::dsl::*;
 
 	match category_id {
@@ -358,9 +358,9 @@ pub fn remove_item(l_id: QueryId, conn: &SqliteConnection) -> QueryResult<usize>
 }
 
 
-impl From<&RssItem> for NewItem {
-	fn from(item: &RssItem) -> NewItem {
-		let mut new_item = NewItem {
+impl From<&RssItem> for NewFeedItemModel {
+	fn from(item: &RssItem) -> NewFeedItemModel {
+		let mut new_item = NewFeedItemModel {
 			guid: Default::default(),
 			title: item.title().unwrap_or_default().to_string(),
 			author: item.author().unwrap_or_default().to_string(),
@@ -411,9 +411,9 @@ impl From<&RssItem> for NewItem {
 	}
 }
 
-impl From<&AtomItem> for NewItem {
-	fn from(item: &AtomItem) -> NewItem {
-		let mut new_item = NewItem {
+impl From<&AtomItem> for NewFeedItemModel {
+	fn from(item: &AtomItem) -> NewFeedItemModel {
+		let mut new_item = NewFeedItemModel {
 			guid: item.id().to_string(),
 
 			title: item.title().to_string(),
@@ -465,9 +465,9 @@ impl From<&AtomItem> for NewItem {
 	}
 }
 
-impl From<CustomFoundItem> for NewItem {
-	fn from(item: CustomFoundItem) -> NewItem {
-		let mut new_item = NewItem {
+impl From<CustomFoundItem> for NewFeedItemModel {
+	fn from(item: CustomFoundItem) -> NewFeedItemModel {
+		let mut new_item = NewFeedItemModel {
 			guid: item.guid,
 
 			title: item.title,
@@ -523,7 +523,7 @@ impl From<CustomFoundItem> for NewItem {
 
 // Feeds / Listeners
 
-pub fn get_listeners(conn: &SqliteConnection) -> QueryResult<Vec<Feed>> {
+pub fn get_listeners(conn: &SqliteConnection) -> QueryResult<Vec<FeedModel>> {
 	self::feeds::table.load(conn)
 }
 
@@ -550,7 +550,7 @@ pub fn remove_listener(f_id: QueryId, rem_stored: bool, state: &mut CoreState) -
 	diesel::delete(feeds.filter(id.eq(f_id))).execute(conn)
 }
 
-pub fn update_listener(f_id: QueryId, edit: &EditFeed, state: &mut CoreState) -> QueryResult<usize> {
+pub fn update_listener(f_id: QueryId, edit: &EditFeedModel, state: &mut CoreState) -> QueryResult<usize> {
 	{ // Update Stored Feed
 		if let Some(feed) = state.feed_requests.feeds.iter_mut().find(|f| f.id == f_id) {
 			if let Some(i) = edit.description.as_ref() { feed.description = i.to_owned(); }
@@ -574,17 +574,17 @@ pub fn update_listener(f_id: QueryId, edit: &EditFeed, state: &mut CoreState) ->
 
 // Categories
 
-pub fn get_categories(conn: &SqliteConnection) -> QueryResult<Vec<Category>> {
+pub fn get_categories(conn: &SqliteConnection) -> QueryResult<Vec<CategoryModel>> {
 	self::categories::table.load(conn)
 }
 
-pub fn get_category(cat_id: QueryId, conn: &SqliteConnection) -> QueryResult<Category> {
+pub fn get_category(cat_id: QueryId, conn: &SqliteConnection) -> QueryResult<CategoryModel> {
 	use self::categories::dsl::*;
 
 	categories.filter(id.eq(cat_id)).get_result(conn)
 }
 
-pub fn create_category(category: &NewCategory, conn: &SqliteConnection) -> QueryResult<usize> {
+pub fn create_category(category: &NewCategoryModel, conn: &SqliteConnection) -> QueryResult<usize> {
 	use self::categories::dsl::*;
 	diesel::insert_into(categories).values(category).execute(conn)
 }
@@ -595,7 +595,7 @@ pub fn remove_category(cat_id: QueryId, conn: &SqliteConnection) -> QueryResult<
 	diesel::delete(categories.filter(id.eq(cat_id))).execute(conn)
 }
 
-pub fn update_category(c_id: QueryId, edit: &EditCategory, conn: &SqliteConnection) -> QueryResult<usize> {
+pub fn update_category(c_id: QueryId, edit: &EditCategoryModel, conn: &SqliteConnection) -> QueryResult<usize> {
 	use self::categories::dsl::*;
 
 	diesel::update(categories.filter(id.eq(c_id)))
@@ -607,7 +607,7 @@ pub fn update_category(c_id: QueryId, edit: &EditCategory, conn: &SqliteConnecti
 
 // Category Feeds
 
-pub fn create_category_feed(category: &NewFeedCategory, conn: &SqliteConnection) -> QueryResult<usize> {
+pub fn create_category_feed(category: &NewFeedCategoryModel, conn: &SqliteConnection) -> QueryResult<usize> {
 	use self::feed_categories::dsl::*;
 	diesel::insert_into(feed_categories).values(category).execute(conn)
 }
@@ -618,11 +618,11 @@ pub fn remove_category_feed(f_id: QueryId, conn: &SqliteConnection) -> QueryResu
 }
 
 
-pub fn get_feed_categories(conn: &SqliteConnection) -> QueryResult<Vec<FeedCategory>> {
+pub fn get_feed_categories(conn: &SqliteConnection) -> QueryResult<Vec<FeedCategoryModel>> {
 	self::feed_categories::table.load(conn)
 }
 
-pub fn get_category_feeds(cat_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<FeedCategory>> {
+pub fn get_category_feeds(cat_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<FeedCategoryModel>> {
 	use self::feed_categories::dsl::*;
 
 	feed_categories.filter(category_id.eq(cat_id)).get_results(conn)
@@ -636,17 +636,17 @@ pub fn get_category_feeds(cat_id: QueryId, conn: &SqliteConnection) -> QueryResu
 
 // Watchers
 
-pub fn get_watchers(conn: &SqliteConnection) -> QueryResult<Vec<Watching>> {
+pub fn get_watchers(conn: &SqliteConnection) -> QueryResult<Vec<WatchingModel>> {
 	self::watching::table.load(conn)
 }
 
-pub fn get_watcher_by_url(f_url: &str, conn: &SqliteConnection) -> QueryResult<Watching> {
+pub fn get_watcher_by_url(f_url: &str, conn: &SqliteConnection) -> QueryResult<WatchingModel> {
 	use self::watching::dsl::*;
 
 	watching.filter(url.eq(f_url)).get_result(conn)
 }
 
-pub fn get_watcher_by_id(f_id: QueryId, conn: &SqliteConnection) -> QueryResult<Watching> {
+pub fn get_watcher_by_id(f_id: QueryId, conn: &SqliteConnection) -> QueryResult<WatchingModel> {
 	use self::watching::dsl::*;
 
 	watching.filter(id.eq(f_id)).get_result(conn)
@@ -669,7 +669,7 @@ pub fn remove_watcher(f_id: QueryId, rem_stored: bool, conn: &SqliteConnection) 
 	diesel::delete(watching.filter(id.eq(f_id))).execute(conn)
 }
 
-pub fn update_watcher(f_id: QueryId, edit: &EditWatching, conn: &SqliteConnection) -> QueryResult<usize> {
+pub fn update_watcher(f_id: QueryId, edit: &EditWatchingModel, conn: &SqliteConnection) -> QueryResult<usize> {
 	use self::watching::dsl::*;
 
 	diesel::update(watching.filter(id.eq(f_id)))
@@ -677,7 +677,7 @@ pub fn update_watcher(f_id: QueryId, edit: &EditWatching, conn: &SqliteConnectio
 		.execute(conn)
 }
 
-pub fn create_watcher(watcher: &NewWatching, conn: &SqliteConnection) -> QueryResult<usize> {
+pub fn create_watcher(watcher: &NewWatchingModel, conn: &SqliteConnection) -> QueryResult<usize> {
 	use self::watching::dsl::*;
 
 	diesel::insert_into(watching).values(watcher).execute(conn)
@@ -687,7 +687,7 @@ pub fn create_watcher(watcher: &NewWatching, conn: &SqliteConnection) -> QueryRe
 
 // Watch Parser
 
-impl Into<WatchParserItemBase> for WatchParserItem {
+impl Into<WatchParserItemBase> for WatchParserItemModel {
 	fn into(self) -> WatchParserItemBase {
 		WatchParserItemBase {
 			id: Some(self.id),
@@ -699,7 +699,7 @@ impl Into<WatchParserItemBase> for WatchParserItem {
 	}
 }
 
-pub fn create_watch_parser(item: &NewWatchParserItem, conn: &SqliteConnection) -> QueryResult<usize> {
+pub fn create_watch_parser(item: &NewWatchParserItemModel, conn: &SqliteConnection) -> QueryResult<usize> {
 	use self::watch_parser::dsl::*;
 
 	diesel::insert_into(watch_parser).values(item).execute(conn)
@@ -710,7 +710,7 @@ pub fn get_watch_parser_by_id(f_id: QueryId, conn: &SqliteConnection) -> QueryRe
 
 	Ok(
 		watch_parser.find(f_id)
-		.get_result::<WatchParserItem>(conn)?
+		.get_result::<WatchParserItemModel>(conn)?
 		.into()
 	)
 }
@@ -740,14 +740,14 @@ pub fn get_watch_parser_from_url(f_url: Url, conn: &SqliteConnection) -> QueryRe
 
 	Ok(
 		watch_parser.filter(match_url.eq_any(values))
-		.get_result::<WatchParserItem>(conn)?
+		.get_result::<WatchParserItemModel>(conn)?
 		.into()
 	)
 }
 
 pub fn get_watch_parsers(conn: &SqliteConnection) -> QueryResult<Vec<WatchParserItemBase>> {
 	Ok(
-		self::watch_parser::table.load::<WatchParserItem>(conn)?
+		self::watch_parser::table.load::<WatchParserItemModel>(conn)?
 		.into_iter()
 		.map(|i| i.into())
 		.collect()
@@ -767,8 +767,8 @@ pub struct WatchHistoryBase {
 	pub date_added: i64
 }
 
-impl From<WatchHistory> for WatchHistoryBase {
-	fn from(history: WatchHistory) -> Self {
+impl From<WatchHistoryModel> for WatchHistoryBase {
+	fn from(history: WatchHistoryModel) -> Self {
 		WatchHistoryBase {
 			id: history.id,
 
@@ -793,7 +793,7 @@ pub fn get_last_watch_history(f_watch_id: QueryId, conn: &SqliteConnection) -> Q
 	watch_history
 	.filter(watch_id.eq(f_watch_id))
 	.order_by(date_added.desc())
-	.get_result::<WatchHistory>(conn)
+	.get_result::<WatchHistoryModel>(conn)
 	.map(WatchHistoryBase::from)
 	.optional()
 }
@@ -804,7 +804,7 @@ pub fn get_last_watch_history_list(f_watch_id: QueryId, conn: &SqliteConnection)
 	watch_history
 	.filter(watch_id.eq(f_watch_id))
 	.order_by(date_added.desc())
-	.get_results::<WatchHistory>(conn)
+	.get_results::<WatchHistoryModel>(conn)
 	.map(|i| i.into_iter().map(WatchHistoryBase::from).collect())
 }
 
@@ -818,7 +818,7 @@ pub fn get_watch_history_list(f_watch_id: Option<QueryId>, item_count: i64, skip
 				.limit(item_count)
 				.offset(skip_count)
 				.order(date_added.desc())
-				.load::<WatchHistory>(conn)
+				.load::<WatchHistoryModel>(conn)
 				.map(|i| i.into_iter().map(WatchHistoryBase::from).collect())
 		}
 
@@ -827,14 +827,14 @@ pub fn get_watch_history_list(f_watch_id: Option<QueryId>, item_count: i64, skip
 				.limit(item_count)
 				.offset(skip_count)
 				.order(date_added.desc())
-				.load::<WatchHistory>(conn)
+				.load::<WatchHistoryModel>(conn)
 				.map(|i| i.into_iter().map(WatchHistoryBase::from).collect())
 		}
 	}
 }
 
 
-pub fn create_last_watch_history(item: &NewWatchHistory, conn: &SqliteConnection) -> QueryResult<usize> {
+pub fn create_last_watch_history(item: &NewWatchHistoryModel, conn: &SqliteConnection) -> QueryResult<usize> {
 	use self::watch_history::dsl::*;
 
 	diesel::insert_into(watch_history).values(item).execute(conn)

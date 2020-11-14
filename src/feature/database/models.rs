@@ -12,7 +12,7 @@ pub type QueryId = i32;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Queryable, Identifiable)]
 #[table_name = "items"]
-pub struct Item {
+pub struct FeedItemModel {
 	pub id: QueryId,
 
 	// Pre-defined
@@ -35,7 +35,7 @@ pub struct Item {
 
 #[derive(Serialize, Deserialize, Debug, Insertable)]
 #[table_name = "items"]
-pub struct NewItem {
+pub struct NewFeedItemModel {
 	pub guid: String,
 	pub title: String,
 	pub author: String,
@@ -58,7 +58,7 @@ pub struct NewItem {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, Queryable, Identifiable)]
 #[table_name = "feeds"]
-pub struct Feed {
+pub struct FeedModel {
 	pub id: QueryId,
 
 	pub url: String,
@@ -82,7 +82,7 @@ pub struct Feed {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
 #[table_name = "feeds"]
-pub struct NewFeed {
+pub struct NewFeedModel {
 	pub url: String,
 	pub title: String,
 	pub description: String,
@@ -104,7 +104,7 @@ pub struct NewFeed {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, AsChangeset)]
 #[table_name = "feeds"]
-pub struct EditFeed {
+pub struct EditFeedModel {
 	pub title: Option<String>,
 	pub description: Option<String>,
 	pub generator: Option<String>,
@@ -121,7 +121,7 @@ pub struct EditFeed {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Queryable, Identifiable)]
 #[table_name = "categories"]
-pub struct Category {
+pub struct CategoryModel {
 	pub id: QueryId,
 
 	pub position: i32,
@@ -135,7 +135,7 @@ pub struct Category {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
 #[table_name = "categories"]
-pub struct NewCategory {
+pub struct NewCategoryModel {
 	pub position: i32,
 
 	pub name: String,
@@ -146,7 +146,7 @@ pub struct NewCategory {
 
 #[derive(Serialize, Deserialize, Debug, Clone, AsChangeset)]
 #[table_name = "categories"]
-pub struct EditCategory {
+pub struct EditCategoryModel {
 	pub position: Option<i32>,
 
 	pub name: Option<String>,
@@ -160,7 +160,7 @@ pub struct EditCategory {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Queryable, Identifiable)]
 #[table_name = "feed_categories"]
-pub struct FeedCategory {
+pub struct FeedCategoryModel {
 	pub id: QueryId,
 
 	pub feed_id: QueryId,
@@ -170,7 +170,7 @@ pub struct FeedCategory {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
 #[table_name = "feed_categories"]
-pub struct NewFeedCategory {
+pub struct NewFeedCategoryModel {
 	pub feed_id: QueryId,
 	pub category_id: QueryId
 }
@@ -180,7 +180,7 @@ pub struct NewFeedCategory {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Queryable, Identifiable)]
 #[table_name = "filters"]
-pub struct FilterDB {
+pub struct FilterModel {
 	pub id: QueryId,
 
 	pub title: String,
@@ -191,14 +191,14 @@ pub struct FilterDB {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
 #[table_name = "filters"]
-pub struct NewFilterDB {
+pub struct NewFilterModel {
 	pub title: String,
 	pub filter: String
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, AsChangeset)]
 #[table_name = "filters"]
-pub struct EditFilterDB {
+pub struct EditFilterModel {
 	pub title: Option<String>,
 	pub filter: Option<String>
 }
@@ -208,7 +208,7 @@ pub struct EditFilterDB {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Queryable, Identifiable)]
 #[table_name = "feed_filters"]
-pub struct FeedFilterDB {
+pub struct FeedFilterModel {
 	pub id: QueryId,
 
 	pub feed_id: QueryId,
@@ -217,7 +217,7 @@ pub struct FeedFilterDB {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
 #[table_name = "feed_filters"]
-pub struct NewFeedFilter {
+pub struct NewFeedFilterModel {
 	pub feed_id: QueryId,
 	pub filter_id: QueryId
 }
@@ -227,7 +227,7 @@ pub struct NewFeedFilter {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Queryable, Identifiable)]
 #[table_name = "custom_item"]
-pub struct CustomItem {
+pub struct CustomItemModel {
 	pub id: QueryId,
 
 	pub title: String,
@@ -239,7 +239,7 @@ pub struct CustomItem {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
 #[table_name = "custom_item"]
-pub struct NewCustomItem {
+pub struct NewCustomItemModel {
 	pub title: String,
 	pub match_url: String,
 	pub description: String,
@@ -249,7 +249,7 @@ pub struct NewCustomItem {
 
 #[derive(Serialize, Deserialize, Debug, Clone, AsChangeset)]
 #[table_name = "custom_item"]
-pub struct EditCustomItem {
+pub struct EditCustomItemModel {
 	pub title: Option<String>,
 	pub match_url: Option<String>,
 	pub description: Option<String>,
@@ -265,7 +265,7 @@ pub struct EditCustomItem {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, Queryable, Identifiable)]
 #[table_name = "watching"]
-pub struct Watching {
+pub struct WatchingModel {
 	pub id: QueryId,
 
 	pub parser_id: Option<QueryId>,
@@ -284,7 +284,7 @@ pub struct Watching {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
 #[table_name = "watching"]
-pub struct NewWatching {
+pub struct NewWatchingModel {
 	pub parser_id: Option<QueryId>,
 
 	pub url: String,
@@ -300,7 +300,7 @@ pub struct NewWatching {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, AsChangeset)]
 #[table_name = "watching"]
-pub struct EditWatching {
+pub struct EditWatchingModel {
 	pub parser_id: Option<QueryId>,
 
 	pub url: Option<String>,
@@ -316,7 +316,7 @@ pub struct EditWatching {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Queryable, Identifiable)]
 #[table_name = "watch_history"]
-pub struct WatchHistory {
+pub struct WatchHistoryModel {
 	pub id: QueryId,
 
 	pub watch_id: QueryId,
@@ -327,7 +327,7 @@ pub struct WatchHistory {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
 #[table_name = "watch_history"]
-pub struct NewWatchHistory {
+pub struct NewWatchHistoryModel {
 	pub watch_id: QueryId,
 	pub items: String,
 
@@ -339,7 +339,7 @@ pub struct NewWatchHistory {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Queryable, Identifiable)]
 #[table_name = "watch_parser"]
-pub struct WatchParserItem {
+pub struct WatchParserItemModel {
 	pub id: QueryId,
 
 	pub title: String,
@@ -351,7 +351,7 @@ pub struct WatchParserItem {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
 #[table_name = "watch_parser"]
-pub struct NewWatchParserItem {
+pub struct NewWatchParserItemModel {
 	pub title: String,
 	pub match_url: String,
 	pub description: String,
@@ -361,7 +361,7 @@ pub struct NewWatchParserItem {
 
 #[derive(Serialize, Deserialize, Debug, Clone, AsChangeset)]
 #[table_name = "watch_parser"]
-pub struct EditWatchParserItem {
+pub struct EditWatchParserItemModel {
 	pub title: Option<String>,
 	pub match_url: Option<String>,
 	pub description: Option<String>,
