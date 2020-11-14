@@ -13,6 +13,16 @@ export default class SocketManager {
 	constructor() {
 		this.socket.addEventListener('message', event => this.onMessage(JSON.parse(event.data)));
 		this.socket.addEventListener('open', event => this.on_open(event));
+
+		setInterval(() => {
+			for (let i = this.awaiting_response.length - 1; i >= 0; i--) {
+				const resp = this.awaiting_response[i];
+
+				if (Date.now() > resp.sent + (resp.timeout_seconds * 1000)) {
+					this.awaiting_response.splice(i, 1);
+				}
+			}
+		}, 5 * 1000);
 	}
 
 	public is_open(): boolean {
