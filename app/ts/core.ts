@@ -54,7 +54,9 @@ const app = {
 
 	on_connection_open() {
 		// Get Current feeds
-		this.process.refresh_feeds();
+		this.process.init_feeds(() => {
+			if (this.view != null) this.view.on_connection_open();
+		});
 		this.process.register_updates();
 	},
 

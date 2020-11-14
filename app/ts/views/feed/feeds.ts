@@ -100,7 +100,7 @@ export default class FeedsView extends View {
 						console.log('create_listener:', opts);
 
 						if (opts!.affected != 0) {
-							core.process.refresh_feeds(close);
+							core.process.init_feeds(close);
 						}
 					});
 				});
@@ -194,7 +194,7 @@ class FeedItem {
 					send_remove_listener(this.model.id!, full, (err, opts) => {
 						console.log('send_remove_listener:', err, opts);
 
-						core.process.refresh_feeds(close);
+						core.process.init_feeds(close);
 					});
 				};
 

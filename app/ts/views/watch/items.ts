@@ -79,7 +79,7 @@ export default class WatchItemsView extends View {
 						console.log('create_watcher:', opts);
 
 						if (opts.affected != 0) {
-							core.process.refresh_feeds(close);
+							core.process.init_feeds(close);
 						}
 					});
 				});
@@ -104,7 +104,7 @@ export default class WatchItemsView extends View {
 
 	on_connection_open() {
 		// TODO: Change on_connection_open() to activate after base processes have been processed.
-		setTimeout(() => this.table.regrab(), 1500);
+		this.table.regrab();
 	}
 
 	on_open() {

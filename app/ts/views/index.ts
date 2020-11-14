@@ -20,8 +20,6 @@ export default class View {
 
 			if (core.socket.is_open()) {
 				this.on_connection_open();
-			} else {
-				core.socket.socket.addEventListener('open', _ => this.on_connection_open());
 			}
 		}
 	}

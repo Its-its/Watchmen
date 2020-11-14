@@ -145,7 +145,7 @@ export default class BackgroundProcess {
 	}
 
 	// Initial call when loading website.
-	refresh_feeds(finished?: () => any) {
+	init_feeds(finished?: () => any) {
 		console.log('Refresh Feeds');
 
 		if (core.view != null && core.view instanceof FeedItemsView) {

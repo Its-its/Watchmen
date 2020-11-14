@@ -738,7 +738,7 @@ class SidebarItem {
 							this.view.refresh_categories();
 
 							if (this.view.table.viewing_category == this.id) {
-								core.process.refresh_feeds();
+								core.process.init_feeds();
 							}
 						}
 
@@ -754,7 +754,7 @@ class SidebarItem {
 							this.view.refresh_categories();
 
 							if (this.view.table.viewing_category == this.id) {
-								core.process.refresh_feeds();
+								core.process.init_feeds();
 							}
 						}
 
