@@ -140,12 +140,13 @@ export default class EditorView extends View {
 		custom_url_preview.addEventListener('click', () => {
 			resetAll();
 
-			send_get_webpage_source(custom_url.value, (err, resp) => {
+			send_get_webpage_source(custom_url.value)
+			.then(resp => {
 				if (iframe.contentWindow != null) {
 					const iframe_doc = iframe.contentWindow.document;
 
 					// Write webpage to iframe document
-					iframe_doc.write(resp!.html);
+					iframe_doc.write(resp.html);
 
 					let style = document.createElement('style');
 					style.innerText = CUSTOM_IFRAME_CSS;
@@ -243,11 +244,8 @@ export default class EditorView extends View {
 
 			let obj = rustify_object(rustify);
 
-			send_new_custom_item(obj, (err, value, method) => {
-				console.log(err);
-				console.log(method);
-				console.log(value);
-			});
+			send_new_custom_item(obj)
+			.catch(console.error);
 		});
 
 
@@ -311,12 +309,13 @@ export default class EditorView extends View {
 				}
 			}
 
-			send_get_webpage_source(custom_url.value, (err, resp) => {
+			send_get_webpage_source(custom_url.value)
+			.then(resp => {
 				if (iframe.contentWindow != null) {
 					const iframe_doc = iframe.contentWindow.document;
 
 					// Write webpage to iframe document
-					iframe_doc.write(resp!.html);
+					iframe_doc.write(resp.html);
 
 					let style = document.createElement('style');
 					style.innerText = CUSTOM_IFRAME_CSS;

@@ -54,10 +54,14 @@ const app = {
 
 	on_connection_open() {
 		// Get Current feeds
-		this.process.init_feeds(() => {
+		this.process.init_feeds()
+		.then(_ => {
 			if (this.view != null) this.view.on_connection_open();
-		});
-		this.process.register_updates();
+		})
+		.catch(console.error);
+
+		this.process.register_updates()
+		.catch(console.error);
 	},
 
 	open_view(newView: View) {

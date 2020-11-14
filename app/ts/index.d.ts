@@ -39,6 +39,7 @@ interface SocketResponse {
 }
 
 type ResponseFunc<V> = (error?: any, value?: V, method?: string) => any;
+type PromiseFunc<V> = (value?: V, method?: string) => any;
 
 interface AwaitingReponse {
 	sent: number,

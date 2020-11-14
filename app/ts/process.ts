@@ -101,7 +101,7 @@ export default class BackgroundProcess {
 		//
 	}
 
-	register_updates() {
+	async register_updates() {
 		Notification.requestPermission();
 
 		setInterval(() => {
@@ -111,14 +111,14 @@ export default class BackgroundProcess {
 				core.view.table.rows.forEach(r => r.update_date_element());
 			}
 
-			send_get_updates_since(this.get_newest_timestamp(), (_, update) => {
-				if (update == null) return;
-
+			send_get_updates_since(this.get_newest_timestamp())
+			.then(update => {
 				if (update.new_feeds != 0) {
-					send_get_item_list(null, 0, update.new_feeds, (_, resp) => {
+					send_get_item_list(null, 0, update.new_feeds)
+					.then(resp => {
 						console.log('Update Items:', resp);
 
-						this.on_received_update_items(resp!.items, resp!.notification_ids);
+						this.on_received_update_items(resp.items, resp.notification_ids);
 
 						if (core.view != null && core.view instanceof FeedItemsView) {
 							if (core.view.table.container.scrollTop < 40 * 4) {
@@ -131,8 +131,9 @@ export default class BackgroundProcess {
 				if (update.new_watches != 0) {
 					new Notification(`Received ${update.new_watches} new watch update(s).`);
 
-					send_get_watcher_list((_, resp) => {
-						this.watching_listeners = resp!.items;
+					send_get_watcher_list()
+					.then(resp => {
+						this.watching_listeners = resp.items;
 						console.log('Watching:', resp);
 
 						if (core.view != null && core.view instanceof WatchItemsView) {
@@ -145,38 +146,39 @@ export default class BackgroundProcess {
 	}
 
 	// Initial call when loading website.
-	init_feeds(finished?: () => any) {
+	async init_feeds() {
 		console.log('Refresh Feeds');
 
 		if (core.view != null && core.view instanceof FeedItemsView) {
 			core.view.table.reset();
 		}
 
-		send_get_feed_list((_, feed_opts) => {
-			this.feed_listeners = feed_opts!.items.map(i => new FeedListener(i));
-			console.log('Feeds:', this.feed_listeners);
+		let feed_list_resp = await send_get_feed_list();
 
-			let viewing_category = null;
-			// Set the viewing_category only if viewing table. Otherwise get all.
-			if (core.view != null && core.view instanceof FeedItemsView) {
-				viewing_category = core.view.table.viewing_category;
-			}
+		this.feed_listeners = feed_list_resp.items.map(i => new FeedListener(i));
+		console.log('Feeds:', this.feed_listeners);
 
-			send_get_item_list(viewing_category, undefined, undefined, (_, items) => {
-				let feed_items = items!.items.map(i => new FeedItem(i, items!.notification_ids.includes(i.id!)));
-				feed_items = this.add_or_update_feed_items(feed_items);
+		let viewing_category = null;
+		// Set the viewing_category only if viewing table. Otherwise get all.
+		if (core.view != null && core.view instanceof FeedItemsView) {
+			viewing_category = core.view.table.viewing_category;
+		}
 
-				if (core.view != null && core.view instanceof FeedItemsView) {
-					core.view.table.new_items(items!, feed_items);
-				}
+		let feed_item_list_resp = await send_get_item_list(viewing_category, undefined, undefined);
 
-				console.log(items);
+		let feed_items = feed_item_list_resp.items.map(i => new FeedItem(i, feed_item_list_resp.notification_ids.includes(i.id!)));
+		feed_items = this.add_or_update_feed_items(feed_items);
 
-				if (finished != null) finished();
-			});
-		});
+		if (core.view != null && core.view instanceof FeedItemsView) {
+			core.view.table.new_items(feed_item_list_resp, feed_items);
+		}
 
-		send_get_watcher_list((_, resp) => this.watching_listeners = resp!.items);
+		console.log(feed_item_list_resp);
+
+		let watcher_list_resp = await send_get_watcher_list();
+		this.watching_listeners = watcher_list_resp.items;
+
+		return Promise.resolve();
 	}
 
 	add_or_update_feed_items(feed_items: FeedItem[]): FeedItem[] {

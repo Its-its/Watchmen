@@ -69,39 +69,37 @@ export default class SocketManager {
 
 	//
 
-	public send(name: string, opts?: Obj<any>, response?: ResponseFunc<any>) {
-		let message_id = this.next_msg_id();
+	public send(name: string, opts?: Obj<any>): Promise<any> {
+		return new Promise((resolve, reject) => {
+			let message_id = this.next_msg_id();
 
-		let method = {
-			"method": name,
-			"params": opts
-		};
+			let method = {
+				"method": name,
+				"params": opts
+			};
 
-		let wrapper = {
-			"method": "frontend",
-			"params": {
-				"message_id": message_id,
-				"command": method
-			}
-		};
+			let wrapper = {
+				"method": "frontend",
+				"params": {
+					"message_id": message_id,
+					"command": method
+				}
+			};
 
-		if (response != undefined) {
 			this.awaiting_response.push({
 				msg_id: message_id,
-				resp_func: response,
+				resp_func: function(err, value) {
+					if (err != null) return reject(err);
+					else resolve(value);
+				},
 				sent: Date.now(),
 				timeout_seconds: 60 * 5
 			});
-		} else {
-			// @ts-ignore
-			delete wrapper.params['message_id'];
-		}
 
-		if (this.debug) console.log(JSON.stringify(method, null, 4));
+			if (this.debug) console.log(JSON.stringify(method, null, 4));
 
-		// console.log('Sending:', wrapper);
-
-		this.socket.send(JSON.stringify(wrapper, null, 4));
+			this.socket.send(JSON.stringify(wrapper, null, 4));
+		});
 	}
 }
 
@@ -109,235 +107,235 @@ export default class SocketManager {
 // Sending
 
 // cat
-export function send_create_category(name: string, cat_id: number, cb?: ResponseFunc<CreateCategoryResponse>) {
+export function send_create_category(name: string, cat_id: number): Promise<CreateCategoryResponse> {
 	let opts = {
 		name: name,
 		position: cat_id
 	};
 
-	app.socket.send('add_category', opts, cb);
+	return app.socket.send('add_category', opts);
 }
 
-export function send_remove_category(cat_feed_id: number, cb?: ResponseFunc<AddCategoryFeedResponse>) {
+export function send_remove_category(cat_feed_id: number): Promise<AddCategoryFeedResponse> {
 	let opts = {
 		id: cat_feed_id
 	};
 
-	app.socket.send('remove_category', opts, cb);
+	return app.socket.send('remove_category', opts);
 }
 
-export function send_edit_category(id: number, editing: ModelEditCategory,  cb?: ResponseFunc<EditListenerResponse>) {
+export function send_edit_category(id: number, editing: ModelEditCategory): Promise<EditListenerResponse> {
 	let opts = {
 		id: id,
 		editing: editing
 	};
 
-	app.socket.send('edit_category', opts, cb);
+	return app.socket.send('edit_category', opts);
 }
 
-export function send_get_category_list(cb?: ResponseFunc<CategoryListResponse>) {
-	app.socket.send('category_list', {}, cb);
+export function send_get_category_list(): Promise<CategoryListResponse> {
+	return app.socket.send('category_list', {});
 }
 
-export function send_add_feed_to_category(feed_id: number, category_id: number, cb?: ResponseFunc<AddCategoryFeedResponse>) {
+export function send_add_feed_to_category(feed_id: number, category_id: number): Promise<AddCategoryFeedResponse> {
 	let opts = {
 		feed_id: feed_id,
 		category_id: category_id
 	};
 
-	app.socket.send('add_feed_category', opts, cb);
+	return app.socket.send('add_feed_category', opts);
 }
 
-export function send_remove_feed_from_category(cat_feed_id: number, cb?: ResponseFunc<AddCategoryFeedResponse>) {
+export function send_remove_feed_from_category(cat_feed_id: number): Promise<AddCategoryFeedResponse> {
 	let opts = {
 		id: cat_feed_id
 	};
 
-	app.socket.send('remove_feed_category', opts, cb);
+	return app.socket.send('remove_feed_category', opts);
 }
 
 
 // items
-export function send_get_item_list(category_id: Nullable<number>, skip_count?: number, item_count?: number, cb?: ResponseFunc<ItemListResponse>) {
+export function send_get_item_list(category_id: Nullable<number>, skip_count?: number, item_count?: number): Promise<ItemListResponse> {
 	let opts = {
 		category_id,
 		item_count,
 		skip_count
 	};
 
-	app.socket.send('item_list', opts, cb);
+	return app.socket.send('item_list', opts);
 }
 
 // listeners
-export function send_get_feed_list(cb?: ResponseFunc<FeedListResponse>) {
-	app.socket.send('feed_list', {}, cb);
+export function send_get_feed_list(): Promise<FeedListResponse> {
+	return app.socket.send('feed_list', {});
 }
 
-export function send_create_listener(url: string, custom_item_id: Nullable<number>, cb?: ResponseFunc<CreateListenerResponse>) {
+export function send_create_listener(url: string, custom_item_id: Nullable<number>): Promise<CreateListenerResponse> {
 	let opts = {
 		url: url,
 		custom_item_id: custom_item_id
 	};
 
-	app.socket.send('add_listener', opts, cb);
+	return app.socket.send('add_listener', opts);
 }
 
-export function send_edit_listener(id: number, editing: ModelEditListener,  cb?: ResponseFunc<EditListenerResponse>) {
+export function send_edit_listener(id: number, editing: ModelEditListener): Promise<EditListenerResponse> {
 	let opts = {
 		id: id,
 		editing: editing
 	};
 
-	app.socket.send('edit_listener', opts, cb);
+	return app.socket.send('edit_listener', opts);
 }
 
-export function send_remove_listener(id: number, rem_stored: boolean,  cb?: ResponseFunc<RemoveListenerResponse>) {
+export function send_remove_listener(id: number, rem_stored: boolean): Promise<RemoveListenerResponse> {
 	let opts = {
 		id: id,
 		rem_stored: rem_stored
 	};
 
-	app.socket.send('remove_listener', opts, cb);
+	return app.socket.send('remove_listener', opts);
 }
 
 
 // Editor / Custom Item
 
-export function send_get_webpage_source(url: string, cb: ResponseFunc<GetWebpageResponse>) {
-	app.socket.send('get_webpage', { url }, cb);
+export function send_get_webpage_source(url: string): Promise<GetWebpageResponse> {
+	return app.socket.send('get_webpage', { url });
 }
 
 // Custom Items
 
-export function send_get_custom_items_list(cb?: ResponseFunc<CustomItemListResponse>) {
-	app.socket.send('custom_item_list', {}, cb);
+export function send_get_custom_items_list(): Promise<CustomItemListResponse> {
+	return app.socket.send('custom_item_list', {});
 }
 
-// export function send_update_custom_item(id: number, item: ModelCustomItem, cb: ResponseFunc<any>) {
-// 	app.socket.send_response('update_custom_item', {
+// export function send_update_custom_item(id: number, item: ModelCustomItem): Promise<any> {
+// 	return app.socket.send_response('update_custom_item', {
 // 		id,
 // 		item
-// 	}, cb);
+// 	});
 // }
 
-export function send_new_custom_item(item: ModelCustomItem, cb: ResponseFunc<CreateCustomItemResponse>) {
-	app.socket.send('new_custom_item', {
+export function send_new_custom_item(item: ModelCustomItem): Promise<CreateCustomItemResponse> {
+	return app.socket.send('new_custom_item', {
 		item
-	}, cb);
+	});
 }
 
 
 // Filters / Feed Filters
-export function send_get_filter_list(cb?: ResponseFunc<FilterListResponse>) {
-	app.socket.send('filter_list', {}, cb);
+export function send_get_filter_list(): Promise<FilterListResponse> {
+	return app.socket.send('filter_list', {});
 }
 
-export function send_new_filter(title: string, filter: rust.Optional<rust.EnumObject>, cb: ResponseFunc<any>) {
-	app.socket.send('new_filter', {
+export function send_new_filter(title: string, filter: rust.Optional<rust.EnumObject>): Promise<any> {
+	return app.socket.send('new_filter', {
 		title,
 		filter
-	}, cb);
+	});
 }
 
-export function send_update_filter(id: number, title: string, filter: rust.Optional<rust.EnumObject>, cb: ResponseFunc<any>) {
-	app.socket.send('update_filter', {
+export function send_update_filter(id: number, title: string, filter: rust.Optional<rust.EnumObject>): Promise<any> {
+	return app.socket.send('update_filter', {
 		id,
 		title,
 		filter
-	}, cb);
+	});
 }
 
-export function send_remove_filter(id: number, cb: ResponseFunc<any>) {
-	app.socket.send('remove_filter', {
+export function send_remove_filter(id: number): Promise<any> {
+	return app.socket.send('remove_filter', {
 		id
-	}, cb);
+	});
 }
 
 
-export function send_new_feed_filter(feed_id: number, filter_id: number, cb: ResponseFunc<any>) {
-	app.socket.send('new_feed_filter', {
+export function send_new_feed_filter(feed_id: number, filter_id: number): Promise<any> {
+	return app.socket.send('new_feed_filter', {
 		feed_id,
 		filter_id
-	}, cb);
+	});
 }
 
-export function send_remove_feed_filter(feed_id: number, filter_id: number, cb: ResponseFunc<any>) {
-	app.socket.send('remove_filter', {
+export function send_remove_feed_filter(feed_id: number, filter_id: number): Promise<any> {
+	return app.socket.send('remove_filter', {
 		feed_id,
 		filter_id
-	}, cb);
+	});
 }
 
 // other
-export function send_get_updates_since(since_timestamp: number, cb?: ResponseFunc<UpdatesResponse>) {
+export function send_get_updates_since(since_timestamp: number): Promise<UpdatesResponse> {
 	// Gets the amount of feeds that are newer than feed_timestamp.
 	let opts = {
 		since: since_timestamp
 	};
 
-	app.socket.send('feed_updates', opts, cb);
+	return app.socket.send('feed_updates', opts);
 }
 
 
 
 /// WATCHING
 
-export function send_get_watch_history_list(watch_id: Nullable<number>, skip_count: Optional<number>, item_count: Optional<number>, cb: ResponseFunc<WatchHistoryListResponse>) {
+export function send_get_watch_history_list(watch_id: Nullable<number>, skip_count: Optional<number>, item_count: Optional<number>): Promise<WatchHistoryListResponse> {
 	let opts = {
 		watch_id,
 		item_count,
 		skip_count
 	};
 
-	app.socket.send('watch_history_list', opts, cb);
+	return app.socket.send('watch_history_list', opts);
 }
 
-export function send_get_watcher_list(cb: ResponseFunc<WatcherListResponse>) {
-	app.socket.send('watcher_list', {}, cb);
+export function send_get_watcher_list(): Promise<WatcherListResponse> {
+	return app.socket.send('watcher_list', {});
 }
 
-export function send_create_watcher(url: string, custom_item_id: Nullable<number>, cb?: ResponseFunc<CreateListenerResponse>) {
+export function send_create_watcher(url: string, custom_item_id: Nullable<number>): Promise<CreateListenerResponse> {
 	let opts = {
 		url: url,
 		custom_item_id: custom_item_id
 	};
 
-	app.socket.send('add_watcher', opts, cb);
+	return app.socket.send('add_watcher', opts);
 }
 
-export function send_edit_watcher(id: number, editing: ModelEditListener,  cb?: ResponseFunc<EditListenerResponse>) {
+export function send_edit_watcher(id: number, editing: ModelEditListener): Promise<EditListenerResponse> {
 	let opts = {
 		id: id,
 		editing: editing
 	};
 
-	app.socket.send('edit_watcher', opts, cb);
+	return app.socket.send('edit_watcher', opts);
 }
 
-export function send_remove_watcher(id: number, rem_stored: boolean,  cb?: ResponseFunc<RemoveListenerResponse>) {
+export function send_remove_watcher(id: number, rem_stored: boolean): Promise<RemoveListenerResponse> {
 	let opts = {
 		id: id,
 		rem_stored: rem_stored
 	};
 
-	app.socket.send('remove_watcher', opts, cb);
+	return app.socket.send('remove_watcher', opts);
 }
 
-export function send_test_watcher(url: string, parser: Nullable<any>, cb: ResponseFunc<CreateListenerResponse>) {
+export function send_test_watcher(url: string, parser: Nullable<any>): Promise<CreateListenerResponse> {
 	let opts = {
 		url,
 		parser
 	};
 
-	app.socket.send('test_watcher', opts, cb);
+	return app.socket.send('test_watcher', opts);
 }
 
-export function send_new_watch_parser(item: ModelWatchParser, cb: ResponseFunc<CreateCustomItemResponse>) {
-	app.socket.send('new_watch_parser', {
+export function send_new_watch_parser(item: ModelWatchParser): Promise<CreateCustomItemResponse> {
+	return app.socket.send('new_watch_parser', {
 		item
-	}, cb);
+	});
 }
 
-export function send_get_watch_parser_list(cb: ResponseFunc<WatchParserListResponse>) {
-	app.socket.send('watch_parser_list', {}, cb);
+export function send_get_watch_parser_list(): Promise<WatchParserListResponse> {
+	return app.socket.send('watch_parser_list', {});
 }

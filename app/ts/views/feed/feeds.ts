@@ -76,7 +76,8 @@ export default class FeedsView extends View {
 
 				createElement('option', { innerText: 'Pick a Custom Item', value: '', disabled: true, selected: true }, custom_item_sel);
 
-				send_get_custom_items_list((_, resp) => {
+				send_get_custom_items_list()
+				.then(resp => {
 					if (resp != null) {
 						resp.items.forEach(item => {
 							createElement('option', { innerText: item.title, title: item.description, value: '' + item.id }, custom_item_sel);
@@ -92,15 +93,13 @@ export default class FeedsView extends View {
 				submit.addEventListener('click', _ => {
 					if (custom_item_sel.value.length == 0) return;
 
-					send_create_listener(cat_text.value, parseInt(custom_item_sel.value), (err, opts) => {
-						if (err != null) {
-							return console.error('create_listener: ', err);
-						}
-
+					send_create_listener(cat_text.value, parseInt(custom_item_sel.value))
+					.then(opts => {
 						console.log('create_listener:', opts);
 
-						if (opts!.affected != 0) {
-							core.process.init_feeds(close);
+						if (opts.affected != 0) {
+							core.process.init_feeds()
+							.then(close);
 						}
 					});
 				});
@@ -127,12 +126,9 @@ class FeedTable {
 	}
 
 	update() {
-		send_get_feed_list((err, resp) => {
-			if (err != null) return console.error(err);
-
-			let items = resp!.items;
-
-			items.forEach(i => this.container.appendChild(new FeedItem(i).render()));
+		send_get_feed_list()
+		.then(resp => {
+			resp.items.forEach(i => this.container.appendChild(new FeedItem(i).render()));
 		});
 	}
 }
@@ -191,11 +187,8 @@ class FeedItem {
 					fully.removeEventListener('click', full_func);
 					partial.removeEventListener('click', partial_func);
 
-					send_remove_listener(this.model.id!, full, (err, opts) => {
-						console.log('send_remove_listener:', err, opts);
-
-						core.process.init_feeds(close);
-					});
+					send_remove_listener(this.model.id!, full)
+					.then(() => core.process.init_feeds().then(close));
 				};
 
 				let self = this;
@@ -297,10 +290,9 @@ class FeedItem {
 
 		let default_filters: { [key: number]: boolean } = {};
 
-		send_get_filter_list((err, filters) => {
-			if (err != null) throw err;
-
-			filters!.items.forEach(filter => {
+		send_get_filter_list()
+		.then(filters => {
+			filters.items.forEach(filter => {
 				const option = createElement('option', {
 					selected: filter.feeds.indexOf(this.model.id!) != -1,
 					innerText: '' + filter.filter.title,
@@ -323,11 +315,13 @@ class FeedItem {
 				if (default_filters[id] != option.selected) {
 					if (option.selected) {
 						// Selected. Wasn't before. Enable it.
-						send_new_feed_filter(this.model.id!, id, err => { if (err) { throw err; } });
+						send_new_feed_filter(this.model.id!, id)
+						.catch(err => { if (err) { throw err; } });
 						console.log('Added: ' + this.model.id! + ' - ' + id);
 					} else {
 						// Not selected. Was before. Remove it.
-						send_remove_feed_filter(this.model.id!, id, err => { if (err) { throw err; } });
+						send_remove_feed_filter(this.model.id!, id)
+						.catch(err => { if (err) { throw err; } });
 						console.log('Removed: ' + this.model.id! + ' - ' + id);
 					}
 				}

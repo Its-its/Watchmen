@@ -66,14 +66,8 @@ export default class FilterView extends View {
 
 		this.container.appendChild(nav_bar);
 
-		send_get_filter_list((err, filterList) => {
-			if (filterList != null) {
-				filterList.items.map(item => this.addItemToSidebar(item));
-			} else {
-				console.error(err);
-				console.log(filterList);
-			}
-		});
+		send_get_filter_list()
+		.then(filterList => filterList.items.map(item => this.addItemToSidebar(item)));
 	}
 
 	render_editor() {
@@ -104,10 +98,9 @@ export default class FilterView extends View {
 		// NEW Filter.
 		if (this.main_filter.filterId == null) {
 			tool_bar.appendChild(renderButton('Create', () => {
-				send_new_filter(this.main_filter!.title!, this.main_filter.filter!.rust_enum.toJSON(), (err, value) => {
-					console.log(err);
-					console.log(value);
-				});
+				send_new_filter(this.main_filter.title!, this.main_filter.filter!.rust_enum.toJSON())
+				.then(console.log)
+				.catch(console.error);
 
 				console.log('Create');
 			}));
@@ -116,13 +109,12 @@ export default class FilterView extends View {
 				console.log('Update');
 
 				send_update_filter(
-					this.main_filter!.filterId!,
+					this.main_filter.filterId!,
 					this.main_filter.title!,
-					this.main_filter.filter!.rust_enum.toJSON(),
-				(err, value) => {
-					console.log(err);
-					console.log(value);
-				});
+					this.main_filter.filter!.rust_enum.toJSON()
+				)
+				.then(console.log)
+				.catch(console.error);
 			}));
 
 			tool_bar.appendChild(renderButton('Clone', () => {

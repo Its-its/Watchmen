@@ -60,26 +60,25 @@ export default class WatchItemsView extends View {
 
 				createElement('option', { innerText: 'Pick a Watch Parser', value: '', disabled: true, selected: true }, parser_item_sel);
 
-				send_get_watch_parser_list((_, resp) => {
+				send_get_watch_parser_list()
+				.then((resp) => {
 					if (resp != null) {
 						resp.items.forEach(item => {
 							createElement('option', { innerText: item.title, title: item.description, value: '' + item.id }, parser_item_sel);
 						});
 					}
-				})
+				});
 
 				submit.addEventListener('click', _ => {
 					if (parser_item_sel.value.length == 0) return;
 
-					send_create_watcher(cat_text.value, parseInt(parser_item_sel.value), (err, opts) => {
-						if (err != null || opts == null) {
-							return console.error('create_watcher: ', err);
-						}
-
+					send_create_watcher(cat_text.value, parseInt(parser_item_sel.value))
+					.then((opts) => {
 						console.log('create_watcher:', opts);
 
 						if (opts.affected != 0) {
-							core.process.init_feeds(close);
+							core.process.init_feeds()
+							.then(close, close);
 						}
 					});
 				});
@@ -336,16 +335,17 @@ export class TableItem {
 				showing_content.style.padding = '10px';
 				showing_content.innerText = 'Loading...';
 
-				send_get_watch_history_list(this.watcher.id!, 0, undefined, (_, resp) => {
+				send_get_watch_history_list(this.watcher.id!, 0, undefined)
+				.then((resp) => {
 					// No longer showing dropdown OR clicked off item quick enough? Return.
 					if (showing_content == null || showing_content.parentElement != this.container) return;
 
-					let list = resp!.items.map(i => `[${new Date(i.date_added * 1000).toLocaleString()}]: ${i.items[0].value}`);
+					let list = resp.items.map(i => `[${new Date(i.date_added * 1000).toLocaleString()}]: ${i.items[0].value}`);
 
 					if (list.length == 0) {
-						showing_content!.innerText = 'None.';
+						showing_content.innerText = 'None.';
 					} else {
-						showing_content!.innerText = list.join('\n');
+						showing_content.innerText = list.join('\n');
 					}
 				});
 

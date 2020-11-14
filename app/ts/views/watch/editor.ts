@@ -96,9 +96,11 @@ export default class EditorView extends View {
 		nav_bar_list.className = 'tree';
 		nav_items.appendChild(nav_bar_list);
 
-		send_get_watch_parser_list((_, resp) => {
-			for (let i = 0; i < resp!.items.length; i++) {
-				const parser = resp!.items[i];
+		// TODO: Move to on_connection_open
+		send_get_watch_parser_list()
+		.then(resp => {
+			for (let i = 0; i < resp.items.length; i++) {
+				const parser = resp.items[i];
 
 				const item = document.createElement('div');
 				item.className = 'tree-item';
@@ -157,12 +159,13 @@ export default class EditorView extends View {
 		custom_url_preview.addEventListener('click', () => {
 			this.resetAllCompiled();
 
-			send_get_webpage_source(this.custom_url.value, (err, resp) => {
+			send_get_webpage_source(this.custom_url.value)
+			.then(resp => {
 				if (this.iframe.contentWindow != null) {
 					const iframe_doc = this.iframe.contentWindow.document;
 
 					// Write webpage to iframe document
-					iframe_doc.write(resp!.html);
+					iframe_doc.write(resp.html);
 
 					let style = document.createElement('style');
 					style.innerText = CUSTOM_IFRAME_CSS;
@@ -223,10 +226,9 @@ export default class EditorView extends View {
 
 			console.log(JSON.stringify(rustify, null, 4));
 
-			send_new_watch_parser(obj, (err, value, method) => {
+			send_new_watch_parser(obj)
+			.then(value => {
 				// TODO: Notification
-				console.log(err);
-				console.log(method);
 				console.log(value);
 			});
 		});
@@ -241,10 +243,9 @@ export default class EditorView extends View {
 			const rustify = this.compileParser();
 			const obj = rustify_object(rustify.match_opts);
 
-			send_test_watcher(this.custom_url.value, obj, (err, value, method) => {
+			send_test_watcher(this.custom_url.value, obj)
+			.then(value => {
 				// TODO: Popup
-				console.log(err);
-				console.log(method);
 				console.log(value);
 			});
 		});
@@ -328,12 +329,13 @@ export default class EditorView extends View {
 			}
 		}
 
-		send_get_webpage_source(this.custom_url.value, (err, resp) => {
+		send_get_webpage_source(this.custom_url.value)
+		.then(resp => {
 			if (this.iframe.contentWindow != null) {
 				const iframe_doc = this.iframe.contentWindow.document;
 
 				// Write webpage to iframe document
-				iframe_doc.write(resp!.html);
+				iframe_doc.write(resp.html);
 
 				let style = document.createElement('style');
 				style.innerText = CUSTOM_IFRAME_CSS;

@@ -187,20 +187,21 @@ export class Table {
 
 		console.log('Skipping:', skip_amount + '/' + this.last_total_items);
 
-		send_get_item_list(this.viewing_category, skip_amount, 25, (err, resp?: ItemListResponse) => {
-			if (err != null) {
-				this.waiting_for_more_feeds = false;
-				console.error(err);
-				return;
-			}
-
-			let feed_items = resp!.items.map(i => new FeedItem(i, resp!.notification_ids.includes(i.id!)));
+		send_get_item_list(this.viewing_category, skip_amount, 25)
+		.then(resp => {
+			let feed_items = resp.items.map(i => new FeedItem(i, resp.notification_ids.includes(i.id!)));
 			feed_items = core.process.add_or_update_feed_items(feed_items);
 
 			this.new_items(resp!, feed_items);
 
 			this.waiting_for_more_feeds = false;
-		});
+		})
+		.catch(err => {
+			if (err != null) {
+				this.waiting_for_more_feeds = false;
+				console.error(err);
+			}
+		})
 	}
 
 	public remove_items_by_id(item_id: number[] | number) {
@@ -404,9 +405,10 @@ export default class FeedView extends View {
 
 	on_connection_open() {
 		// Get Categories (init)
-		send_get_category_list((_, opts) => {
+		send_get_category_list()
+		.then(opts => {
 			console.log('Categories:', opts);
-			this.create_nav_items(opts!);
+			this.create_nav_items(opts);
 		});
 	}
 
@@ -533,8 +535,10 @@ export default class FeedView extends View {
 					console.log(cat_text.value);
 					console.log('Largest Category: ' + cat_id);
 
-					send_create_category(cat_text.value, cat_id, (_, _1) => {
-						send_get_category_list((_, opts) => this.create_categories(opts!));
+					send_create_category(cat_text.value, cat_id)
+					.then(() => {
+						send_get_category_list()
+						.then(opts => this.create_categories(opts));
 					});
 
 					close();
@@ -563,9 +567,8 @@ export default class FeedView extends View {
 	}
 
 	refresh_categories() {
-		send_get_category_list((_, opts) => {
-			this.create_categories(opts!);
-		});
+		send_get_category_list()
+		.then(opts => this.create_categories(opts));
 	}
 
 	get_category_by_id(id: number): Nullable<SidebarItem> {
@@ -732,7 +735,8 @@ class SidebarItem {
 
 				if (to_send_adding.length != 0) {
 					for_each(to_send_adding, (feed_id, fin) => {
-						send_add_feed_to_category(feed_id, this.id, fin);
+						send_add_feed_to_category(feed_id, this.id)
+						.then(fin);
 					}, _ => {
 						if (other_finished) {
 							this.view.refresh_categories();
@@ -748,7 +752,8 @@ class SidebarItem {
 
 				if (to_send_removing.length != 0) {
 					for_each(to_send_removing, (feed_id, fin) => {
-						send_remove_feed_from_category(feed_id, fin);
+						send_remove_feed_from_category(feed_id)
+						.then(fin);
 					}, _ => {
 						if (other_finished) {
 							this.view.refresh_categories();
