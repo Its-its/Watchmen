@@ -99,27 +99,6 @@ const app = {
 // Ensures the imports are registered.
 setTimeout(() => app.init(), 100);
 
-// Utils
-export function create_popup(cb: (container: HTMLDivElement, open: () => any, close: () => any) => any) {
-	let container = document.createElement('div');
-	container.className = 'popup-container';
-
-	function close() {
-		container.parentElement!.removeChild(container);
-	}
-
-	container.addEventListener('click', e => {
-		if ((<HTMLElement>e.target) == container) {
-			close()
-		}
-	});
-
-	let inner = document.createElement('div');
-	inner.className = 'popup';
-	container.appendChild(inner);
-
-	cb(inner, () => document.body.appendChild(container), close);
-}
 
 export function for_each<I, R>(items: I[], next_item: (item: I, item_finished: (...items: R[]) => any) => any, on_fin?: (resp: R[][]) => any) {
 	let pos = 0;

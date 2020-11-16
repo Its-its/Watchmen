@@ -2,7 +2,7 @@ import View from '../index';
 import EditorView from './editor';
 import FeedView from './items';
 
-import core, { create_popup, for_each } from '../../core';
+import core from '../../core';
 
 import { RustEnum } from '../../util/rust';
 import { notifyErrorDesc } from '../../util/notification';

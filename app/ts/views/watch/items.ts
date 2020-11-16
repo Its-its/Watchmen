@@ -2,13 +2,14 @@ import { elapsed_to_time_ago } from '../../process';
 import { createElement } from '../../util/html';
 
 import { notifyErrorDesc } from '../../util/notification';
+import { newEmptyPopup } from '../../util/popup';
 
 import View from '../index';
 import FeedItemsView from '../feed/items';
 import DashboardView from '../dashboard';
 import EditorView from './editor';
 
-import core, { create_popup } from '../../core';
+import core from '../../core';
 
 import {
 	send_create_watcher,
@@ -45,54 +46,54 @@ export default class WatchItemsView extends View {
 		const create_button = createElement('div', { className: 'button new-category', innerText: 'New Watcher'}, this.nav_bar);
 
 		create_button.addEventListener('click', () => {
-			create_popup((container, open, close) => {
-				const form = createElement('div', { className: 'form-group' }, container);
+			const popup = newEmptyPopup();
 
-				// Feed URL
-				const cat_row = createElement('div', { className: 'form-row' }, form);
-				const cat_text = createElement('input', { placeholder: 'Feed URL', type: 'text' }, cat_row);
+			const form = createElement('div', { className: 'form-group' }, popup.inner_container);
 
-				// Submit
-				const sub_row = createElement('div', { className: 'form-row' }, form);
-				const submit = createElement('div', { className: 'button', innerText: 'Create'}, sub_row);
+			// Feed URL
+			const cat_row = createElement('div', { className: 'form-row' }, form);
+			const cat_text = createElement('input', { placeholder: 'Feed URL', type: 'text' }, cat_row);
 
-				// Parser ID
-				const parser_row = createElement('div', { className: 'form-row' }, form);
-				const parser_item_sel = createElement('select', { name: 'custom_item' }, parser_row);
+			// Submit
+			const sub_row = createElement('div', { className: 'form-row' }, form);
+			const submit = createElement('div', { className: 'button', innerText: 'Create'}, sub_row);
 
-				createElement('option', { innerText: 'Pick a Watch Parser', value: '', disabled: true, selected: true }, parser_item_sel);
+			// Parser ID
+			const parser_row = createElement('div', { className: 'form-row' }, form);
+			const parser_item_sel = createElement('select', { name: 'custom_item' }, parser_row);
 
-				send_get_watch_parser_list()
-				.then((resp) => {
-					if (resp != null) {
-						resp.items.forEach(item => {
-							createElement('option', { innerText: item.title, title: item.description, value: '' + item.id }, parser_item_sel);
+			createElement('option', { innerText: 'Pick a Watch Parser', value: '', disabled: true, selected: true }, parser_item_sel);
+
+			send_get_watch_parser_list()
+			.then((resp) => {
+				if (resp != null) {
+					resp.items.forEach(item => {
+						createElement('option', { innerText: item.title, title: item.description, value: '' + item.id }, parser_item_sel);
+					});
+				}
+			})
+			.catch(e => notifyErrorDesc('Grabbing Watch Parser List', e));
+
+			submit.addEventListener('click', _ => {
+				if (parser_item_sel.value.length == 0) return;
+
+				send_create_watcher(cat_text.value, parseInt(parser_item_sel.value))
+				.then((opts) => {
+					console.log('create_watcher:', opts);
+
+					if (opts.affected != 0) {
+						core.process.init_feeds()
+						.then(popup.close)
+						.catch(e => {
+							notifyErrorDesc('Re-initiating Feeds', e);
+							popup.close();
 						});
 					}
 				})
-				.catch(e => notifyErrorDesc('Grabbing Watch Parser List', e));
-
-				submit.addEventListener('click', _ => {
-					if (parser_item_sel.value.length == 0) return;
-
-					send_create_watcher(cat_text.value, parseInt(parser_item_sel.value))
-					.then((opts) => {
-						console.log('create_watcher:', opts);
-
-						if (opts.affected != 0) {
-							core.process.init_feeds()
-							.then(close)
-							.catch(e => {
-								notifyErrorDesc('Re-initiating Feeds', e);
-								close();
-							});
-						}
-					})
-					.catch(e => notifyErrorDesc('Creating Watcher', e));
-				});
-
-				open();
+				.catch(e => notifyErrorDesc('Creating Watcher', e));
 			});
+
+			popup.open();
 		});
 
 		// Nav bar items

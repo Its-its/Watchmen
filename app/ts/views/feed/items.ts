@@ -3,9 +3,11 @@ import EditorView from './editor';
 import FilterView from './filter';
 import FeedsView from './feeds';
 
+import { newEmptyPopup } from '../../util/popup';
+
 import { notifyErrorDesc } from '../../util/notification';
 
-import core, { create_popup, for_each } from '../../core';
+import core, { for_each } from '../../core';
 
 import { FeedListener, FeedItem } from '../../process';
 
@@ -506,50 +508,50 @@ export default class FeedView extends View {
 		this.nav_bar.appendChild(create_button);
 
 		create_button.addEventListener('click', () => {
-			create_popup((container, open, close) => {
-				let form = document.createElement('div');
-				form.className = 'form-group';
-				container.appendChild(form);
+			const popup = newEmptyPopup();
 
-				// Category Text
-				let cat_row = document.createElement('div');
-				cat_row.className = 'form-row';
-				form.appendChild(cat_row);
+			let form = document.createElement('div');
+			form.className = 'form-group';
+			popup.inner_container.appendChild(form);
 
-				let cat_text = document.createElement('input');
-				cat_text.placeholder = 'Category Name';
-				cat_text.type = 'text';
-				cat_row.appendChild(cat_text);
+			// Category Text
+			let cat_row = document.createElement('div');
+			cat_row.className = 'form-row';
+			form.appendChild(cat_row);
 
-				// Submit
-				let sub_row = document.createElement('div');
-				sub_row.className = 'form-row';
-				form.appendChild(sub_row);
+			let cat_text = document.createElement('input');
+			cat_text.placeholder = 'Category Name';
+			cat_text.type = 'text';
+			cat_row.appendChild(cat_text);
 
-				let submit = document.createElement('div');
-				submit.className = 'button';
-				submit.innerText = 'Create';
-				sub_row.appendChild(submit);
+			// Submit
+			let sub_row = document.createElement('div');
+			sub_row.className = 'form-row';
+			form.appendChild(sub_row);
 
-				submit.addEventListener('click', _ => {
-					let cat_id = this.largest_category_id();
+			let submit = document.createElement('div');
+			submit.className = 'button';
+			submit.innerText = 'Create';
+			sub_row.appendChild(submit);
 
-					console.log(cat_text.value);
-					console.log('Largest Category: ' + cat_id);
+			submit.addEventListener('click', _ => {
+				let cat_id = this.largest_category_id();
 
-					send_create_category(cat_text.value, cat_id)
-					.then(() => {
-						send_get_category_list()
-						.then(opts => this.create_categories(opts))
-						.catch(e => notifyErrorDesc('Grabbing Category List', e));
-					})
-					.catch(e => notifyErrorDesc('Creating Category', e));
+				console.log(cat_text.value);
+				console.log('Largest Category: ' + cat_id);
 
-					close();
-				});
+				send_create_category(cat_text.value, cat_id)
+				.then(() => {
+					send_get_category_list()
+					.then(opts => this.create_categories(opts))
+					.catch(e => notifyErrorDesc('Grabbing Category List', e));
+				})
+				.catch(e => notifyErrorDesc('Creating Category', e));
 
-				open();
+				popup.close();
 			});
+
+			popup.open();
 		});
 
 		this.create_categories(opts);
@@ -654,131 +656,131 @@ class SidebarItem {
 	}
 
 	public show_editor() {
-		create_popup((container, open, close) => {
-			let form = document.createElement('div');
-			form.className = 'form-group';
-			container.appendChild(form);
+		const popup = newEmptyPopup();
 
-			// Category Text
-			let cat_row = document.createElement('div');
-			cat_row.className = 'form-row';
-			form.appendChild(cat_row);
+		let form = document.createElement('div');
+		form.className = 'form-group';
+		popup.inner_container.appendChild(form);
 
-			let inputs: [HTMLInputElement, number][] = [];
+		// Category Text
+		let cat_row = document.createElement('div');
+		cat_row.className = 'form-row';
+		form.appendChild(cat_row);
 
-			// Display Feeds
+		let inputs: [HTMLInputElement, number][] = [];
 
-			core.process.feed_listeners.forEach(feed => {
-				let cont = document.createElement('div');
+		// Display Feeds
 
-				let input = document.createElement('input');
-				input.checked = this.contains_cat_feed_by_feed_id(feed.id);
-				input.type = 'checkbox';
-				input.name = 'feed-' + feed.id;
-				cont.appendChild(input);
+		core.process.feed_listeners.forEach(feed => {
+			let cont = document.createElement('div');
 
-				let label = document.createElement('label');
-				(<any>label).for = 'feed-' + feed.id;
-				label.innerText = feed.title;
-				cont.appendChild(label);
+			let input = document.createElement('input');
+			input.checked = this.contains_cat_feed_by_feed_id(feed.id);
+			input.type = 'checkbox';
+			input.name = 'feed-' + feed.id;
+			cont.appendChild(input);
 
-				// Generator
-				let generator = document.createElement('div');
-				generator.innerText = feed.generator.slice(0, 20) + (feed.generator.length > 20 ? '..' : '');
-				generator.title = feed.generator;
-				cont.appendChild(generator);
+			let label = document.createElement('label');
+			(<any>label).for = 'feed-' + feed.id;
+			label.innerText = feed.title;
+			cont.appendChild(label);
 
-				// Description
-				let descr = document.createElement('pre');
-				descr.innerText = feed.description.slice(0, 80) + (feed.description.length > 80 ? '..' : '');
-				descr.title = feed.description;
-				cont.appendChild(descr);
+			// Generator
+			let generator = document.createElement('div');
+			generator.innerText = feed.generator.slice(0, 20) + (feed.generator.length > 20 ? '..' : '');
+			generator.title = feed.generator;
+			cont.appendChild(generator);
 
-				cat_row.appendChild(cont);
+			// Description
+			let descr = document.createElement('pre');
+			descr.innerText = feed.description.slice(0, 80) + (feed.description.length > 80 ? '..' : '');
+			descr.title = feed.description;
+			cont.appendChild(descr);
 
-				inputs.push([input, feed.id]);
-			});
+			cat_row.appendChild(cont);
 
-
-			// TODO: Checkbox saying if browser should Notify
-
-			// Submit
-			let sub_row = document.createElement('div');
-			sub_row.className = 'form-row';
-			form.appendChild(sub_row);
-
-			let submit = document.createElement('div');
-			submit.className = 'button';
-			submit.innerText = 'Update';
-			sub_row.appendChild(submit);
-
-			submit.addEventListener('click', _ => {
-				let to_send_adding: number[] = [];
-				let to_send_removing: number[] = [];
-
-				inputs.forEach(input_id => {
-					let input = input_id[0],
-						feed_id = input_id[1];
-
-					let contains_feed = this.contains_cat_feed_by_feed_id(feed_id);
-
-					// Adding Feed
-					if (!contains_feed && input.checked) {
-						to_send_adding.push(feed_id);
-					}
-
-					// Removing Feed
-					else if (contains_feed && !input.checked) {
-						let feed = this.get_cat_feed_by_feed_id(feed_id);
-						if (feed == null) return console.log('No category feed: ' + feed_id + ',', this.category_feeds);
-
-						to_send_removing.push(feed.id!);
-					}
-				});
-
-				let other_finished = false;
-
-				if (to_send_adding.length != 0) {
-					for_each(to_send_adding, (feed_id, fin) => {
-						send_add_feed_to_category(feed_id, this.id)
-						.then(fin)
-						.catch(e => notifyErrorDesc('Adding Feed to Category', e));
-					}, _ => {
-						if (other_finished) {
-							this.view.refresh_categories();
-
-							if (this.view.table.viewing_category == this.id) {
-								core.process.init_feeds();
-							}
-						}
-
-						other_finished = true;
-					});
-				}
-
-				if (to_send_removing.length != 0) {
-					for_each(to_send_removing, (feed_id, fin) => {
-						send_remove_feed_from_category(feed_id)
-						.then(fin)
-						.catch(e => notifyErrorDesc('Removing Feed from Category', e));
-					}, _ => {
-						if (other_finished) {
-							this.view.refresh_categories();
-
-							if (this.view.table.viewing_category == this.id) {
-								core.process.init_feeds();
-							}
-						}
-
-						other_finished = true;
-					});
-				}
-
-				close();
-			});
-
-			open();
+			inputs.push([input, feed.id]);
 		});
+
+
+		// TODO: Checkbox saying if browser should Notify
+
+		// Submit
+		let sub_row = document.createElement('div');
+		sub_row.className = 'form-row';
+		form.appendChild(sub_row);
+
+		let submit = document.createElement('div');
+		submit.className = 'button';
+		submit.innerText = 'Update';
+		sub_row.appendChild(submit);
+
+		submit.addEventListener('click', _ => {
+			let to_send_adding: number[] = [];
+			let to_send_removing: number[] = [];
+
+			inputs.forEach(input_id => {
+				let input = input_id[0],
+					feed_id = input_id[1];
+
+				let contains_feed = this.contains_cat_feed_by_feed_id(feed_id);
+
+				// Adding Feed
+				if (!contains_feed && input.checked) {
+					to_send_adding.push(feed_id);
+				}
+
+				// Removing Feed
+				else if (contains_feed && !input.checked) {
+					let feed = this.get_cat_feed_by_feed_id(feed_id);
+					if (feed == null) return console.log('No category feed: ' + feed_id + ',', this.category_feeds);
+
+					to_send_removing.push(feed.id!);
+				}
+			});
+
+			let other_finished = false;
+
+			if (to_send_adding.length != 0) {
+				for_each(to_send_adding, (feed_id, fin) => {
+					send_add_feed_to_category(feed_id, this.id)
+					.then(fin)
+					.catch(e => notifyErrorDesc('Adding Feed to Category', e));
+				}, _ => {
+					if (other_finished) {
+						this.view.refresh_categories();
+
+						if (this.view.table.viewing_category == this.id) {
+							core.process.init_feeds();
+						}
+					}
+
+					other_finished = true;
+				});
+			}
+
+			if (to_send_removing.length != 0) {
+				for_each(to_send_removing, (feed_id, fin) => {
+					send_remove_feed_from_category(feed_id)
+					.then(fin)
+					.catch(e => notifyErrorDesc('Removing Feed from Category', e));
+				}, _ => {
+					if (other_finished) {
+						this.view.refresh_categories();
+
+						if (this.view.table.viewing_category == this.id) {
+							core.process.init_feeds();
+						}
+					}
+
+					other_finished = true;
+				});
+			}
+
+			popup.close();
+		});
+
+		popup.open();
 	}
 
 	public get_cat_feed_by_id(id: number): Nullable<ModelFeedCategory> {

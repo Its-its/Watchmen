@@ -2,10 +2,10 @@ import View from '../index';
 import ItemsView from './items';
 
 import { createElement } from '../../util/html';
-
+import { newEmptyPopup } from '../../util/popup';
 import { notifyErrorDesc } from '../../util/notification';
 
-import core, { create_popup, for_each } from '../../core';
+import core from '../../core';
 
 import { FeedListener } from '../../process';
 
@@ -63,55 +63,55 @@ export default class FeedsView extends View {
 		const create_button = createElement('div', { className: 'button new-category', innerText: 'New Feed'}, nav_bar);
 
 		create_button.addEventListener('click', () => {
-			create_popup((container, open, close) => {
-				const form = createElement('div', { className: 'form-group' }, container);
+			const popup = newEmptyPopup();
 
-				// Feed URL
-				const cat_row = createElement('div', { className: 'form-row' }, form);
+			const form = createElement('div', { className: 'form-group' }, popup.inner_container);
 
-				const cat_text = createElement('input', { placeholder: 'Feed URL', type: 'text' }, cat_row);
+			// Feed URL
+			const cat_row = createElement('div', { className: 'form-row' }, form);
 
-				// Custom Items
-				const custom_row = createElement('div', { className: 'form-row' }, form);
+			const cat_text = createElement('input', { placeholder: 'Feed URL', type: 'text' }, cat_row);
 
-				const custom_item_sel = createElement('select', { name: 'custom_item' }, custom_row);
+			// Custom Items
+			const custom_row = createElement('div', { className: 'form-row' }, form);
 
-				createElement('option', { innerText: 'Pick a Custom Item', value: '', disabled: true, selected: true }, custom_item_sel);
+			const custom_item_sel = createElement('select', { name: 'custom_item' }, custom_row);
 
-				send_get_custom_items_list()
-				.then(resp => {
-					if (resp != null) {
-						resp.items.forEach(item => {
-							createElement('option', { innerText: item.title, title: item.description, value: '' + item.id }, custom_item_sel);
-						});
+			createElement('option', { innerText: 'Pick a Custom Item', value: '', disabled: true, selected: true }, custom_item_sel);
+
+			send_get_custom_items_list()
+			.then(resp => {
+				if (resp != null) {
+					resp.items.forEach(item => {
+						createElement('option', { innerText: item.title, title: item.description, value: '' + item.id }, custom_item_sel);
+					});
+				}
+			})
+			.catch(e => notifyErrorDesc('Grabbing Custom Items List', e));
+
+			// Submit
+			const sub_row = createElement('div', { className: 'form-row' }, form);
+
+			const submit = createElement('div', { className: 'button', innerText: 'Create'}, sub_row);
+
+			submit.addEventListener('click', _ => {
+				if (custom_item_sel.value.length == 0) return;
+
+				send_create_listener(cat_text.value, parseInt(custom_item_sel.value))
+				.then(opts => {
+					console.log('create_listener:', opts);
+
+					if (opts.affected != 0) {
+						core.process.init_feeds()
+						.then(close)
+						.catch(e => notifyErrorDesc('Re-initiating Feeds', e));
 					}
 				})
-				.catch(e => notifyErrorDesc('Grabbing Custom Items List', e));
-
-				// Submit
-				const sub_row = createElement('div', { className: 'form-row' }, form);
-
-				const submit = createElement('div', { className: 'button', innerText: 'Create'}, sub_row);
-
-				submit.addEventListener('click', _ => {
-					if (custom_item_sel.value.length == 0) return;
-
-					send_create_listener(cat_text.value, parseInt(custom_item_sel.value))
-					.then(opts => {
-						console.log('create_listener:', opts);
-
-						if (opts.affected != 0) {
-							core.process.init_feeds()
-							.then(close)
-							.catch(e => notifyErrorDesc('Re-initiating Feeds', e));
-						}
-					})
-					.catch(e => notifyErrorDesc('Creating Listener', e));
-				});
-
-				open();
+				.catch(e => notifyErrorDesc('Creating Listener', e));
 			});
-		})
+
+			popup.open();
+		});
 	}
 
 	render_editor() {
@@ -183,31 +183,30 @@ class FeedItem {
 
 		delete_button.addEventListener('click', () => {
 			// Options on what to remove
-			create_popup((container, open, close) => {
-				const sub_row = createElement('div', { className: 'form-row' }, container);
+			const popup = newEmptyPopup();
 
-				const partial = createElement('div', { className: 'button', innerText: 'Partial Delete (Only remove listener)' }, sub_row);
-				const fully = createElement('div', { className: 'button', innerText: 'Fully Delete (Remove listener AND feed items)' }, sub_row);
+			const sub_row = createElement('div', { className: 'form-row' }, popup.inner_container);
 
-				const removeChoice = (full: boolean) => {
-					fully.removeEventListener('click', full_func);
-					partial.removeEventListener('click', partial_func);
+			const partial = createElement('div', { className: 'button', innerText: 'Partial Delete (Only remove listener)' }, sub_row);
+			const fully = createElement('div', { className: 'button', innerText: 'Fully Delete (Remove listener AND feed items)' }, sub_row);
 
-					send_remove_listener(this.model.id!, full)
-					.then(() => core.process.init_feeds().then(close, e => notifyErrorDesc('Re-initating Feeds', e)))
-					.catch(e => notifyErrorDesc('Removing Listener', e));
-				};
+			const removeChoice = (full: boolean) => {
+				fully.removeEventListener('click', full_func);
+				partial.removeEventListener('click', partial_func);
 
-				let self = this;
-				const partial_func = () => removeChoice.call(self, false);
-				const full_func = () => removeChoice.call(self, true);
+				send_remove_listener(this.model.id!, full)
+				.then(() => core.process.init_feeds().then(close, e => notifyErrorDesc('Re-initating Feeds', e)))
+				.catch(e => notifyErrorDesc('Removing Listener', e));
+			};
 
-				partial.addEventListener('click', partial_func);
-				fully.addEventListener('click', full_func);
+			let self = this;
+			const partial_func = () => removeChoice.call(self, false);
+			const full_func = () => removeChoice.call(self, true);
 
-				open();
-			});
+			partial.addEventListener('click', partial_func);
+			fully.addEventListener('click', full_func);
 
+			popup.open();
 		});
 
 		return container;
