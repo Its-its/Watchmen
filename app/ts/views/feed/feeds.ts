@@ -2,7 +2,7 @@ import View from '../index';
 import ItemsView from './items';
 
 import { createElement } from '../../util/html';
-import { newEmptyPopup } from '../../util/popup';
+import { newEmptyPopup, newFormPopup } from '../../util/popup';
 import { notifyErrorDesc } from '../../util/notification';
 
 import core from '../../core';
@@ -63,19 +63,15 @@ export default class FeedsView extends View {
 		const create_button = createElement('div', { className: 'button new-category', innerText: 'New Feed'}, nav_bar);
 
 		create_button.addEventListener('click', () => {
-			const popup = newEmptyPopup();
-
-			const form = createElement('div', { className: 'form-group' }, popup.inner_container);
+			const form_popup = newFormPopup();
 
 			// Feed URL
-			const cat_row = createElement('div', { className: 'form-row' }, form);
-
-			const cat_text = createElement('input', { placeholder: 'Feed URL', type: 'text' }, cat_row);
+			const cat_text = createElement('input', { placeholder: 'Feed URL', type: 'text' });
+			form_popup.addRow(cat_text);
 
 			// Custom Items
-			const custom_row = createElement('div', { className: 'form-row' }, form);
-
-			const custom_item_sel = createElement('select', { name: 'custom_item' }, custom_row);
+			const custom_item_sel = createElement('select', { name: 'custom_item' });
+			form_popup.addRow(custom_item_sel);
 
 			createElement('option', { innerText: 'Pick a Custom Item', value: '', disabled: true, selected: true }, custom_item_sel);
 
@@ -90,9 +86,8 @@ export default class FeedsView extends View {
 			.catch(e => notifyErrorDesc('Grabbing Custom Items List', e));
 
 			// Submit
-			const sub_row = createElement('div', { className: 'form-row' }, form);
-
-			const submit = createElement('div', { className: 'button', innerText: 'Create'}, sub_row);
+			const submit = createElement('div', { className: 'button', innerText: 'Create'});
+			form_popup.addRow(submit);
 
 			submit.addEventListener('click', _ => {
 				if (custom_item_sel.value.length == 0) return;
@@ -110,7 +105,7 @@ export default class FeedsView extends View {
 				.catch(e => notifyErrorDesc('Creating Listener', e));
 			});
 
-			popup.open();
+			form_popup.open();
 		});
 	}
 
