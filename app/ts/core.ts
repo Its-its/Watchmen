@@ -58,7 +58,10 @@ const app = {
 		// Get Current feeds
 		this.process.init_feeds()
 		.then(_ => {
-			if (this.view != null) this.view.on_connection_open();
+			if (this.view != null) {
+				console.log('View.on_connection_open()');
+				this.view.on_connection_open();
+			}
 		})
 		.catch(e => notifyErrorDesc('Initiate Feeds', e));
 

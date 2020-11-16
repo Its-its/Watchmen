@@ -50,6 +50,10 @@ export default class FeedsView extends View {
 		open_editor.addEventListener('click', () => core.open_view(new ItemsView()));
 	}
 
+	on_connection_open() {
+		this.table.update();
+	}
+
 	on_close() {
 		core.navbar.clear();
 	}
@@ -122,10 +126,10 @@ class FeedTable {
 
 	render(parent: HTMLElement) {
 		parent.appendChild(this.container);
-		this.update();
 	}
 
 	update() {
+		console.log('FeeTable Update');
 		send_get_feed_list()
 		.then(resp => {
 			resp.items.forEach(i => this.container.appendChild(new FeedItem(i).render()));

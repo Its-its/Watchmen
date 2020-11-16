@@ -14,17 +14,22 @@ export default class View {
 
 
 	public init() {
+		console.log('View.init()');
+
 		if (!this.initiated) {
 			this.on_init();
 			this.initiated = true;
 
 			if (core.socket.is_open()) {
+				console.log(' - Opening socket.');
 				this.on_connection_open();
 			}
 		}
 	}
 
 	public open() {
+		console.log('View.open()');
+
 		if (this.container.parentElement == null) {
 			document.body.appendChild(this.container);
 			this.on_open();
@@ -32,6 +37,8 @@ export default class View {
 	}
 
 	public close() {
+		console.log('View.close()');
+
 		if (this.container.parentElement != null) {
 			this.container.remove();
 			this.on_close();
