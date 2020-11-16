@@ -4,6 +4,8 @@ import Navbar from './navbar';
 
 import View from './views/index';
 
+import { notifyErrorDesc } from './util/notification';
+
 // Views
 import DashboardView from './views/dashboard';
 
@@ -58,10 +60,10 @@ const app = {
 		.then(_ => {
 			if (this.view != null) this.view.on_connection_open();
 		})
-		.catch(console.error);
+		.catch(e => notifyErrorDesc('Initiate Feeds', e));
 
 		this.process.register_updates()
-		.catch(console.error);
+		.catch(e => notifyErrorDesc('Initiate Feeds', e));
 	},
 
 	open_view(newView: View) {

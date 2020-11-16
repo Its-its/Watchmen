@@ -3,6 +3,8 @@ import EditorView from './editor';
 import FilterView from './filter';
 import FeedsView from './feeds';
 
+import { notifyErrorDesc } from '../../util/notification';
+
 import core, { create_popup, for_each } from '../../core';
 
 import { FeedListener, FeedItem } from '../../process';
@@ -197,10 +199,9 @@ export class Table {
 			this.waiting_for_more_feeds = false;
 		})
 		.catch(err => {
-			if (err != null) {
-				this.waiting_for_more_feeds = false;
-				console.error(err);
-			}
+			notifyErrorDesc('Grabbing Feed Item List', err);
+			this.waiting_for_more_feeds = false;
+			console.error(err);
 		})
 	}
 
@@ -409,7 +410,8 @@ export default class FeedView extends View {
 		.then(opts => {
 			console.log('Categories:', opts);
 			this.create_nav_items(opts);
-		});
+		})
+		.catch(e => notifyErrorDesc('Grabbing Category List', e));
 	}
 
 	on_open() {
@@ -538,8 +540,10 @@ export default class FeedView extends View {
 					send_create_category(cat_text.value, cat_id)
 					.then(() => {
 						send_get_category_list()
-						.then(opts => this.create_categories(opts));
-					});
+						.then(opts => this.create_categories(opts))
+						.catch(e => notifyErrorDesc('Grabbing Category List', e));
+					})
+					.catch(e => notifyErrorDesc('Creating Category', e));
 
 					close();
 				});
@@ -568,7 +572,8 @@ export default class FeedView extends View {
 
 	refresh_categories() {
 		send_get_category_list()
-		.then(opts => this.create_categories(opts));
+		.then(opts => this.create_categories(opts))
+		.catch(e => notifyErrorDesc('Grabbing Category List', e));
 	}
 
 	get_category_by_id(id: number): Nullable<SidebarItem> {
@@ -736,7 +741,8 @@ class SidebarItem {
 				if (to_send_adding.length != 0) {
 					for_each(to_send_adding, (feed_id, fin) => {
 						send_add_feed_to_category(feed_id, this.id)
-						.then(fin);
+						.then(fin)
+						.catch(e => notifyErrorDesc('Adding Feed to Category', e));
 					}, _ => {
 						if (other_finished) {
 							this.view.refresh_categories();
@@ -753,7 +759,8 @@ class SidebarItem {
 				if (to_send_removing.length != 0) {
 					for_each(to_send_removing, (feed_id, fin) => {
 						send_remove_feed_from_category(feed_id)
-						.then(fin);
+						.then(fin)
+						.catch(e => notifyErrorDesc('Removing Feed from Category', e));
 					}, _ => {
 						if (other_finished) {
 							this.view.refresh_categories();

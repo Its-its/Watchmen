@@ -1,6 +1,8 @@
 import { elapsed_to_time_ago } from '../../process';
 import { createElement } from '../../util/html';
 
+import { notifyErrorDesc } from '../../util/notification';
+
 import View from '../index';
 import FeedItemsView from '../feed/items';
 import DashboardView from '../dashboard';
@@ -67,7 +69,8 @@ export default class WatchItemsView extends View {
 							createElement('option', { innerText: item.title, title: item.description, value: '' + item.id }, parser_item_sel);
 						});
 					}
-				});
+				})
+				.catch(e => notifyErrorDesc('Grabbing Watch Parser List', e));
 
 				submit.addEventListener('click', _ => {
 					if (parser_item_sel.value.length == 0) return;
@@ -78,9 +81,14 @@ export default class WatchItemsView extends View {
 
 						if (opts.affected != 0) {
 							core.process.init_feeds()
-							.then(close, close);
+							.then(close)
+							.catch(e => {
+								notifyErrorDesc('Re-initiating Feeds', e);
+								close();
+							});
 						}
-					});
+					})
+					.catch(e => notifyErrorDesc('Creating Watcher', e));
 				});
 
 				open();
@@ -347,7 +355,8 @@ export class TableItem {
 					} else {
 						showing_content.innerText = list.join('\n');
 					}
-				});
+				})
+				.catch(e => notifyErrorDesc('Grabbing Watch History List', e));
 
 				this.container.appendChild(showing_content);
 

@@ -46,7 +46,7 @@ interface AwaitingReponse {
 	timeout_seconds: number,
 
 	msg_id: number,
-	resp_func?: ResponseFunc<any>
+	resp_func: ResponseFunc<any>
 }
 
 // Models

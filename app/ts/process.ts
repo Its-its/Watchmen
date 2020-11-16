@@ -1,6 +1,10 @@
 // Background processing.
 
 import core from './core';
+
+import { notifyErrorDesc } from './util/notification';
+
+
 import FeedItemsView from './views/feed/items';
 import WatchItemsView from './views/watch/items';
 
@@ -125,7 +129,8 @@ export default class BackgroundProcess {
 								core.view.table.container.scrollTo({ top: 0, behavior: 'smooth' });
 							}
 						}
-					});
+					})
+					.catch(e => notifyErrorDesc('Grabbing Feed Items List', e));
 				}
 
 				if (update.new_watches != 0) {
@@ -139,9 +144,11 @@ export default class BackgroundProcess {
 						if (core.view != null && core.view instanceof WatchItemsView) {
 							core.view.table.add_sort_render_rows();
 						}
-					});
+					})
+					.catch(e => notifyErrorDesc('Grabbing Watcher List', e));
 				}
-			});
+			})
+			.catch(e => notifyErrorDesc('Getting Newest Updates', e));
 		}, 1000 * 30);
 	}
 

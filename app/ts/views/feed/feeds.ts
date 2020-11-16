@@ -3,6 +3,8 @@ import ItemsView from './items';
 
 import { createElement } from '../../util/html';
 
+import { notifyErrorDesc } from '../../util/notification';
+
 import core, { create_popup, for_each } from '../../core';
 
 import { FeedListener } from '../../process';
@@ -83,7 +85,8 @@ export default class FeedsView extends View {
 							createElement('option', { innerText: item.title, title: item.description, value: '' + item.id }, custom_item_sel);
 						});
 					}
-				});
+				})
+				.catch(e => notifyErrorDesc('Grabbing Custom Items List', e));
 
 				// Submit
 				const sub_row = createElement('div', { className: 'form-row' }, form);
@@ -99,9 +102,11 @@ export default class FeedsView extends View {
 
 						if (opts.affected != 0) {
 							core.process.init_feeds()
-							.then(close);
+							.then(close)
+							.catch(e => notifyErrorDesc('Re-initiating Feeds', e));
 						}
-					});
+					})
+					.catch(e => notifyErrorDesc('Creating Listener', e));
 				});
 
 				open();
@@ -129,7 +134,8 @@ class FeedTable {
 		send_get_feed_list()
 		.then(resp => {
 			resp.items.forEach(i => this.container.appendChild(new FeedItem(i).render()));
-		});
+		})
+		.catch(e => notifyErrorDesc('Grabbing Feed List', e));
 	}
 }
 
@@ -188,7 +194,8 @@ class FeedItem {
 					partial.removeEventListener('click', partial_func);
 
 					send_remove_listener(this.model.id!, full)
-					.then(() => core.process.init_feeds().then(close));
+					.then(() => core.process.init_feeds().then(close, e => notifyErrorDesc('Re-initating Feeds', e)))
+					.catch(e => notifyErrorDesc('Removing Listener', e));
 				};
 
 				let self = this;
@@ -301,7 +308,8 @@ class FeedItem {
 
 				default_filters[filter.filter.id] = option.selected;
 			});
-		});
+		})
+		.catch(e => notifyErrorDesc('Grabbing Filter List', e));
 
 		submit_button.addEventListener('click', () => {
 			// submit_button.innerText = 'Submitting. Please wait..';
@@ -316,12 +324,12 @@ class FeedItem {
 					if (option.selected) {
 						// Selected. Wasn't before. Enable it.
 						send_new_feed_filter(this.model.id!, id)
-						.catch(err => { if (err) { throw err; } });
+						.catch(e => notifyErrorDesc('Creating Feed Filter', e));
 						console.log('Added: ' + this.model.id! + ' - ' + id);
 					} else {
 						// Not selected. Was before. Remove it.
 						send_remove_feed_filter(this.model.id!, id)
-						.catch(err => { if (err) { throw err; } });
+						.catch(e => notifyErrorDesc('Removing Feed Filter', e));
 						console.log('Removed: ' + this.model.id! + ' - ' + id);
 					}
 				}

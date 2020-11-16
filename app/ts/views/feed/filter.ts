@@ -5,6 +5,7 @@ import FeedView from './items';
 import core, { create_popup, for_each } from '../../core';
 
 import { RustEnum } from '../../util/rust';
+import { notifyErrorDesc } from '../../util/notification';
 
 import {
 	send_get_filter_list,
@@ -67,7 +68,8 @@ export default class FilterView extends View {
 		this.container.appendChild(nav_bar);
 
 		send_get_filter_list()
-		.then(filterList => filterList.items.map(item => this.addItemToSidebar(item)));
+		.then(filterList => filterList.items.map(item => this.addItemToSidebar(item)))
+		.catch(e => notifyErrorDesc('Grabbing Filter List', e));
 	}
 
 	render_editor() {
@@ -100,7 +102,7 @@ export default class FilterView extends View {
 			tool_bar.appendChild(renderButton('Create', () => {
 				send_new_filter(this.main_filter.title!, this.main_filter.filter!.rust_enum.toJSON())
 				.then(console.log)
-				.catch(console.error);
+				.catch(e => notifyErrorDesc('Creating New Filter', e));;
 
 				console.log('Create');
 			}));
@@ -114,7 +116,7 @@ export default class FilterView extends View {
 					this.main_filter.filter!.rust_enum.toJSON()
 				)
 				.then(console.log)
-				.catch(console.error);
+				.catch(e => notifyErrorDesc('Updating Existing Filter', e));;
 			}));
 
 			tool_bar.appendChild(renderButton('Clone', () => {

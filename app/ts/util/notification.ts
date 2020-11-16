@@ -137,3 +137,9 @@ export function notifySuccess(title: string, opts?: Exclude<NotificationOptions,
 export function notifyWarning(title: string, opts?: Exclude<NotificationOptions, 'color'>) {
 	return notify(title, Object.assign(opts || {}, { color: 'yellow' }));
 }
+
+
+
+export function notifyErrorDesc(title: string, description: string) {
+	return notifyError(title, { description, timer: 0 });
+}

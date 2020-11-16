@@ -2,6 +2,8 @@ import core from '../../core';
 import { rustify_object, RustEnum, NULL_ENUM, CompleteRustValues } from '../../util/rust';
 import { parseFromString } from '../../util/time';
 
+import { notifyErrorDesc } from '../../util/notification';
+
 import View from '../index';
 import FeedItemsView from './items';
 import FilterView from './filter';
@@ -152,7 +154,8 @@ export default class EditorView extends View {
 					style.innerText = CUSTOM_IFRAME_CSS;
 					iframe_doc.body.appendChild(style);
 				}
-			});
+			})
+			.catch(e => notifyErrorDesc('Grabbing Webpage Source', e));
 		});
 
 
@@ -245,7 +248,7 @@ export default class EditorView extends View {
 			let obj = rustify_object(rustify);
 
 			send_new_custom_item(obj)
-			.catch(console.error);
+			.catch(e => notifyErrorDesc('Creating Custom Item', e));
 		});
 
 
@@ -323,7 +326,8 @@ export default class EditorView extends View {
 
 					setTimeout(() => mainItem.findItems(), 1000);
 				}
-			});
+			})
+			.catch(e => notifyErrorDesc('Grabbing Webpage Source', e));
 		}
 	}
 }

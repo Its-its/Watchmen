@@ -2,6 +2,8 @@ import core from '../../core';
 import { rustify_object, RustEnum, NULL_ENUM, CompleteRustValues } from '../../util/rust';
 import { parseFromString } from '../../util/time';
 
+import { notifyErrorDesc } from '../../util/notification';
+
 import View from '../index';
 import WatcherView from './items';
 
@@ -115,7 +117,8 @@ export default class EditorView extends View {
 
 				nav_bar_list.appendChild(item);
 			}
-		});
+		})
+		.catch(e => notifyErrorDesc('Grabbing Watch Parser List', e));
 
 		this.container.appendChild(nav_bar);
 	}
@@ -171,7 +174,8 @@ export default class EditorView extends View {
 					style.innerText = CUSTOM_IFRAME_CSS;
 					iframe_doc.body.appendChild(style);
 				}
-			});
+			})
+			.catch(e => notifyErrorDesc('Grabbing Webpage', e));
 		});
 
 		const site_title = document.createElement('h3');
@@ -230,7 +234,8 @@ export default class EditorView extends View {
 			.then(value => {
 				// TODO: Notification
 				console.log(value);
-			});
+			})
+			.catch(e => notifyErrorDesc('Creating New Watch Parser', e));
 		});
 
 		const test_button = document.createElement('div');
@@ -247,7 +252,8 @@ export default class EditorView extends View {
 			.then(value => {
 				// TODO: Popup
 				console.log(value);
-			});
+			})
+			.catch(e => notifyErrorDesc('Testing Watcher', e));
 		});
 	}
 
@@ -343,7 +349,8 @@ export default class EditorView extends View {
 
 				setTimeout(() => this.mainItem!.findItems(), 1000);
 			}
-		});
+		})
+		.catch(e => notifyErrorDesc('Grabbing Webpage', e));
 	}
 }
 
