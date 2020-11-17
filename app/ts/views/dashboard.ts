@@ -40,9 +40,6 @@ export default class DasboardView extends View {
 		this.container.appendChild(this.nav_bar);
 	}
 
-	on_connection_open() {
-		//
-	}
 
 	on_open() {
 		console.log('open');

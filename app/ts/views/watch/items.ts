@@ -108,16 +108,11 @@ export default class WatchItemsView extends View {
 		this.container.appendChild(this.nav_bar);
 
 		this.container.appendChild(this.table.render());
-	}
 
-	on_connection_open() {
-		// TODO: Change on_connection_open() to activate after base processes have been processed.
 		this.table.regrab();
 	}
 
 	on_open() {
-		console.log('open');
-
 		// Navbar buttons
 
 		let dashboard_listener = document.createElement('div');

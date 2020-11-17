@@ -19,11 +19,6 @@ export default class View {
 		if (!this.initiated) {
 			this.on_init();
 			this.initiated = true;
-
-			if (core.socket.is_open()) {
-				console.log(' - Opening socket.');
-				this.on_connection_open();
-			}
 		}
 	}
 
@@ -49,8 +44,6 @@ export default class View {
 	public on_init() {}
 	public on_open() {}
 	public on_close() {}
-
-	public on_connection_open() {}
 
 	static path = '';
 }

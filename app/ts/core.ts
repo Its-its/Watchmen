@@ -57,12 +57,7 @@ const app = {
 	on_connection_open() {
 		// Get Current feeds
 		this.process.init_feeds()
-		.then(_ => {
-			if (this.view != null) {
-				console.log('View.on_connection_open()');
-				this.view.on_connection_open();
-			}
-		})
+		.then(_ => app.init())
 		.catch(e => notifyErrorDesc('Initiate Feeds', e));
 
 		this.process.register_updates()
@@ -98,9 +93,6 @@ const app = {
 		}
 	}
 };
-
-// Ensures the imports are registered.
-setTimeout(() => app.init(), 100);
 
 
 export function for_each<I, R>(items: I[], next_item: (item: I, item_finished: (...items: R[]) => any) => any, on_fin?: (resp: R[][]) => any) {

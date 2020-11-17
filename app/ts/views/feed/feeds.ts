@@ -48,9 +48,7 @@ export default class FeedsView extends View {
 		core.navbar.append_left_html(open_editor);
 
 		open_editor.addEventListener('click', () => core.open_view(new ItemsView()));
-	}
 
-	on_connection_open() {
 		this.table.update();
 	}
 

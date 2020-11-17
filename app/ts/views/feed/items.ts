@@ -404,9 +404,7 @@ export default class FeedView extends View {
 		this.container.appendChild(this.nav_bar);
 
 		this.container.appendChild(this.table.render());
-	}
 
-	on_connection_open() {
 		// Get Categories (init)
 		send_get_category_list()
 		.then(opts => {

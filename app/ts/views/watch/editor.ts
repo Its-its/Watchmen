@@ -98,7 +98,6 @@ export default class EditorView extends View {
 		nav_bar_list.className = 'tree';
 		nav_items.appendChild(nav_bar_list);
 
-		// TODO: Move to on_connection_open
 		send_get_watch_parser_list()
 		.then(resp => {
 			for (let i = 0; i < resp.items.length; i++) {
