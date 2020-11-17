@@ -1,11 +1,16 @@
+@use "sass:color";
 
+$body-bg-color: #242531;
+$navbar-bg-color: #1b1c24;
+
+$overlay-bg-color: #25252b;
 
 html, body {
 	width: 100%;
 	height: 100%;
 	margin: 0;
 
-	background-color: #242531;
+	background-color: $body-bg-color;
 	color: #e6e6e6;
 
 	font-family: "OpenSans", "Cantarell", "Helvetica", "Arial", "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -22,7 +27,7 @@ body {
 	height: 40px;
 	padding: 4px;
 	padding-bottom: 7px;
-	background-color: #1b1c24;
+	background-color: $navbar-bg-color;
 
 	.nav-container {
 		height: 100%;
@@ -50,25 +55,34 @@ body {
 
 .popup-container {
 	position: absolute;
+	background: linear-gradient(to bottom, color.adjust(#131313, $alpha: -0.5), color.adjust(#131313, $alpha: -0.1));
+
 	left: 0;
 	top: 0;
 	width: 100%;
 	height: 100%;
+
 	z-index: 9999;
 
 	text-align: center;
 
 	> .popup {
-		padding: 2em;
-		vertical-align: middle;
-		position: relative;
 		display: inline-block;
-		background-color: #96979d;
-		border-radius: 6px;
-		margin-top: 5em;
+		position: relative;
+
+		background-color: $overlay-bg-color;
 		color: #202020;
 
 		text-align: left;
+		vertical-align: middle;
+
+		padding: 2em;
+		margin-top: 5em;
+		min-width: 30%;
+
+		> .title {
+			//
+		}
 	}
 }
 
@@ -81,7 +95,7 @@ body {
 	}
 
 	input {
-		background-color: #242531;
+		background-color: $body-bg-color;
 		color: white;
 		border: none;
 		padding: 0.5em;
@@ -148,7 +162,7 @@ body {
 	width: 250px;
 	height: 100%;
 	flex: 1 0 auto;
-	background-color: #1b1c24;
+	background-color: $navbar-bg-color;
 
 	.title-container {
 		margin-bottom: 10px;
@@ -192,7 +206,7 @@ body {
 
 				&:hover,
 				&.active {
-					background-color: scale-color(#1b1c24, $lightness: -9%);
+					background-color: scale-color($navbar-bg-color, $lightness: -9%);
 				}
 
 				.tree-item-title {
@@ -371,7 +385,7 @@ textarea {
 select.custom {
 	padding: 5px;
 	border-radius: 5px;
-	background-color: #1b1c24;
+	background-color: $navbar-bg-color;
 	color: white;
 	font-size: 16px;
 	border: 1px solid #3b3d48;
@@ -453,8 +467,7 @@ select.custom {
 				> .sub-filter {
 					padding: 4px;
 					margin-bottom: 0.5em;
-					// background-color: #1b1c24;
-					border-left: 6px solid #1b1c24;
+					border-left: 6px solid $navbar-bg-color;
 				}
 			}
 
@@ -473,7 +486,7 @@ select.custom {
 	.feed-table {
 		> .table-item {
 			margin-bottom: 5px;
-			background-color: #1b1c24;
+			background-color: $navbar-bg-color;
 			padding: 6px;
 
 			.display {
@@ -549,7 +562,7 @@ body > .notification-container {
 		padding: 10px;
 
 
-		background-color: #25252b;
+		background-color: $overlay-bg-color;
 		border: 1px solid #151518;
 
 		max-width: 25em;
