@@ -33,7 +33,7 @@ pub struct WatchParserItem {
 
 	pub title: String,
 	pub description: String,
-	pub match_url: String, // TODO: Ensure always lowercase. I have unique index.
+	pub match_url: String,
 
 	pub match_opts: MatchParser
 }
@@ -287,16 +287,12 @@ pub fn request_feed(feed: &WatchingModel, conn: &SqliteConnection) -> WatcherRes
 	if let Some(last_item) = get_last_watch_history(feed.id, conn)? {
 		// Anything in the new_items is not in the last_items?
 		if new_items.iter().any(|v| !last_item.items.contains(v)) {
-			println!(" | New item Value found!");
-
 			feed_res.to_insert.push(NewWatchHistoryModel {
 				watch_id: feed.id,
 				items: serde_json::to_string(&new_items).unwrap(),
 
 				date_added: chrono::Utc::now().timestamp()
 			});
-		} else {
-			println!(" | Unchanged.");
 		}
 	} else {
 		// No last watch history? Create it.
@@ -306,8 +302,6 @@ pub fn request_feed(feed: &WatchingModel, conn: &SqliteConnection) -> WatcherRes
 
 			date_added: chrono::Utc::now().timestamp()
 		}, conn)?;
-
-		println!("Creating watch history for feed id: {}", feed.id);
 	}
 
 	feed_res.duration = feed_res.start_time.elapsed();
