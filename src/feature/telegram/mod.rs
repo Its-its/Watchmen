@@ -107,14 +107,18 @@ impl TelegramState {
 				let conn = inner.connection.connection();
 
 				if let Ok(items) = objects::get_items_in_range(None, 1, 0, &conn) {
-					*last_grabbed.lock().unwrap() = Some(items[0].date);
+					if !items.is_empty() {
+						*last_grabbed.lock().unwrap() = Some(items[0].date);
+					}
 				}
 
 				if let Ok(items) = objects::get_watch_history_list(None, 1, 0, &conn) {
-					let mut last = last_grabbed.lock().unwrap();
+					if !items.is_empty() {
+						let mut last = last_grabbed.lock().unwrap();
 
-					if items[0].date_added > *last.as_ref().unwrap() {
-						*last = Some(items[0].date_added);
+						if items[0].date_added > *last.as_ref().unwrap() {
+							*last = Some(items[0].date_added);
+						}
 					}
 				}
 			}
