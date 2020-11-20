@@ -117,6 +117,8 @@ impl RequestManager {
 		let watcher = NewWatchingModel {
 			parser_id: item.id,
 
+			enabled: true,
+
 			url,
 
 			title: item.title,

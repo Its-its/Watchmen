@@ -164,6 +164,8 @@ pub fn new_from_url(url: String, custom_item_id: Option<QueryId>, conn: &diesel:
 	Ok(NewFeedModel {
 		url,
 
+		enabled: true,
+
 		title: item.title,
 		description: item.description,
 		generator: String::new(),
@@ -184,6 +186,8 @@ pub fn new_from_url(url: String, custom_item_id: Option<QueryId>, conn: &diesel:
 pub fn new_from_feed(url: String, feed: CustomItem) -> NewFeedModel {
 	NewFeedModel {
 		url,
+
+		enabled: true,
 
 		title: feed.title,
 		description: feed.description,

@@ -58,6 +58,8 @@ impl Connection {
 			"CREATE TABLE IF NOT EXISTS feeds (
 				id                 INTEGER PRIMARY KEY,
 
+				enabled            BOOL NOT NULL DEFAULT true,
+
 				url                TEXT NOT NULL,
 				title              TEXT NOT NULL,
 				description        TEXT NOT NULL,
@@ -166,6 +168,8 @@ impl Connection {
 		self.0.execute(
 			"CREATE TABLE IF NOT EXISTS watching (
 				id                 INTEGER PRIMARY KEY,
+
+				enabled            BOOL NOT NULL DEFAULT true,
 
 				parser_id          INTEGER,
 

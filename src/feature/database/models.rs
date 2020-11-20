@@ -61,6 +61,8 @@ pub struct NewFeedItemModel {
 pub struct FeedModel {
 	pub id: QueryId,
 
+	pub enabled: bool,
+
 	pub url: String,
 	pub title: String,
 	pub description: String,
@@ -83,6 +85,7 @@ pub struct FeedModel {
 #[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
 #[table_name = "feeds"]
 pub struct NewFeedModel {
+	pub enabled: bool,
 	pub url: String,
 	pub title: String,
 	pub description: String,
@@ -105,6 +108,7 @@ pub struct NewFeedModel {
 #[derive(Serialize, Deserialize, Debug, Default, Clone, AsChangeset)]
 #[table_name = "feeds"]
 pub struct EditFeedModel {
+	pub enabled: Option<bool>,
 	pub title: Option<String>,
 	pub description: Option<String>,
 	pub generator: Option<String>,
@@ -268,6 +272,8 @@ pub struct EditCustomItemModel {
 pub struct WatchingModel {
 	pub id: QueryId,
 
+	pub enabled: bool,
+
 	pub parser_id: Option<QueryId>,
 
 	pub url: String,
@@ -287,6 +293,8 @@ pub struct WatchingModel {
 pub struct NewWatchingModel {
 	pub parser_id: Option<QueryId>,
 
+	pub enabled: bool,
+
 	pub url: String,
 	pub title: String,
 	pub description: String,
@@ -302,6 +310,8 @@ pub struct NewWatchingModel {
 #[table_name = "watching"]
 pub struct EditWatchingModel {
 	pub parser_id: Option<QueryId>,
+
+	pub enabled: Option<bool>,
 
 	pub url: Option<String>,
 	pub title: Option<String>,

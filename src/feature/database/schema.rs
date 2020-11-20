@@ -24,6 +24,8 @@ table! {
 	feeds(id) {
 		id -> Integer,
 
+		enabled -> Bool,
+
 		// Save favicon.ico ?
 
 		url -> Text,
@@ -106,6 +108,8 @@ table! {
 table! {
 	watching(id) {
 		id -> Integer,
+
+		enabled -> Bool,
 
 		parser_id -> Nullable<Integer>,
 
