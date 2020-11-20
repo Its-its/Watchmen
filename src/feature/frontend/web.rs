@@ -56,7 +56,7 @@ impl Web {
 				.service(fs::Files::new("/style", "./app/compiled/css"))
 				.service(web::resource("/ws/").route(web::get().to(socket_index)))
 			})
-			.bind("127.0.0.1:8080")
+			.bind("0.0.0.0:8080")
 			.unwrap()
 			.run();
 
