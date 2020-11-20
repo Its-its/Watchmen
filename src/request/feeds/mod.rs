@@ -6,13 +6,13 @@ use diesel::{RunQueryDsl, SqliteConnection};
 use crate::error::{Error, Result};
 use crate::feature::schema::{items as ItemsSchema, feeds as FeedsSchema};
 use crate::feature::models::{QueryId, NewFeedItemModel, FeedModel, NewFeedModel};
-use super::RequestResults;
+use super::{RequestResults, ItemResults, RequestItemResults, InnerRequestResults};
 
 pub mod rss;
 pub mod atom;
 pub mod custom;
 
-pub type CollectedResult = Result<RequestFeedResults>;
+type CollectedResult = Result<RequestItemResults<NewFeedItemModel>>;
 
 
 pub enum FeedType {
@@ -129,13 +129,13 @@ impl RequestManager {
 	}
 
 	pub fn request_all_if_idle(&mut self, is_manual: bool, connection: &SqliteConnection) -> RequestResults {
-		let mut results = FeedRequestResults {
-			error: None,
+		let mut results = InnerRequestResults {
+			general_error: None,
 			start_time: Instant::now(),
 			duration: Duration::new(0, 0),
 			was_manual: is_manual,
 			concurrency: 0,
-			feeds: Vec::new()
+			items: Vec::new()
 		};
 
 
@@ -149,7 +149,7 @@ impl RequestManager {
 
 
 		if !self.is_idle {
-			results.error = Some("Request Manager is already running!".into());
+			results.general_error = Some("Request Manager is already running!".into());
 			return RequestResults::Feed(results);
 		}
 
@@ -164,7 +164,12 @@ impl RequestManager {
 
 
 		for feed in &feeds {
-			results.feeds.push(request_feed((*feed).clone(), connection));
+			let cloned_feed = (*feed).clone();
+
+			results.items.push(ItemResults {
+				results: request_feed(&cloned_feed, connection),
+				item: cloned_feed
+			});
 		}
 
 
@@ -175,8 +180,8 @@ impl RequestManager {
 			update_feed_last_called_db(new_timestamp, feeds, connection);
 
 			// After finished insert new items to DB.
-			for res in results.feeds.iter_mut() {
-				if let Ok(res) = res {
+			for res in results.items.iter_mut() {
+				if let Ok(res) = res.results.as_mut() {
 					let e = diesel::insert_or_ignore_into(ItemsSchema::table)
 						.values(&res.to_insert)
 						.execute(connection);
@@ -197,10 +202,10 @@ impl RequestManager {
 }
 
 
-pub fn request_feed(feed: FeedModel, conn: &SqliteConnection) -> CollectedResult {
+pub fn request_feed(feed: &FeedModel, conn: &SqliteConnection) -> CollectedResult {
 	info!(" - Requesting: {}", feed.url);
 
-	let mut feed_res = RequestFeedResults {
+	let mut feed_res = RequestItemResults {
 		start_time: Instant::now(),
 		duration: Duration::new(0, 0),
 		new_item_count: 0,
@@ -266,25 +271,4 @@ pub fn update_feed_last_called_db(set_last_called: i64, feeds_arr: Vec<&mut Feed
 
 		feed.last_called = set_last_called;
 	}
-}
-
-
-#[derive(Debug)]
-pub struct FeedRequestResults {
-	pub error: Option<String>,
-	pub was_manual: bool,
-	pub start_time: Instant,
-	pub duration: Duration,
-	pub concurrency: i32,
-	pub feeds: Vec<CollectedResult>
-}
-
-
-#[derive(Debug)]
-pub struct RequestFeedResults {
-	pub start_time: Instant,
-	pub duration: Duration,
-	pub new_item_count: usize,
-	pub item_count: i32,
-	pub to_insert: Vec<NewFeedItemModel>
 }

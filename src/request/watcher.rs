@@ -14,7 +14,7 @@ use crate::feature::models::{
 };
 use crate::{Result, Error};
 use super::feeds::custom::ParseOpts;
-use super::RequestResults;
+use super::{RequestResults, ItemResults, RequestItemResults, InnerRequestResults};
 
 use crate::feature::objects::{
 	get_watch_parser_from_url, get_watch_parser_by_id,
@@ -24,7 +24,7 @@ use crate::feature::objects::{
 
 
 
-pub type WatcherResult = Result<RequestWatcherResults>;
+type WatcherResult = Result<RequestItemResults<NewWatchHistoryModel>>;
 
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -75,25 +75,6 @@ pub struct FoundItem {
 }
 
 
-#[derive(Debug)]
-pub struct WatcherRequestResults {
-	pub error: Option<String>,
-	pub was_manual: bool,
-	pub start_time: Instant,
-	pub duration: Duration,
-	pub concurrency: i32,
-	pub items: Vec<WatcherResult>
-}
-
-#[derive(Debug)]
-pub struct RequestWatcherResults {
-	pub start_time: Instant,
-	pub duration: Duration,
-	pub new_item_count: usize,
-	pub item_count: i32,
-	pub insert: Option<NewWatchHistoryModel>
-}
-
 pub struct RequestManager {
 	pub is_idle: bool,
 	pub concurrency: i32,
@@ -135,8 +116,8 @@ impl RequestManager {
 	}
 
 	pub fn request_all_if_idle(&mut self, is_manual: bool, connection: &SqliteConnection) -> RequestResults {
-		let mut results = WatcherRequestResults {
-			error: None,
+		let mut results = InnerRequestResults {
+			general_error: None,
 			start_time: Instant::now(),
 			duration: Duration::new(0, 0),
 			was_manual: is_manual,
@@ -151,7 +132,7 @@ impl RequestManager {
 			let watchers = match get_watchers(connection) {
 				Ok(i) => i,
 				Err(e) => {
-					results.error = Some(format!("{:?}", e));
+					results.general_error = Some(format!("{:?}", e));
 					return RequestResults::Watcher(results);
 				}
 			};
@@ -163,7 +144,7 @@ impl RequestManager {
 
 
 		if !self.is_idle {
-			results.error = Some("Request Manager is already running!".into());
+			results.general_error = Some("Request Manager is already running!".into());
 			return RequestResults::Watcher(results);
 		}
 
@@ -178,7 +159,12 @@ impl RequestManager {
 
 
 		for feed in &feeds {
-			results.items.push(request_feed((*feed).clone(), connection));
+			let feed_cloned = (*feed).clone();
+
+			results.items.push(ItemResults {
+				results: request_feed(&feed_cloned, connection),
+				item: feed_cloned
+			});
 		}
 
 
@@ -190,8 +176,9 @@ impl RequestManager {
 
 			// After finished insert new items to DB.
 			for res in results.items.iter_mut() {
-				if let Ok(res) = res {
-					if let Some(item) = res.insert.as_ref() {
+				if let Ok(res) = res.results.as_mut() {
+					// Only have to get(0) since we only ever return 1 watch history.
+					if let Some(item) = res.to_insert.get(0) {
 						let count = create_last_watch_history(item, connection);
 
 						if let Ok(count) = count {
@@ -278,15 +265,15 @@ pub fn get_from_url_parser(url: &str, parser: &MatchParser) -> Result<Vec<FoundI
 }
 
 
-pub fn request_feed(feed: WatchingModel, conn: &SqliteConnection) -> WatcherResult {
+pub fn request_feed(feed: &WatchingModel, conn: &SqliteConnection) -> WatcherResult {
 	info!(" - Requesting: {}", feed.url);
 
-	let mut feed_res = RequestWatcherResults {
+	let mut feed_res = RequestItemResults {
 		start_time: Instant::now(),
 		duration: Duration::new(0, 0),
 		new_item_count: 0,
 		item_count: 0,
-		insert: None
+		to_insert: Vec::new()
 	};
 
 	let parser = if let Some(parser_id) = feed.parser_id {
@@ -302,7 +289,7 @@ pub fn request_feed(feed: WatchingModel, conn: &SqliteConnection) -> WatcherResu
 		if new_items.iter().any(|v| !last_item.items.contains(v)) {
 			println!(" | New item Value found!");
 
-			feed_res.insert = Some(NewWatchHistoryModel {
+			feed_res.to_insert.push(NewWatchHistoryModel {
 				watch_id: feed.id,
 				items: serde_json::to_string(&new_items).unwrap(),
 

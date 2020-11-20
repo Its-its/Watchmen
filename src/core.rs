@@ -5,7 +5,6 @@ use url::Url;
 use log::info;
 
 use crate::state::CoreState;
-use crate::request::feeds::CollectedResult;
 use crate::request::watcher;
 use crate::request::RequestResults;
 
@@ -35,33 +34,39 @@ impl FeederCore {
 				for req in reqs {
 					match req {
 						RequestResults::Feed(req) => {
-							if let Some(e) = req.error.as_ref() {
-								info!("Request Error: {:?}", e);
+							if let Some(e) = req.general_error.as_ref() {
+								info!("Feed Request Error: {:?}", e);
 							} else {
-								let feed_errors = req.feeds.iter()
-									.filter(|f| f.is_err())
-									.collect::<Vec<&CollectedResult>>();
+								let mut encountered_error = false;
 
-								if !feed_errors.is_empty() {
-									info!("Feed Errors: {:#?}", feed_errors);
-								} else {
-									info!("Feeds ran without error. Took: {}s :)", req.duration.as_secs());
+								for feed in &req.items {
+									if let Err(e) = feed.results.as_ref() {
+										info!("Feed \"{}\" Error: {:#?}", feed.item.title, e);
+										encountered_error = true;
+									}
+								}
+
+								if !encountered_error {
+									info!("Feeds ran without error. Took: {} :)", req.duration.as_secs());
 								}
 							}
 						}
 
 						RequestResults::Watcher(req) => {
-							if let Some(e) = req.error.as_ref() {
-								info!("Request Error: {:?}", e);
+							if let Some(e) = req.general_error.as_ref() {
+								info!("Watcher Request Error: {:?}", e);
 							} else {
-								let feed_errors = req.items.iter()
-									.filter(|f| f.is_err())
-									.collect::<Vec<_>>();
+								let mut encountered_error = false;
 
-								if !feed_errors.is_empty() {
-									info!("Feed Errors: {:#?}", feed_errors);
-								} else {
-									info!("Feeds ran without error. Took: {}s :)", req.duration.as_secs());
+								for feed in &req.items {
+									if let Err(e) = feed.results.as_ref() {
+										info!("Watcher \"{}\" Error: {:#?}", feed.item.title, e);
+										encountered_error = true;
+									}
+								}
+
+								if !encountered_error {
+									info!("Watchers ran without error. Took: {} :)", req.duration.as_secs());
 								}
 							}
 						}
