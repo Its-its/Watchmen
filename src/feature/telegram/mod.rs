@@ -109,6 +109,14 @@ impl TelegramState {
 				if let Ok(items) = objects::get_items_in_range(None, 1, 0, &conn) {
 					*last_grabbed.lock().unwrap() = Some(items[0].date);
 				}
+
+				if let Ok(items) = objects::get_watch_history_list(None, 1, 0, &conn) {
+					let mut last = last_grabbed.lock().unwrap();
+
+					if items[0].date_added > *last.as_ref().unwrap() {
+						*last = Some(items[0].date_added);
+					}
+				}
 			}
 
 			let mut rt = Runtime::new().expect("runtime");
@@ -130,10 +138,7 @@ impl TelegramState {
 							if count != 0 {
 								if let Ok(items) = objects::get_items_in_range(None, count, 0, &conn) {
 									{ // Update last grabbed (ensuring newest first)
-										let mut newest_time: Vec<i64> = items.iter().map(|i| i.date).collect();
-										newest_time.sort_by(|a, b| b.partial_cmp(a).unwrap());
-
-										last_ran = newest_time[0];
+										last_ran = newest_time(items.iter().map(|i| i.date));
 									}
 
 									let filtered = match filter_items(&items, conn) {
@@ -173,11 +178,10 @@ impl TelegramState {
 							if count != 0 {
 								if let Ok(items) = objects::get_watch_history_list(None, count, 0, &conn) {
 									{ // Update last grabbed (ensuring newest first)
-										let mut newest_time: Vec<i64> = items.iter().map(|i| i.date_added).collect();
-										newest_time.sort_by(|a, b| b.partial_cmp(a).unwrap());
+										let time = newest_time(items.iter().map(|i| i.date_added));
 
-										if last_ran < newest_time[0] {
-											last_ran = newest_time[0];
+										if last_ran < time {
+											last_ran = time;
 										}
 									}
 
@@ -217,8 +221,16 @@ impl TelegramState {
 					}
 				}
 
-				thread::sleep(Duration::from_secs(30));
+				thread::sleep(Duration::from_secs(10));
 			}
 		});
 	}
+}
+
+fn newest_time<I: Iterator<Item = i64>>(iter: I) -> i64 {
+	let mut items: Vec<_> = iter.collect();
+
+	items.sort_by(|a, b| b.partial_cmp(a).unwrap());
+
+	items[0]
 }
