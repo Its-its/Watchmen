@@ -46,8 +46,8 @@ impl FeederCore {
 									}
 								}
 
-								if !encountered_error {
-									info!("Feeds ran without error. Took: {} :)", req.duration.as_secs());
+								if !encountered_error && !req.items.is_empty() {
+									info!("Feeds ran without error. Took: {}s", req.duration.as_secs());
 								}
 							}
 						}
@@ -65,8 +65,8 @@ impl FeederCore {
 									}
 								}
 
-								if !encountered_error {
-									info!("Watchers ran without error. Took: {} :)", req.duration.as_secs());
+								if !encountered_error && !req.items.is_empty() {
+									info!("Watchers ran without error. Took: {}s", req.duration.as_secs());
 								}
 							}
 						}
