@@ -10,6 +10,7 @@ import { notifyErrorDesc } from '../../util/notification';
 import {
 	send_get_filter_list,
 	send_update_filter,
+	send_remove_filter,
 	send_new_filter
 } from '../../socket';
 
@@ -121,6 +122,14 @@ export default class FilterView extends View {
 
 			tool_bar.appendChild(renderButton('Clone', () => {
 				console.log('Clone');
+			}));
+
+			tool_bar.appendChild(renderButton('Delete', () => {
+				send_remove_filter(
+					this.main_filter.filterId!
+				)
+				.then(console.log)
+				.catch(e => notifyErrorDesc('Updating Existing Filter', e));;
 			}));
 		}
 
