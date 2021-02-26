@@ -8,7 +8,7 @@ use crate::feature::TerminalCore;
 #[cfg(feature = "telegram")]
 use crate::feature::TelegramCore;
 
-use crate::feature::Connection;
+use crate::{config::Config, feature::Connection};
 
 use crate::core::WeakFeederCore;
 use crate::request::{
@@ -84,5 +84,9 @@ impl CoreState {
 				self.connection.connection()
 			)
 		]
+	}
+
+	pub fn get_config(&self) -> Config {
+		self.config.read().unwrap().config()
 	}
 }

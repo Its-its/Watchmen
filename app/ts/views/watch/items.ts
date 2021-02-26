@@ -13,6 +13,7 @@ import core from '../../core';
 
 import {
 	send_create_watcher,
+	send_edit_watcher,
 	send_get_watch_parser_list,
 	send_get_watch_history_list
 } from '../../socket';
@@ -296,6 +297,25 @@ export class TableItem {
 		list.className = 'list horizontal';
 		this.container.appendChild(list);
 
+		// Enable toggle.
+		list.appendChild((() => {
+			let li = document.createElement('li');
+			li.className = 'list-item feed-toggle';
+
+			let input = document.createElement('input');
+			input.type = 'checkbox';
+			input.checked = this.watcher.enabled;
+			input.title = 'Alert Toggle';
+			li.appendChild(input);
+
+			input.addEventListener('change', () => {
+				send_edit_watcher(this.watcher.id!, {
+					enabled: input.checked
+				});
+			});
+
+			return li;
+		})());
 
 		// Watcher Name
 		list.appendChild((() => {

@@ -246,6 +246,9 @@ interface WatchHistoryListResponse {
 interface ModelWatcher {
 	id?: number;
 
+	parser_id: number;
+	enabled: boolean;
+
 	title: string;
 	url: string;
 	description: string;
@@ -253,8 +256,19 @@ interface ModelWatcher {
 	remove_after: number;
 	sec_interval: number;
 
-	last_called: number;
-	date_added: number;
+	alert?: boolean;
+}
+
+interface ModelEditWatcher {
+	parser_id?: number;
+	enabled?: boolean;
+
+	title?: string;
+	url?: string;
+	description?: string;
+
+	remove_after?: number;
+	sec_interval?: number;
 
 	alert?: boolean;
 }

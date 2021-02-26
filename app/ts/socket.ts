@@ -313,7 +313,7 @@ export function send_create_watcher(url: string, custom_item_id: Nullable<number
 	return app.socket.send('add_watcher', opts);
 }
 
-export function send_edit_watcher(id: number, editing: ModelEditListener): Promise<EditListenerResponse> {
+export function send_edit_watcher(id: number, editing: ModelEditWatcher): Promise<EditListenerResponse> {
 	let opts = {
 		id: id,
 		editing: editing

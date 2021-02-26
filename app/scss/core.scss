@@ -317,6 +317,10 @@ body {
 		overflow: hidden;
 		padding: 0px 5px;
 
+		&.feed-toggle {
+			width: 21px;
+		}
+
 		&.feed-name {
 			width: 200px;
 			white-space: nowrap;

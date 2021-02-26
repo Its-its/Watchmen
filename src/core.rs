@@ -29,6 +29,12 @@ impl FeederCore {
 		loop {
 			{
 				let mut inner = self.to_inner();
+
+				// Requests aren't enabled? Break out of loop.
+				if !inner.get_config().request.enabled {
+					break;
+				}
+
 				let reqs = inner.run_all_requests();
 
 				for req in reqs {
@@ -76,6 +82,15 @@ impl FeederCore {
 
 			// Sleep otherwise loop will make the process use lots of cpu power.
 			std::thread::sleep(std::time::Duration::from_secs(10));
+		}
+
+		let inner = self.to_inner();
+		let mut frontend = inner.frontend.to_inner();
+
+		if let Some(handle) = frontend.web.thread_handle.take() {
+			std::mem::drop(frontend);
+			std::mem::drop(inner);
+			handle.join().expect("join");
 		}
 	}
 

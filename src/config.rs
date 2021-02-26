@@ -85,14 +85,21 @@ mod opts {
 
 	#[derive(Clone, Copy, Serialize, Deserialize)]
 	pub struct ConfigRequest {
-		concurrency: i32
+		#[serde(default = "default_true")]
+		pub enabled: bool,
+		pub concurrency: i32 // Currently not used
 	}
 
 	impl Default for ConfigRequest {
 		fn default() -> Self {
 			ConfigRequest {
+				enabled: true,
 				concurrency: 2
 			}
 		}
+	}
+
+	fn default_true() -> bool {
+		true
 	}
 }

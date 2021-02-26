@@ -1,4 +1,4 @@
-use std::{io, thread};
+use std::{io, thread::{self, JoinHandle}};
 
 use log::info;
 
@@ -18,14 +18,16 @@ use handlebars::Handlebars;
 
 pub struct Web {
 	weak_core: Option<WeakFeederCore>,
-	weak_frontend: Option<WeakFrontendCore>
+	weak_frontend: Option<WeakFrontendCore>,
+	pub thread_handle: Option<JoinHandle<()>>
 }
 
 impl Web {
 	pub fn new() -> Self {
 		Self {
 			weak_core: None,
-			weak_frontend: None
+			weak_frontend: None,
+			thread_handle: None
 		}
 	}
 
@@ -38,7 +40,7 @@ impl Web {
 		let frontend_ref = self.weak_frontend.as_ref().unwrap().clone();
 		let core_ref = self.weak_core.as_ref().unwrap().clone();
 
-		thread::spawn(move || {
+		self.thread_handle = Some(thread::spawn(move || {
 			let mut sys = System::new("HTTP Server");
 
 			let server = HttpServer::new(move || {
@@ -61,7 +63,7 @@ impl Web {
 			.run();
 
 			let _ = sys.block_on(server);
-		});
+		}));
 
 		Ok(())
 	}

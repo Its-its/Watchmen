@@ -103,7 +103,7 @@ export default class FilterView extends View {
 			tool_bar.appendChild(renderButton('Create', () => {
 				send_new_filter(this.main_filter.title!, this.main_filter.filter!.rust_enum.toJSON())
 				.then(console.log)
-				.catch(e => notifyErrorDesc('Creating New Filter', e));;
+				.catch(e => notifyErrorDesc('Creating New Filter', e));
 
 				console.log('Create');
 			}));
@@ -117,7 +117,7 @@ export default class FilterView extends View {
 					this.main_filter.filter!.rust_enum.toJSON()
 				)
 				.then(console.log)
-				.catch(e => notifyErrorDesc('Updating Existing Filter', e));;
+				.catch(e => notifyErrorDesc('Updating Existing Filter', e));
 			}));
 
 			tool_bar.appendChild(renderButton('Clone', () => {
@@ -128,8 +128,11 @@ export default class FilterView extends View {
 				send_remove_filter(
 					this.main_filter.filterId!
 				)
-				.then(console.log)
-				.catch(e => notifyErrorDesc('Updating Existing Filter', e));;
+				.then(v => {
+					console.log(v);
+					// TODO: Unselect AND remove from frontend.
+				})
+				.catch(e => notifyErrorDesc('Deleting Filter', e));
 			}));
 		}
 
