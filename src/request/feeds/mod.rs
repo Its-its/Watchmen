@@ -4,6 +4,7 @@ use log::{info};
 use diesel::{RunQueryDsl, SqliteConnection};
 
 use crate::error::{Error, Result};
+use crate::feature::objects::get_listeners;
 use crate::feature::schema::{items as ItemsSchema, feeds as FeedsSchema};
 use crate::feature::models::{QueryId, NewFeedItemModel, FeedModel, NewFeedModel};
 use super::{RequestResults, ItemResults, RequestItemResults, InnerRequestResults};
@@ -88,7 +89,6 @@ impl FeedType {
 
 
 pub struct RequestManager {
-	pub feeds: Vec<FeedModel>,
 	pub is_idle: bool,
 	pub concurrency: i32,
 }
@@ -96,22 +96,9 @@ pub struct RequestManager {
 impl RequestManager {
 	pub fn new() -> Self {
 		Self {
-			feeds: Vec::new(),
-
 			is_idle: true,
 			concurrency: 2,
 		}
-	}
-
-	pub fn init(&mut self, connection: &SqliteConnection) -> Result<usize> {
-		use diesel::prelude::*;
-		use FeedsSchema::dsl::*;
-
-		let found = feeds.filter(id.ne(0)).load::<FeedModel>(connection)?;
-
-		self.feeds = found;
-
-		Ok(self.feeds.len())
 	}
 
 	pub fn create_new_feed(&self, url: String, custom_item_id: Option<QueryId>, conn: &SqliteConnection) -> Result<NewFeedModel> {
@@ -138,14 +125,13 @@ impl RequestManager {
 			items: Vec::new()
 		};
 
+		let timestamp = chrono::Utc::now().timestamp();
 
-		let feeds: Vec<&mut FeedModel> = {
-			let timestamp = chrono::Utc::now().timestamp();
-
-			self.feeds.iter_mut()
-			.filter(|i: &&mut FeedModel| timestamp - i.last_called - i.sec_interval as i64 > 0)
-			.collect()
-		};
+		let feeds: Vec<_> = get_listeners(connection)
+			.unwrap()
+			.into_iter()
+			.filter(|i| timestamp - i.last_called - i.sec_interval as i64 > 0)
+			.collect();
 
 
 		if !self.is_idle {
@@ -260,15 +246,13 @@ pub fn request_feed(feed: &FeedModel, conn: &SqliteConnection) -> CollectedResul
 }
 
 
-pub fn update_feed_last_called_db(set_last_called: i64, feeds_arr: Vec<&mut FeedModel>, connection: &SqliteConnection) {
+pub fn update_feed_last_called_db(set_last_called: i64, feeds_arr: Vec<FeedModel>, connection: &SqliteConnection) {
 	use diesel::prelude::*;
 	use FeedsSchema::dsl::*;
 
 	for feed in feeds_arr {
-		let _ = diesel::update(&*feed)
+		let _ = diesel::update(&feed)
 			.set(last_called.eq(set_last_called))
 			.execute(connection);
-
-		feed.last_called = set_last_called;
 	}
 }

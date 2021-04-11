@@ -67,9 +67,6 @@ impl CoreState {
 		}
 
 		self.connection.init_sql().unwrap_or_else(|e| panic!("Loading Database Error: {}", e));
-
-		self.feed_requests.init(self.connection.connection())
-			.unwrap_or_else(|e| panic!("Requester Initiation Error: {}", e));
 	}
 
 	//

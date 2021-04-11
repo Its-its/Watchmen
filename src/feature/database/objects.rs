@@ -25,7 +25,7 @@ use super::models::{
 	WatchParserItemModel, NewWatchParserItemModel,
 	WatchHistoryModel, NewWatchHistoryModel
 };
-use crate::state::CoreState;
+
 use crate::request::feeds::custom::{CustomItem as CustomItemBase, FoundItem as CustomFoundItem};
 use crate::request::watcher::{self, WatchParserItem as WatchParserItemBase};
 
@@ -527,13 +527,13 @@ pub fn get_listeners(conn: &SqliteConnection) -> QueryResult<Vec<FeedModel>> {
 	self::feeds::table.load(conn)
 }
 
-pub fn remove_listener(f_id: QueryId, rem_stored: bool, state: &mut CoreState) -> QueryResult<usize> {
-	let conn = state.connection.connection();
 
-	if let Some(index) = state.feed_requests.feeds.iter().position(|f| f.id == f_id) {
-		state.feed_requests.feeds.remove(index);
-	}
+pub fn get_listener_by_id(f_id: QueryId, conn: &SqliteConnection) -> QueryResult<Option<FeedModel>> {
+	use self::feeds::dsl::*;
+	feeds.filter(id.eq(f_id)).get_result(conn).optional()
+}
 
+pub fn remove_listener(f_id: QueryId, rem_stored: bool, conn: &SqliteConnection) -> QueryResult<usize> {
 	if rem_stored {
 		use self::items::dsl::*;
 		diesel::delete(items.filter(feed_id.eq(f_id))).execute(conn)?;
@@ -550,24 +550,12 @@ pub fn remove_listener(f_id: QueryId, rem_stored: bool, state: &mut CoreState) -
 	diesel::delete(feeds.filter(id.eq(f_id))).execute(conn)
 }
 
-pub fn update_listener(f_id: QueryId, edit: &EditFeedModel, state: &mut CoreState) -> QueryResult<usize> {
-	{ // Update Stored Feed
-		if let Some(feed) = state.feed_requests.feeds.iter_mut().find(|f| f.id == f_id) {
-			if let Some(i) = edit.description.as_ref() { feed.description = i.to_owned(); }
-			if let Some(i) = edit.generator.as_ref() { feed.generator = i.to_owned(); }
-			if let Some(i) = edit.title.as_ref() { feed.title = i.to_owned(); }
-			if let Some(i) = edit.global_show { feed.global_show = i; }
-			if let Some(i) = edit.ignore_if_not_new { feed.ignore_if_not_new = i; }
-			if let Some(i) = edit.remove_after { feed.remove_after = i; }
-			if let Some(i) = edit.sec_interval { feed.sec_interval = i; }
-		}
-	}
-
+pub fn update_listener(f_id: QueryId, edit: &EditFeedModel, conn: &SqliteConnection) -> QueryResult<usize> {
 	use self::feeds::dsl::*;
 
 	diesel::update(feeds.filter(id.eq(f_id)))
 		.set(edit)
-		.execute(state.connection.connection())
+		.execute(conn)
 }
 
 

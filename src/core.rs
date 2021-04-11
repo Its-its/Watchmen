@@ -32,6 +32,7 @@ impl FeederCore {
 
 				// Requests aren't enabled? Break out of loop.
 				if !inner.get_config().request.enabled {
+					info!("Requests disabled.");
 					break;
 				}
 
@@ -127,7 +128,7 @@ impl WeakFeederCore {
 		rpc: Front2CoreNotification
 	) -> Result<()> {
 		let upgrade = self.upgrade().unwrap();
-		let mut inner = upgrade.to_inner();
+		let inner = upgrade.to_inner();
 
 		let conn = inner.connection.connection();
 
@@ -171,7 +172,9 @@ impl WeakFeederCore {
 			}
 
 			Front2CoreNotification::FeedList(..) => {
-				let list = Core2FrontNotification::FeedList { items: inner.feed_requests.feeds.clone() };
+				let list = Core2FrontNotification::FeedList {
+					items: objects::get_listeners(conn)?
+				};
 
 				ctx.respond_with(msg_id_opt, list);
 			}
@@ -204,7 +207,7 @@ impl WeakFeederCore {
 			}
 
 			Front2CoreNotification::RemoveListener { id, rem_stored } => {
-				let affected = objects::remove_listener(id, rem_stored, &mut inner)?;
+				let affected = objects::remove_listener(id, rem_stored, conn)?;
 
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::RemoveListener { affected });
 			}
@@ -212,7 +215,7 @@ impl WeakFeederCore {
 			Front2CoreNotification::EditListener { id, editing } => {
 				// TODO: Check if changed url. If so; call it and return url it gives us. Will prevent duplicates/redirects.
 
-				let affected = objects::update_listener(id, &editing, &mut inner)?;
+				let affected = objects::update_listener(id, &editing, conn)?;
 
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::EditListener { affected, listener: editing });
 			}
