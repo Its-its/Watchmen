@@ -35,38 +35,36 @@ pub struct CoreState {
 
 impl CoreState {
 	pub fn new() -> Self {
-		let config_manager = ConfigManager::new();
-
 		Self {
 			#[cfg(feature = "website")]
 			frontend: FrontendCore::new(),
 			#[cfg(feature = "terminal")]
 			terminal: TerminalCore::new(),
 			#[cfg(feature = "telegram")]
-			telegram: TelegramCore::new(config_manager.config()),
+			telegram: TelegramCore::new(),
 
 			connection: Connection::new(),
 			feed_requests: FeedRequestManager::new(),
 			watcher_requests: WatcherRequestManager::new(),
-			config: RwLock::new(config_manager),
+			config: RwLock::new(ConfigManager::new()),
 		}
 	}
 
 	#[allow(unused_variables)]
 	pub fn init(&mut self, weak_core: WeakFeederCore) {
-		#[cfg(feature = "website")]
-		self.frontend.init(weak_core.clone());
-		#[cfg(feature = "terminal")]
-		self.terminal.init(weak_core.clone());
-		#[cfg(feature = "telegram")]
-		self.telegram.init(weak_core);
-
 		{
 			let mut write = self.config.write().unwrap();
 
 			write.init();
 			write.load().unwrap_or_else(|e| panic!("Loading Config Error: {}", e));
 		}
+
+		#[cfg(feature = "website")]
+		self.frontend.init(weak_core.clone());
+		#[cfg(feature = "terminal")]
+		self.terminal.init(weak_core.clone());
+		#[cfg(feature = "telegram")]
+		self.telegram.init(self.config.read().unwrap().config(), weak_core);
 
 		self.connection.init_sql().unwrap_or_else(|e| panic!("Loading Database Error: {}", e));
 	}

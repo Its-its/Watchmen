@@ -104,7 +104,7 @@ mod opts {
 	#[derive(Default, Clone, Serialize, Deserialize)]
 	pub struct ConfigTelegram {
 		pub api_key: String,
-		pub chat_id: i64
+		pub chat_id: Option<i64>
 	}
 
 

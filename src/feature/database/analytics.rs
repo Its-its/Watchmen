@@ -2,8 +2,6 @@
 
 use serde::{Serialize, Deserialize};
 
-use crate::Error;
-
 use super::QueryId;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

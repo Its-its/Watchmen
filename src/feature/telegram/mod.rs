@@ -14,17 +14,17 @@ use crate::filter::filter_items;
 pub struct TelegramCore(Arc<Mutex<TelegramState>>);
 
 impl TelegramCore {
-	pub fn new(config: Config) -> Self {
-		Self(Arc::new(Mutex::new(TelegramState::new(config))))
+	pub fn new() -> Self {
+		Self(Arc::new(Mutex::new(TelegramState::new())))
 	}
 
 
-	pub fn init(&mut self, weak_core: WeakFeederCore) {
+	pub fn init(&mut self, config: Config, weak_core: WeakFeederCore) {
 		let weak = self.to_weak();
 
 		let mut inner = self.to_inner();
 
-		inner.init(weak_core, weak);
+		inner.init(config, weak_core, weak);
 	}
 
 
@@ -49,23 +49,27 @@ impl WeakTelegramCore {
 
 
 pub struct TelegramState {
-	api: Api,
+	api: Option<Api>,
 	chat_ref: Option<ChatRef>,
 	last_grabbed: Arc<Mutex<Option<i64>>>
 }
 
 impl TelegramState {
-	pub fn new(config: Config) -> Self {
+	pub fn new() -> Self { // TODO: Messed up.
 		TelegramState {
-			api: Api::new(config.telegram.api_key),
-			chat_ref: Some(ChatRef::from_chat_id(config.telegram.chat_id.into())),
+			api: None,
+			chat_ref: None,
 			last_grabbed: Arc::new(Mutex::new(None)),
 		}
 	}
 
-	pub fn init(&mut self, weak_core: WeakFeederCore, _weak_telegram: WeakTelegramCore) {
+	pub fn init(&mut self, config: Config, weak_core: WeakFeederCore, _weak_telegram: WeakTelegramCore) {
+		self.api = Some(Api::new(config.telegram.api_key));
+		self.chat_ref = config.telegram.chat_id.map(|v| ChatRef::from_chat_id(v.into()));
+
 		let chat_ref = self.chat_ref.clone();
-		let api = self.api.clone();
+		let api = self.api.clone().unwrap();
+
 
 		thread::spawn(move || {
 			let mut rt = Runtime::new().expect("runtime");
@@ -78,15 +82,19 @@ impl TelegramState {
 						if let MessageKind::Text { ref data, .. } = message.kind {
 							println!("[{}]: <{}>: {}", message.chat.id(), &message.from.first_name, data);
 
-							let send = api.send(
-								SendMessage::new(
-									chat_ref.as_ref().unwrap(),
-									format!("Received:\n{}", data)
-								)
-							).await;
+							if let Some(chat) = chat_ref.as_ref() {
+								let send = api.send(
+									SendMessage::new(
+										chat,
+										format!("Received:\n{}", data)
+									)
+								).await;
 
-							if let Err(e) = send {
-								eprintln!("{:?}", e);
+								if let Err(e) = send {
+									eprintln!("{:?}", e);
+								}
+							} else {
+								println!(r#"TELEGRAM NOTIFICATIONS DISABLED!\nPLEASE PUT THE CHAT ID (inside brackets) IN THE CONFIG FILE AFTER api_key as "chat_id" = XXXX"#);
 							}
 						}
 					}
@@ -97,7 +105,7 @@ impl TelegramState {
 
 		let last_grabbed = self.last_grabbed.clone();
 		let chat_ref = self.chat_ref.clone();
-		let api = self.api.clone();
+		let api = self.api.clone().unwrap();
 
 		thread::spawn(move || {
 			{
@@ -154,24 +162,26 @@ impl TelegramState {
 									};
 
 									if !filtered.is_empty() {
-										rt.block_on(async {
-											for item in filtered {
-												let send = api.send(
-													SendMessage::new(
-														chat_ref.as_ref().unwrap(),
-														format!(
-															"{}\n{}",
-															item.title,
-															item.link
+										if let Some(chat) = chat_ref.as_ref() {
+											rt.block_on(async {
+												for item in filtered {
+													let send = api.send(
+														SendMessage::new(
+															chat,
+															format!(
+																"{}\n{}",
+																item.title,
+																item.link
+															)
 														)
-													)
-												).await;
+													).await;
 
-												if let Err(e) = send {
-													eprintln!("{:?}", e);
+													if let Err(e) = send {
+														eprintln!("{:?}", e);
+													}
 												}
-											}
-										});
+											});
+										}
 									}
 								}
 							}
@@ -190,32 +200,34 @@ impl TelegramState {
 									}
 
 									if !items.is_empty() {
-										rt.block_on(async {
-											for item in items {
-												let watcher = objects::get_watcher_by_id(item.watch_id, conn).unwrap();
-												let send = api.send(
-													SendMessage::new(
-														chat_ref.as_ref().unwrap(),
-														format!(
-															"{}\n{}\n{}",
-															watcher.title,
-															if item.items.len() == 1 {
-																item.items.first()
-																.map(|i| i.value.clone())
-																.unwrap_or_default()
-															} else {
-																format!("{} items", item.items.len())
-															},
-															watcher.url
+										if let Some(chat) = chat_ref.as_ref() {
+											rt.block_on(async {
+												for item in items {
+													let watcher = objects::get_watcher_by_id(item.watch_id, conn).unwrap();
+													let send = api.send(
+														SendMessage::new(
+															chat,
+															format!(
+																"{}\n{}\n{}",
+																watcher.title,
+																if item.items.len() == 1 {
+																	item.items.first()
+																	.map(|i| i.value.clone())
+																	.unwrap_or_default()
+																} else {
+																	format!("{} items", item.items.len())
+																},
+																watcher.url
+															)
 														)
-													)
-												).await;
+													).await;
 
-												if let Err(e) = send {
-													eprintln!("{:?}", e);
+													if let Err(e) = send {
+														eprintln!("{:?}", e);
+													}
 												}
-											}
-										});
+											});
+										}
 									}
 								}
 							}
