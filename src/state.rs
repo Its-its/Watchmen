@@ -35,18 +35,20 @@ pub struct CoreState {
 
 impl CoreState {
 	pub fn new() -> Self {
+		let config_manager = ConfigManager::new();
+
 		Self {
 			#[cfg(feature = "website")]
 			frontend: FrontendCore::new(),
 			#[cfg(feature = "terminal")]
 			terminal: TerminalCore::new(),
 			#[cfg(feature = "telegram")]
-			telegram: TelegramCore::new(),
+			telegram: TelegramCore::new(config_manager.config()),
 
 			connection: Connection::new(),
 			feed_requests: FeedRequestManager::new(),
 			watcher_requests: WatcherRequestManager::new(),
-			config: RwLock::new(ConfigManager::new()),
+			config: RwLock::new(config_manager),
 		}
 	}
 

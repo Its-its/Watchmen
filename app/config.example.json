@@ -1,0 +1,10 @@
+{
+  "request": {
+    "enabled": true,
+    "concurrency": 2
+  },
+  "telegram": {
+    "api_key": "",
+    "chat_id": 0
+  }
+}

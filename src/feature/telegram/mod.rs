@@ -7,15 +7,15 @@ use tokio::{runtime::Runtime};
 
 use telegram_bot::*;
 
-use crate::feature::database::objects;
+use crate::{config::Config, feature::database::objects};
 use crate::core::WeakFeederCore;
 use crate::filter::filter_items;
 
 pub struct TelegramCore(Arc<Mutex<TelegramState>>);
 
 impl TelegramCore {
-	pub fn new() -> Self {
-		Self(Arc::new(Mutex::new(TelegramState::new())))
+	pub fn new(config: Config) -> Self {
+		Self(Arc::new(Mutex::new(TelegramState::new(config))))
 	}
 
 
@@ -55,10 +55,10 @@ pub struct TelegramState {
 }
 
 impl TelegramState {
-	pub fn new() -> Self {
+	pub fn new(config: Config) -> Self {
 		TelegramState {
-			api: Api::new("777709278:AAEaI-XSvZX5RMpGuZOqILsxij5lXPFMjUs"),
-			chat_ref: Some(ChatRef::from_chat_id(296604566.into())),
+			api: Api::new(config.telegram.api_key),
+			chat_ref: Some(ChatRef::from_chat_id(config.telegram.chat_id.into())),
 			last_grabbed: Arc::new(Mutex::new(None)),
 		}
 	}

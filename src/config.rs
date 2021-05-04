@@ -70,7 +70,7 @@ impl ConfigManager {
 	}
 
 	pub fn config(&self) -> Config {
-		self.config
+		self.config.clone()
 	}
 }
 
@@ -78,12 +78,13 @@ impl ConfigManager {
 mod opts {
 	use serde::{Serialize, Deserialize};
 
-	#[derive(Default, Clone, Copy, Serialize, Deserialize)]
+	#[derive(Default, Clone, Serialize, Deserialize)]
 	pub struct Config {
+		pub telegram: ConfigTelegram,
 		pub request: ConfigRequest
 	}
 
-	#[derive(Clone, Copy, Serialize, Deserialize)]
+	#[derive(Clone, Serialize, Deserialize)]
 	pub struct ConfigRequest {
 		#[serde(default = "default_true")]
 		pub enabled: bool,
@@ -98,6 +99,14 @@ mod opts {
 			}
 		}
 	}
+
+
+	#[derive(Default, Clone, Serialize, Deserialize)]
+	pub struct ConfigTelegram {
+		pub api_key: String,
+		pub chat_id: i64
+	}
+
 
 	fn default_true() -> bool {
 		true
