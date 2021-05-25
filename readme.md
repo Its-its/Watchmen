@@ -1,9 +1,8 @@
 Simple Project I made because I wanted to watch multiple feeds and items for when they come in stock or out of stock. Etc..
 
-Makes use of a couple of my other libraries.
+Makes use of my other library.
 
-XPATH - which was a practice project I made and isn't finished
-CONVERISON - which is another practice project I made what will be used for ensuring numbers fall into the correct ranges you specify.
+[XPATH](https://github.com/Its-its/rust-xpath) - which was a practice project I made and isn't finished
 
 ## Getting Started
 1. Rename config.example.json file in the app directory to config.json
