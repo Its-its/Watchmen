@@ -1,7 +1,7 @@
 use std::fmt;
 
 use regex::Error as RegexError;
-use xpath::Error as XpathError;
+use xpather::Error as XpathError;
 use chrono::ParseError as ChronoError;
 use std::io::Error as IoError;
 use serde_json::Error as JsonError;

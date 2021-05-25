@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use url::Url;
 
 use regex::RegexBuilder;
-use xpath::{Node, Document, Value};
+use xpather::{Node, Document, Value};
 use chrono::{DateTime, FixedOffset};
 
 use crate::feature::models::QueryId;
@@ -82,7 +82,7 @@ pub struct ParseOpts {
 }
 
 impl ParseOpts {
-	pub fn evaluate(&self, doc: &Document, node: Node) -> Option<Value> {
+	pub fn evaluate(&self, doc: &Document, node: Node) -> xpather::Result<Value> {
 		doc.evaluate_from(&self.xpath, node)
 	}
 
@@ -218,56 +218,53 @@ pub fn get_from_url(url: &str, conn: &diesel::SqliteConnection) -> CustomResult 
 pub fn get_from_url_parser(url: &str, parser: &SearchParser) -> CustomResult {
 	let mut resp = reqwest::get(url)?;
 
-	let doc = xpath::parse_doc(&mut resp);
+	let doc = xpather::parse_doc(&mut resp);
 
 
 	Ok(
-		doc.evaluate(&parser.items)
-		.ok_or_else(|| Error::Other("Xpath Evaluation Error!".into()))?
+		doc.evaluate(&parser.items)?
 		.into_iterset()?
-		.map::<Result<FoundItem>, _>(|node| {
+		.map::<Result<FoundItem>, _>(|node| { // TODO: Remove transpose.
 			let title = parser.title.evaluate(&doc, node.clone())
-				.map(|v| v.vec_string())
-				.transpose()?
-				.and_then(|v| v.first().cloned())
+				.and_then(|v| v.vec_string())?
+				.into_iter().next()
 				.map(|v| parser.title.parse(v))
 				.transpose()?;
 
 			let author = parser.author.as_ref()
-				.and_then(|i| i.evaluate(&doc, node.clone()))
+				.map(|i| i.evaluate(&doc, node.clone()))
+				.transpose()?
 				.map(|v| v.vec_string())
 				.transpose()?
-				.and_then(|v| v.first().cloned())
+				.and_then(|v| v.into_iter().next())
 				.and_then(|v| parser.author.as_ref().map(|i| i.parse(v)))
 				.transpose()?;
 
 			let content = parser.content.as_ref()
-				.and_then(|i| i.evaluate(&doc, node.clone()))
+				.map(|i| i.evaluate(&doc, node.clone()))
+				.transpose()?
 				.map(|v| v.into_iterset())
 				.transpose()?
 				.and_then(|mut v| v.next())
-				.map(|v| v.as_simple_html())
+				.and_then(|v| v.as_simple_html())
 				.and_then(|v| parser.content.as_ref().map(|i| i.parse(v)))
 				.transpose()?;
 
 			let date = parser.date.evaluate(&doc, node.clone())
-				.map(|v| v.vec_string())
-				.transpose()?
-				.and_then(|v| v.first().cloned())
+				.and_then(|v| v.vec_string())?
+				.into_iter().next()
 				.map(|v| parser.date.parse(v))
 				.transpose()?;
 
 			let guid = parser.guid.evaluate(&doc, node.clone())
-				.map(|v| v.vec_string())
-				.transpose()?
-				.and_then(|v| v.first().cloned())
+				.and_then(|v| v.vec_string())?
+				.into_iter().next()
 				.map(|v| parser.guid.parse(v))
 				.transpose()?;
 
 			let link = parser.link.evaluate(&doc, node)
-				.map(|v| v.vec_string())
-				.transpose()?
-				.and_then(|v| v.first().cloned())
+				.and_then(|v| v.vec_string())?
+				.into_iter().next()
 				.map(|v| parser.link.parse(v))
 				.transpose()?;
 

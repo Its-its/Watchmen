@@ -30,7 +30,7 @@ reqwest = "=0.9.17"
 rss = "1.8"
 quick-xml = "0.17.0"
 atom_syndication = { version = "0.6.0", features = ["serde"] }
-xpath = { git = "http://192.168.1.50:3000/Its/rust-xpath.git" }
+xpather = "0.2.0"
 
 # Database
 diesel = { version = "1.4", features = ["sqlite", "extras"] }

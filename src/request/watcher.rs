@@ -201,24 +201,23 @@ impl RequestManager {
 pub fn get_from_url_parser(url: &str, parser: &MatchParser) -> Result<Vec<FoundItem>> {
 	let mut resp = reqwest::get(url)?;
 
-	let doc = xpath::parse_doc(&mut resp);
+	let doc = xpather::parse_doc(&mut resp);
 
-	Ok(doc.evaluate(&parser.items)
-		.ok_or_else(|| Error::Other("Xpath Evaluation Error!".into()))?
+	Ok(doc.evaluate(&parser.items)?
 		.into_iterset()?
-		.map::<Result<FoundItem>, _>(|node| {
+		.map::<Result<FoundItem>, _>(|node| { // TODO: Remove transpose.
 			// Find value.
-			let value = parser.value.evaluate(&doc, node.clone())
-				.map(|v| v.vec_string())
-				.transpose()?
-				.and_then(|v| v.first().cloned())
+			let value = parser.value.evaluate(&doc, node.clone())?
+				.vec_string()?
+				.into_iter().next()
 				.ok_or_else(|| Error::Other("Unable to find Value.".into()))
 				.and_then(|v| parser.value.parse(v))
 				.map(|v| v.trim().escape_default().to_string())?;
 
 			// Find title.
 			let title = parser.title.as_ref()
-				.and_then(|v| v.evaluate(&doc, node.clone()))
+				.map(|v| v.evaluate(&doc, node.clone()))
+				.transpose()?
 				.map(|v| v.vec_string())
 				.transpose()?
 				.and_then(|v| v.first().cloned())
@@ -228,7 +227,8 @@ pub fn get_from_url_parser(url: &str, parser: &MatchParser) -> Result<Vec<FoundI
 
 			// Find link.
 			let link = parser.link.as_ref()
-				.and_then(|v| v.evaluate(&doc, node.clone()))
+				.map(|v| v.evaluate(&doc, node.clone()))
+				.transpose()?
 				.map(|v| v.vec_string())
 				.transpose()?
 				.and_then(|v| v.first().cloned())
@@ -238,7 +238,8 @@ pub fn get_from_url_parser(url: &str, parser: &MatchParser) -> Result<Vec<FoundI
 
 			// Unique ID
 			let unique_id = parser.unique_id.as_ref()
-				.and_then(|v| v.evaluate(&doc, node.clone()))
+				.map(|v| v.evaluate(&doc, node.clone()))
+				.transpose()?
 				.map(|v| v.vec_string())
 				.transpose()?
 				.and_then(|v| v.first().cloned())
