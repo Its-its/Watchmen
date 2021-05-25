@@ -4,3 +4,30 @@ Makes use of a couple of my other libraries.
 
 XPATH - which was a practice project I made and isn't finished
 CONVERISON - which is another practice project I made what will be used for ensuring numbers fall into the correct ranges you specify.
+
+## Getting Started
+1. Rename config.example.json file in the app directory to config.json
+2. Set the telegram [api key](https://core.telegram.org/bots#3-how-do-i-create-a-bot).
+3. Start the app, talk in the bots' chat. The chat id will be in brackets.
+4. Set the chat id in config file, restart app.
+5. Website starts on port 8080
+
+
+## Features
+
+### Current Features
+- Filter alerts with matching: regex, contains, starts-with, ends-with, and, or.
+- Ability to watch for specific changes in a website (ex: price). With history.
+- Supports displaying RSS Feeds, Custom Xpath Feeds
+
+
+## Images
+
+### Feed Watching
+![Feed Watching](https://i.thick.at/UnbestowedFlaminHotWotsits995.png)
+
+### Item Watching
+![Item Watching](https://i.thick.at/EstrangedFrazzles697.png)
+
+### Filters
+![Filter](https://i.thick.at/DenotativeFritos878.png)
