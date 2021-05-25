@@ -30,3 +30,6 @@ Makes use of my other library.
 
 ### Filters
 ![Filter](https://i.thick.at/DenotativeFritos878.png)
+
+### Xpath Websites
+![Xpath Parser](https://i.thick.at/CycloidGoodnCrunchy627.png)
