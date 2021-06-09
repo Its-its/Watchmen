@@ -2,6 +2,7 @@ import View from '../index';
 import EditorView from './editor';
 import FilterView from './filter';
 import FeedsView from './feeds';
+import Dashboard from '../dashboard';
 
 import { newEmptyPopup } from '../../util/popup';
 
@@ -432,16 +433,23 @@ export default class FeedView extends View {
 
 		// Navbar buttons
 
+		let dashboard = document.createElement('div');
+		dashboard.className = 'button';
+		dashboard.innerText = 'Dashboard';
+		core.navbar.append_left_html(dashboard);
+
+		dashboard.addEventListener('click', () => core.open_view(new Dashboard()));
+
 		let new_listener = document.createElement('div');
 		new_listener.className = 'button';
-		new_listener.innerText = 'Feeds';
+		new_listener.innerText = 'Watching';
 		core.navbar.append_left_html(new_listener);
 
 		new_listener.addEventListener('click', () => core.open_view(new FeedsView()));
 
 		let open_editor = document.createElement('div');
 		open_editor.className = 'button';
-		open_editor.innerText = 'Open Editor';
+		open_editor.innerText = 'Editor';
 		core.navbar.append_left_html(open_editor);
 
 		open_editor.addEventListener('click', () => core.open_view(new EditorView()));
@@ -449,7 +457,7 @@ export default class FeedView extends View {
 
 		let open_filter = document.createElement('div');
 		open_filter.className = 'button';
-		open_filter.innerText = 'Filter Viewer';
+		open_filter.innerText = 'Filters';
 		core.navbar.append_left_html(open_filter);
 
 		open_filter.addEventListener('click', () => core.open_view(new FilterView()));

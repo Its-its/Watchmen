@@ -38,6 +38,14 @@ export default class DasboardView extends View {
 		nav_items.appendChild(this.nav_bar_list);
 
 		this.container.appendChild(this.nav_bar);
+
+
+		// Body
+		let announce = document.createElement('h2');
+		announce.style.marginLeft = '1em';
+		announce.innerText = 'Just added.\nTo implement after designing.\nUse Buttons on top left.';
+
+		this.container.appendChild(announce);
 	}
 
 

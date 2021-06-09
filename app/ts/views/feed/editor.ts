@@ -36,7 +36,7 @@ export default class EditorView extends View {
 		// Navbar buttons
 		let open_editor = document.createElement('div');
 		open_editor.className = 'button';
-		open_editor.innerText = 'Feed Viewer';
+		open_editor.innerText = 'Feeds';
 		core.navbar.append_left_html(open_editor);
 
 		open_editor.addEventListener('click', () => core.open_view(new FeedItemsView()));
@@ -129,7 +129,6 @@ export default class EditorView extends View {
 		custom_cont.appendChild(site_url);
 
 		let custom_url = document.createElement('input');
-		custom_url.value = 'https://www.ebay.com/sch/i.html?_from=R40&_nkw=x-h1&_sacat=0&_sop=10';
 		custom_url.placeholder = 'URL';
 		custom_url.type = 'text';
 		custom_cont.appendChild(custom_url);
@@ -249,46 +248,6 @@ export default class EditorView extends View {
 
 			send_new_custom_item(obj)
 			.catch(e => notifyErrorDesc('Creating Custom Item', e));
-		});
-
-
-		load({
-			"title": "Ebay",
-			"description": "Parser for Ebay..",
-			"match_url": "*.ebay.com",
-			"search_opts": {
-				"items": "//ul[@class=\"srp-results srp-list clearfix\"]/li",
-				"title": {
-					"xpath": ".//h3/text()",
-					"parse_type": "None"
-				},
-				"link": {
-					"xpath": ".//a[@class=\"s-item__link\"]/@href",
-					"parse_type": {
-						"Regex": "^([a-z0-9:/.-]+)"
-					}
-				},
-				"guid": {
-					"xpath": ".//div[@class=\"s-item__image\"]/a/@href",
-					"parse_type": {
-						"Regex": "^[a-zA-Z0-9:/.-]+/([0-9]+)\?"
-					}
-				},
-				"date": {
-					"xpath": ".//span[@class=\"s-item__dynamic s-item__listingDate\"]/span/text()",
-					"parse_type": {
-						"TimeFormat": [ "%b-%e %R", "PST" ]
-					}
-				},
-				"author": {
-					"xpath": ".//span[@class=\"s-item__seller-info-text\"]/text()",
-					"parse_type": "None"
-				},
-				"content": {
-					"xpath": "./node()",
-					"parse_type": "None"
-				}
-			}
 		});
 
 		function load(opts: any) {
