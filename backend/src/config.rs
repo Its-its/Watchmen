@@ -20,7 +20,7 @@ impl ConfigManager {
 	}
 
 	pub fn init(&mut self/*, file_path: PathBuf*/) {
-		self.file_path = PathBuf::from("app/config.json");
+		self.file_path = PathBuf::from("../app/config.json");
 	}
 
 	pub fn load(&mut self) -> Result<(), Error>  {
