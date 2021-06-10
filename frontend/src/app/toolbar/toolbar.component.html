@@ -1,0 +1,9 @@
+<mat-toolbar>
+	<span class="example-spacer"></span>
+
+	<div *ngFor="let item of items">
+		<a mat-button href="{{ item[1] }}">{{ item[0] }}</a>
+	</div>
+
+	<span>My App</span>
+</mat-toolbar>
