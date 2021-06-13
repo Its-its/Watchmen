@@ -7,6 +7,7 @@ import { webSocket, WebSocketSubject } from "rxjs/webSocket";
 @Injectable({
 	providedIn: 'root'
 })
+
 export class WebsocketService {
 	// 'ws://' + window.location.host + '/ws/'
 	private subject: WebSocketSubject<any> = webSocket('ws://192.168.1.51:8080/ws/');

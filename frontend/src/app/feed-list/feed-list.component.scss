@@ -8,6 +8,20 @@ table {
 		td {
 			overflow: hidden;
 			padding: 0px 5px !important;
+
+			&.mat-column-from a {
+				text-decoration: none;
+			}
+
+			&.mat-column-link a,
+			&.mat-column-title a {
+				text-decoration: none;
+				color: inherit;
+			}
+
+			&.mat-column-date_added {
+				text-align: right;
+			}
 		}
 
 		td:nth-child(1) {
