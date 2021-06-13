@@ -47,16 +47,17 @@ impl Web {
 				App::new()
 				.data({
 					let mut handlebars = Handlebars::new();
-					handlebars.register_templates_directory(".hbs", "./app/views").expect("register_templates_dirs");
+					handlebars.register_templates_directory(".hbs", "../app/views").expect("register_templates_dirs");
 					handlebars
 				})
 				.data(frontend_ref.clone())
 				.data(core_ref.clone())
-				.service(index)
+				// .service(index)
 				.service(scraper_editor)
-				.service(fs::Files::new("/script", "./app/compiled/js"))
-				.service(fs::Files::new("/style", "./app/compiled/css"))
+				// .service(fs::Files::new("/script", "../app/compiled/js"))
+				.service(fs::Files::new("/", "../frontend/dist/frontend").show_files_listing())
 				.service(web::resource("/ws/").route(web::get().to(socket_index)))
+				.default_service(web::route().to(index))
 			})
 			.bind("0.0.0.0:8080")
 			.unwrap()
@@ -74,13 +75,8 @@ impl Web {
 }
 
 
-#[get("/")]
-fn index(hb: web::Data<Handlebars>) -> HttpResponse {
-	let data = json!({});
-
-	let body = hb.render("index", &data).unwrap();
-
-	HttpResponse::Ok().body(body)
+async fn index() -> HttpResponse {
+	HttpResponse::Ok().body(tokio::fs::read("../frontend/dist/frontend/index.html").await.unwrap())
 }
 
 

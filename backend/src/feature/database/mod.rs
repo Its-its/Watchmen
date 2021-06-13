@@ -15,7 +15,7 @@ pub struct Connection(pub SqliteConnection);
 
 impl Connection {
 	pub fn new() -> Self {
-		let database_url = "app/feeder.db";
+		let database_url = "../app/feeder.db"; // TODO: Add to config.
 
 		Self(
 			SqliteConnection::establish(&database_url)
