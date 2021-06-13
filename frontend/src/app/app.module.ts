@@ -1,20 +1,26 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 
+import { HttpClientModule } from '@angular/common/http';
+
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatTableModule } from '@angular/material/table';
+import { MatGridListModule } from '@angular/material/grid-list';
 
-import { AppRoutingModule } from './app-routing.module';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
+import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
+import { WebsocketService } from "./websocket.service";
+
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { FeedListComponent } from './feed-list/feed-list.component';
 import { ToolbarComponent } from './toolbar/toolbar.component';
+import { BackgroundService } from './background.service';
 
 @NgModule({
 	declarations: [
@@ -25,6 +31,9 @@ import { ToolbarComponent } from './toolbar/toolbar.component';
 	],
 
 	imports: [
+		HttpClientModule,
+
+		MatGridListModule,
 		MatToolbarModule,
 		MatSidenavModule,
 		MatButtonModule,
@@ -37,11 +46,17 @@ import { ToolbarComponent } from './toolbar/toolbar.component';
 		BrowserAnimationsModule
 	],
 
-	providers: [],
+	providers: [
+		WebsocketService
+	],
 
 	bootstrap: [
 		AppComponent
 	]
 })
 
-export class AppModule { }
+export class AppModule {
+	constructor(private background: BackgroundService) {
+		this.background.init();
+	}
+}

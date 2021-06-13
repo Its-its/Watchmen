@@ -2,12 +2,16 @@
 
 table {
 	background: inherit;
+	width: 100%;
 
-	tbody {
-		tr {
-			td {
-				//
-			}
+	tr {
+		td {
+			overflow: hidden;
+			padding: 0px 5px !important;
+		}
+
+		td:nth-child(1) {
+			padding-left: 0;
 		}
 	}
 }

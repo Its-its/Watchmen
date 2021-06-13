@@ -1,4 +1,50 @@
 import { Component, OnInit } from '@angular/core';
+import { BackgroundService } from '../background.service';
+import { WebsocketService } from '../websocket.service';
+
+interface Feed {
+	id?: number;
+
+	url: string;
+	title: string;
+	description: string;
+
+	generator: string;
+
+	global_show: boolean;
+	ignore_if_not_new: boolean;
+
+	remove_after: number;
+	sec_interval: number;
+
+	date_added: number;
+	last_called: number;
+}
+
+interface FeedItem {
+	id?: number;
+
+	guid: string;
+	title: string;
+	author: string;
+	content: string;
+	link: string;
+	date: number;
+	hash: string;
+
+	date_added: number;
+	is_read: boolean;
+	is_starred: boolean;
+	is_removed: boolean;
+	tags: string;
+	feed_id: number;
+}
+
+interface FeedGrouping {
+	title: string;
+	feed_items: FeedItem[];
+}
+
 
 @Component({
 	selector: 'app-feed-list',
@@ -7,871 +53,98 @@ import { Component, OnInit } from '@angular/core';
 })
 
 export class FeedListComponent implements OnInit {
-	feeds = [
-		{
-		  "id": 1,
-		  "url": "https://forum.cosmicpvp.com/forums/server-announcements.2/index.rss",
-		  "title": "Server Announcements",
-		  "description": "Announcements related to any of the CosmicPvP Servers",
-		  "generator": "CosmicPvP Forums",
-		  "global_show": true,
-		  "ignore_if_not_new": true,
-		  "remove_after": 0,
-		  "sec_interval": 300,
-		  "date_added": 1563350111,
-		  "last_called": 1623288841
-		},
-		{
-		  "id": 2,
-		  "url": "https://forum.cosmicprisons.com/forums/2/index.rss",
-		  "title": "Server Announcements",
-		  "description": "Announcements related to any of the CosmicPrisons Servers",
-		  "generator": "CosmicPrisons Forums",
-		  "global_show": true,
-		  "ignore_if_not_new": true,
-		  "remove_after": 0,
-		  "sec_interval": 300,
-		  "date_added": 1563350111,
-		  "last_called": 1623288841
-		},
-		{
-		  "id": 3,
-		  "url": "https://forum.cosmicsky.com/forums/server-announcements.3/index.rss",
-		  "title": "Server Announcements",
-		  "description": "Announcements related to any of the CosmicSky Servers",
-		  "generator": "CosmicSky Forums",
-		  "global_show": true,
-		  "ignore_if_not_new": true,
-		  "remove_after": 0,
-		  "sec_interval": 300,
-		  "date_added": 1563350111,
-		  "last_called": 1623288841
-		},
-		{
-		  "id": 4,
-		  "url": "https://www.reddit.com/r/buildapcsales/new/.rss",
-		  "title": "buildapcsales",
-		  "description": "A community for links to products that are on sale at various websites. Monitors, cables, processors, video cards, fans, cooling, cases, accessories, anything for a PC build.",
-		  "generator": "",
-		  "global_show": true,
-		  "ignore_if_not_new": true,
-		  "remove_after": 0,
-		  "sec_interval": 300,
-		  "date_added": 1563350111,
-		  "last_called": 1623288841
-		}
-	];
-
-	feed_items = [
-		{
-		  "author": "/u/kratoasty",
-		  "content": "<table> <tr><td> <a href=\"https://www.reddit.com/r/buildapcsales/comments/nwam7k/prebuilt_gaming_rdy_element_plus_iii_ibuypower/\"> <img src=\"https://external-preview.redd.it/k4zHfWcAlaBhPUUBBZIDMI-3t-9n4L-lnyB7UKFnRrM.jpg?width=108&amp;crop=smart&amp;auto=webp&amp;s=571c351561128644f079730d74f7029300018879\" alt=\"[PRE-BUILT] Gaming RDY Element Plus III: iBUYPOWER® RTX-3070, i7-11700KF, 1TB M.2 SSD, 16GB 3200Mhz RAM with 240mm Liquid Cooler $2049. SHIP TODAY\" title=\"[PRE-BUILT] Gaming RDY Element Plus III: iBUYPOWER® RTX-3070, i7-11700KF, 1TB M.2 SSD, 16GB 3200Mhz RAM with 240mm Liquid Cooler $2049. SHIP TODAY\" /> </a> </td><td> &#32; submitted by &#32; <a href=\"https://www.reddit.com/user/kratoasty\"> /u/kratoasty </a> <br/> <span><a href=\"https://www.ibuypower.com/Store/Gaming-RDY-Element-Plus-III\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nwam7k/prebuilt_gaming_rdy_element_plus_iii_ibuypower/\">[comments]</a></span> </td></tr></table>",
-		  "date": 1623285161,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nwam7k",
-		  "hash": "03e90c599152bd7e74525c1026abfe12",
-		  "id": 12823,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nwam7k/prebuilt_gaming_rdy_element_plus_iii_ibuypower/",
-		  "tags": "",
-		  "title": "[PRE-BUILT] Gaming RDY Element Plus III: iBUYPOWER® RTX-3070, i7-11700KF, 1TB M.2 SSD, 16GB 3200Mhz RAM with 240mm Liquid Cooler $2049. SHIP TODAY"
-		},
-		{
-		  "author": "/u/Snoo_80413",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/Snoo_80413\"> /u/Snoo_80413 </a> <br/> <span><a href=\"https://www.bestbuy.com/site/cyberpowerpc-gamer-supreme-gaming-desktop-intel-core-i9-11900kf-16gb-memory-nvidia-geforce-rtx-3080-1tb-ssd-black/6452136.p?skuId=6452136\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nwa6zb/prebuilt_cyberpowerpc_gamer_supreme_gaming/\">[comments]</a></span>",
-		  "date": 1623283837,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nwa6zb",
-		  "hash": "2d82a030c6254aafe3347dbfba384289",
-		  "id": 12824,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nwa6zb/prebuilt_cyberpowerpc_gamer_supreme_gaming/",
-		  "tags": "",
-		  "title": "[Prebuilt] CyberPowerPC - Gamer Supreme Gaming Desktop - Intel Core i9-11900KF - 16GB Memory - NVIDIA GeForce RTX 3080 - 1TB SSD - Black - $2499"
-		},
-		{
-		  "author": "/u/MasterSteaIth",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/MasterSteaIth\"> /u/MasterSteaIth </a> <br/> <span><a href=\"https://www.bestbuy.com/site/intel-core-i3-10100-10th-generation-4-core-8-thread-3-6-ghz-4-3-ghz-turbo-socket-lga1200-locked-processor/6411497.p?skuId=6411497\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nw6o9b/cpu_core_i310100_10th_generation_4core_8thread_36/\">[comments]</a></span>",
-		  "date": 1623273608,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nw6o9b",
-		  "hash": "ed4daf17cc6733a22cdecdec3c4acce8",
-		  "id": 12825,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nw6o9b/cpu_core_i310100_10th_generation_4core_8thread_36/",
-		  "tags": "",
-		  "title": "[CPU] Core i3-10100 10th Generation 4-Core - 8-Thread - 3.6 GHz - $114.99"
-		},
-		{
-		  "author": "/u/jimbokimo3",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/jimbokimo3\"> /u/jimbokimo3 </a> <br/> <span><a href=\"https://www.amazon.com/gp/product/B07W956JBC/ref=ox_sc_act_title_1?smid=ATVPDKIKX0DER&amp;psc=1\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nw6jfu/psu_evga_700_watt_gold_power_supply_for_5999/\">[comments]</a></span>",
-		  "date": 1623273254,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nw6jfu",
-		  "hash": "057ac4c65e5fb992d7ea767919b6c521",
-		  "id": 12826,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nw6jfu/psu_evga_700_watt_gold_power_supply_for_5999/",
-		  "tags": "",
-		  "title": "[PSU] EVGA 700 Watt Gold Power Supply for $59.99"
-		},
-		{
-		  "author": "/u/Fuckerinos",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/Fuckerinos\"> /u/Fuckerinos </a> <br/> <span><a href=\"https://www.evga.com/Products/ProductList.aspx?type=8\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nw63ot/gpu_evga_bstock_gpus_150_30_20_16_series_msrp10/\">[comments]</a></span>",
-		  "date": 1623272095,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nw63ot",
-		  "hash": "294473d57429956316cb80918c83c4db",
-		  "id": 12827,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nw63ot/gpu_evga_bstock_gpus_150_30_20_16_series_msrp10/",
-		  "tags": "",
-		  "title": "[GPU] EVGA B-Stock GPUs - $150+ (30, 20, 16 Series @ MSRP-$10 to $20, 10 Series @ MSRP-$60 to $100+)"
-		},
-		{
-		  "author": "/u/CO7803",
-		  "content": "<table> <tr><td> <a href=\"https://www.reddit.com/r/buildapcsales/comments/nw5w0g/prebuilt_refurbished_hp_pavilion_ryzen_5_3500_gtx/\"> <img src=\"https://external-preview.redd.it/fCZprxTmVo1uE5HWfvnNFm80UyXVrcHnI9zxiH84_ko.jpg?width=640&amp;crop=smart&amp;auto=webp&amp;s=1d7ed75c77ded4ec67f91a9f19f96811fd37830c\" alt=\"[Prebuilt] Refurbished HP Pavilion Ryzen 5 3500 GTX 1650 SUPER 8 GB DDR4-2666 - $399\" title=\"[Prebuilt] Refurbished HP Pavilion Ryzen 5 3500 GTX 1650 SUPER 8 GB DDR4-2666 - $399\" /> </a> </td><td> &#32; submitted by &#32; <a href=\"https://www.reddit.com/user/CO7803\"> /u/CO7803 </a> <br/> <span><a href=\"https://www.walmart.com/ip/Refurbished-HP-Pavilion-Gaming-R5-1650-Super-8GB-256GB-Gaming-Desktop-Tower/828808485?action=Create&amp;rm=true\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nw5w0g/prebuilt_refurbished_hp_pavilion_ryzen_5_3500_gtx/\">[comments]</a></span> </td></tr></table>",
-		  "date": 1623271537,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nw5w0g",
-		  "hash": "988e1e7d87adfde07913aff04c2909ca",
-		  "id": 12828,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nw5w0g/prebuilt_refurbished_hp_pavilion_ryzen_5_3500_gtx/",
-		  "tags": "",
-		  "title": "[Prebuilt] Refurbished HP Pavilion Ryzen 5 3500 GTX 1650 SUPER 8 GB DDR4-2666 - $399"
-		},
-		{
-		  "author": "/u/SPKTRSHPRD",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/SPKTRSHPRD\"> /u/SPKTRSHPRD </a> <br/> <span><a href=\"https://www.bestbuy.com/site/asus-rog-zephyrus-g15-15-6-qhd-laptop-amd-ryzen-9-16gb-memory-nvidiageforcertx3080-1tb-solid-state-drive-eclipse-gray/6451629.p?skuId=6451629\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nw54ls/laptop_asus_rog_zephyrus_g15_156_qhd_laptop_amd/\">[comments]</a></span>",
-		  "date": 1623269501,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nw54ls",
-		  "hash": "5804911d7695fb92f11a8490e09cf019",
-		  "id": 12829,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nw54ls/laptop_asus_rog_zephyrus_g15_156_qhd_laptop_amd/",
-		  "tags": "",
-		  "title": "[LAPTOP] ASUS ROG Zephyrus G15 15.6\" QHD Laptop AMD Ryzen 9 16GB Memory NVIDIA GeForce RTX 3080 1TB Solid State Drive Eclipse Gray GA503QSBS96Q $1999 Best Buy In stock delivery pick up available"
-		},
-		{
-		  "author": "/u/Taeyus",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/Taeyus\"> /u/Taeyus </a> <br/> <span><a href=\"https://www.bestbuy.com/site/hp-omen-gaming-desktop-amd-ryzen-5-5600g-16gb-memory-nvidia-geforce-rtx-3060-1tb-ssd-jet-black/6454566.p?skuId=6454566\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nw3f7m/prebuilt_hp_omen_gaming_desktop_amd_ryzen_5_5600g/\">[comments]</a></span>",
-		  "date": 1623265058,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nw3f7m",
-		  "hash": "04534445a1e46235c15cd3eb8ee61eb8",
-		  "id": 12830,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nw3f7m/prebuilt_hp_omen_gaming_desktop_amd_ryzen_5_5600g/",
-		  "tags": "",
-		  "title": "[Prebuilt] HP OMEN - Gaming Desktop - AMD Ryzen 5 5600G - 16GB Memory - NVIDIA GeForce RTX 3060 - 1TB SSD - Jet Black - Open box $1,214.99 instant ship (delivery by 14th)"
-		},
-		{
-		  "author": "/u/BanditKing",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/BanditKing\"> /u/BanditKing </a> <br/> <span><a href=\"https://www.amazon.com/dp/B07TD94TQF\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nw358c/monitor_lg_27gl850b_27_inch_ultragear_qhd_nano/\">[comments]</a></span>",
-		  "date": 1623264327,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nw358c",
-		  "hash": "aca4ae875f9cef395d8c442c63831cb0",
-		  "id": 12831,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nw358c/monitor_lg_27gl850b_27_inch_ultragear_qhd_nano/",
-		  "tags": "",
-		  "title": "[Monitor] LG 27GL850-B 27 Inch Ultragear QHD Nano IPS 1ms 144Hz NVIDIA G-Sync Compatible - $389.99 ($499.99 - $113) [Amazon.com]"
-		},
-		{
-		  "author": "/u/big_three",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/big_three\"> /u/big_three </a> <br/> <span><a href=\"https://www.bestbuy.com/site/asus-rog-strix-g15-advantage-edition-15-6-fhd-gaming-laptop-amd-ryzen-9-5900hx-16gb-memory-radeonrx-6800m-512gb-ssd/6466550.p?skuId=6466550\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nw0znz/gaming_laptop_rog_strix_amd_advantage_edition/\">[comments]</a></span>",
-		  "date": 1623258737,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nw0znz",
-		  "hash": "df322c40cbb2d4ee3c398434213519e6",
-		  "id": 12832,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nw0znz/gaming_laptop_rog_strix_amd_advantage_edition/",
-		  "tags": "",
-		  "title": "[Gaming Laptop] ROG STRIX AMD Advantage Edition 6800m - $1649"
-		},
-		{
-		  "author": "/u/csyzrk",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/csyzrk\"> /u/csyzrk </a> <br/> <span><a href=\"https://www.bestbuy.com/site/nvidia-geforce-rtx-3070-ti-8gb-gddr6x-pci-express-4-0-graphics-card-dark-platinum-and-black/6465789.p?skuId=6465789\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nw06or/meta_bestbuy_will_have_3070_ti_for_online_only/\">[comments]</a></span>",
-		  "date": 1623256658,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nw06or",
-		  "hash": "bfed99a1619b7ed39c924abb45797354",
-		  "id": 12833,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nw06or/meta_bestbuy_will_have_3070_ti_for_online_only/",
-		  "tags": "",
-		  "title": "[Meta] Bestbuy will have 3070 ti for online only. NVIDIA GeForce RTX 3070 Ti 8GB GDDR6X PCI Express 4.0 Graphics Card - $599.99"
-		},
-		{
-		  "author": "/u/XXSnakeBoy1XX",
-		  "content": "<table> <tr><td> <a href=\"https://www.reddit.com/r/buildapcsales/comments/nvyia9/monitor_viotek_gfv24cb_24inch_gaming_monitor/\"> <img src=\"https://external-preview.redd.it/eapsZahaBS-5QFKCWc6FbwtLzSXiHVbnT-nwFrH1XvQ.jpg?width=640&amp;crop=smart&amp;auto=webp&amp;s=9e2c860a4d989e0b0ccf83cd74b798b39a4f1664\" alt=\"[Monitor] VIOTEK GFV24CB 24-Inch Gaming Monitor 165Hz FHD 1920x1080p Super Thin Build Competition-Ready Adaptive Sync with LFC G-SYNC &amp; FreeSync-Compatible - $159.99\" title=\"[Monitor] VIOTEK GFV24CB 24-Inch Gaming Monitor 165Hz FHD 1920x1080p Super Thin Build Competition-Ready Adaptive Sync with LFC G-SYNC &amp; FreeSync-Compatible - $159.99\" /> </a> </td><td> &#32; submitted by &#32; <a href=\"https://www.reddit.com/user/XXSnakeBoy1XX\"> /u/XXSnakeBoy1XX </a> <br/> <span><a href=\"https://www.walmart.com/ip/VIOTEK-GFV24CB-24-Inch-Gaming-Monitor-165Hz-FHD-1920x1080p-Super-Thin-Build-Competition-Ready-Adaptive-Sync-with-LFC-G-SYNC-FreeSync-Compatible/529678475?findingMethod=wpa\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nvyia9/monitor_viotek_gfv24cb_24inch_gaming_monitor/\">[comments]</a></span> </td></tr></table>",
-		  "date": 1623252290,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nvyia9",
-		  "hash": "f09ddac75fdfbcdebbbcc795801ea95c",
-		  "id": 12834,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nvyia9/monitor_viotek_gfv24cb_24inch_gaming_monitor/",
-		  "tags": "",
-		  "title": "[Monitor] VIOTEK GFV24CB 24-Inch Gaming Monitor 165Hz FHD 1920x1080p Super Thin Build Competition-Ready Adaptive Sync with LFC G-SYNC & FreeSync-Compatible - $159.99"
-		},
-		{
-		  "author": "/u/csyzrk",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/csyzrk\"> /u/csyzrk </a> <br/> <span><a href=\"https://www.hp.com/us-en/shop/pdp/omen-30l-desktop-gt13-1350st-1x7b6av-1\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nvyfxx/prebuilt_omen_30l_desktop_11700k_3090_8gb_512gb/\">[comments]</a></span>",
-		  "date": 1623252110,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nvyfxx",
-		  "hash": "486c98d21f4d6cac6701716531ca1dcf",
-		  "id": 12835,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nvyfxx/prebuilt_omen_30l_desktop_11700k_3090_8gb_512gb/",
-		  "tags": "",
-		  "title": "[Prebuilt] OMEN 30L Desktop 11700K, 3090, 8gb, 512gb, 800w, WiFi 6 - $2713.49(w/ code 10GAMER2021)"
-		},
-		{
-		  "author": "/u/KSoMA",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/KSoMA\"> /u/KSoMA </a> <br/> <span><a href=\"https://www.evga.com/products/product.aspx?pn=123-GM-0650-Y1\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nvvgdb/psu_evga_650_gm_sfx_psu_6381_bstock_and_brand_new/\">[comments]</a></span>",
-		  "date": 1623243847,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nvvgdb",
-		  "hash": "65343b75d9a0edbe4767f2d0f061613b",
-		  "id": 12836,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nvvgdb/psu_evga_650_gm_sfx_psu_6381_bstock_and_brand_new/",
-		  "tags": "",
-		  "title": "[PSU] EVGA 650 GM SFX PSU - $63/81 (B-stock and Brand new, with associate code)"
-		},
-		{
-		  "author": "/u/Finarut",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/Finarut\"> /u/Finarut </a> <br/> <span><a href=\"https://smile.amazon.com/dp/B01H5KKQTM/ref=ord_cart_shr?_encoding=UTF8&amp;smid=ATVPDKIKX0DER&amp;th=1\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nvta5s/monitor_benq_zowie_xl2411p_24_inch_144hz_gaming/\">[comments]</a></span>",
-		  "date": 1623237278,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nvta5s",
-		  "hash": "7ae52b4ad5870d30813c484197431d96",
-		  "id": 12837,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nvta5s/monitor_benq_zowie_xl2411p_24_inch_144hz_gaming/",
-		  "tags": "",
-		  "title": "[Monitor] BenQ ZOWIE XL2411P 24 Inch 144Hz Gaming Monitor / 1080P 1ms / TN Panel / $159.00 ($199.00 - $40.00)"
-		},
-		{
-		  "author": "/u/crownpuff",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/crownpuff\"> /u/crownpuff </a> <br/> <span><a href=\"https://www.newegg.com/asus-rog-strix-b550-a-gaming/p/N82E16813119349\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nvs3z4/motherboard_asus_rog_strix_b550a_gaming_am4_amd/\">[comments]</a></span>",
-		  "date": 1623232880,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nvs3z4",
-		  "hash": "ebbad5d6569d49e35bd11592f0540d09",
-		  "id": 12838,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nvs3z4/motherboard_asus_rog_strix_b550a_gaming_am4_amd/",
-		  "tags": "",
-		  "title": "[Motherboard] ASUS ROG STRIX B550-A GAMING AM4 AMD B550 SATA 6Gb/s ATX AMD Motherboard - $149.99 (1. Code 93XRE46 2. $15 MIR)"
-		},
-		{
-		  "author": "/u/Jazzlike-Patience-15",
-		  "content": "<table> <tr><td> <a href=\"https://www.reddit.com/r/buildapcsales/comments/nvpp3k/laptop_msi_gf65_rtx_2060_i59300h_800_899100_rebate/\"> <img src=\"https://external-preview.redd.it/1J_KxdHb85f3Ost-7bqiNE7RQidhbxIWd1uv6Z5ylHQ.jpg?width=640&amp;crop=smart&amp;auto=webp&amp;s=0cfd9cf248af8d1cc1a096964b90ab12bc08cdcb\" alt=\"[LAPTOP] Msi gf65 RTX 2060 i5-9300H. $800 ($899-100 rebate)\" title=\"[LAPTOP] Msi gf65 RTX 2060 i5-9300H. $800 ($899-100 rebate)\" /> </a> </td><td> &#32; submitted by &#32; <a href=\"https://www.reddit.com/user/Jazzlike-Patience-15\"> /u/Jazzlike-Patience-15 </a> <br/> <span><a href=\"https://www.newegg.com/black-msi-gf-series-gf65-thin-9sexr-839-gaming-entertainment/p/N82E16834155586?Item=N82E16834155586&amp;Source=socialshare&amp;cm_mmc=snc-social-_-sr-_-34-155-586-_-06092021\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nvpp3k/laptop_msi_gf65_rtx_2060_i59300h_800_899100_rebate/\">[comments]</a></span> </td></tr></table>",
-		  "date": 1623222726,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nvpp3k",
-		  "hash": "53d9dad1c67a4748bc96f1460c780061",
-		  "id": 12839,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nvpp3k/laptop_msi_gf65_rtx_2060_i59300h_800_899100_rebate/",
-		  "tags": "",
-		  "title": "[LAPTOP] Msi gf65 RTX 2060 i5-9300H. $800 ($899-100 rebate)"
-		},
-		{
-		  "author": "/u/JonesCZ",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/JonesCZ\"> /u/JonesCZ </a> <br/> <span><a href=\"https://www.amazon.com/dp/B08FJGMZG1/ref=cm_sw_r_cp_apa_glt_fabc_DYCHZXZRH7RB0P735BWJ?psc=1\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nvp0vk/psu_cooler_master_v850_black_edition_118/\">[comments]</a></span>",
-		  "date": 1623219972,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nvp0vk",
-		  "hash": "c88eebb1b28266d7aec09fa091e27298",
-		  "id": 12841,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nvp0vk/psu_cooler_master_v850_black_edition_118/",
-		  "tags": "",
-		  "title": "[PSU] Cooler Master V850 black edition - $118"
-		},
-		{
-		  "author": "/u/Snuffy2g",
-		  "content": "<table> <tr><td> <a href=\"https://www.reddit.com/r/buildapcsales/comments/nvoyfo/aio_coolermaster_masterliquid_ml120l_rgb_v2_4499/\"> <img src=\"https://external-preview.redd.it/6kaDXKqOcBogY3WBjtIGtcIiRsXI1vj_2zwPV52lwYg.jpg?width=640&amp;crop=smart&amp;auto=webp&amp;s=7faec70ebf102cf45d78461a2c4c7f00870e64e0\" alt=\"[AIO] CoolerMaster MasterLiquid ML120L RGB V2 $44.99 (74.99-20MIR+ $10 off w/ promo code 6DADSALE27)\" title=\"[AIO] CoolerMaster MasterLiquid ML120L RGB V2 $44.99 (74.99-20MIR+ $10 off w/ promo code 6DADSALE27)\" /> </a> </td><td> &#32; submitted by &#32; <a href=\"https://www.reddit.com/user/Snuffy2g\"> /u/Snuffy2g </a> <br/> <span><a href=\"https://www.newegg.com/cooler-master-liquid-cooling-system-masterliquid-ml120l-rgb-v2/p/N82E16835103298?Description=CoolerMaster%20MasterLiquid%20ML120L%20RGB%20V2&amp;cm_re=CoolerMaster_MasterLiquid%20ML120L%20RGB%20V2-_-35-103-\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nvoyfo/aio_coolermaster_masterliquid_ml120l_rgb_v2_4499/\">[comments]</a></span> </td></tr></table>",
-		  "date": 1623219700,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nvoyfo",
-		  "hash": "0ba5aab61e058fe611a84bd0b8a8350f",
-		  "id": 12840,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nvoyfo/aio_coolermaster_masterliquid_ml120l_rgb_v2_4499/",
-		  "tags": "",
-		  "title": "[AIO] CoolerMaster MasterLiquid ML120L RGB V2 $44.99 (74.99-20MIR+ $10 off w/ promo code 6DADSALE27)"
-		},
-		{
-		  "author": "/u/Banguskahn",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/Banguskahn\"> /u/Banguskahn </a> <br/> <span><a href=\"https://deals.dell.com/en-us/mpp/productdetail/909f\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nvmeqv/monitor_dell_s2721dgf_27_2560_x_1440_165_hz_w_dp/\">[comments]</a></span>",
-		  "date": 1623210209,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nvmeqv",
-		  "hash": "a79cafa79e956e1fd761a6e1ce575097",
-		  "id": 12842,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nvmeqv/monitor_dell_s2721dgf_27_2560_x_1440_165_hz_w_dp/",
-		  "tags": "",
-		  "title": "[MONITOR] Dell S2721DGF 27'' 2560 x 1440 @ 165 Hz /w DP 1.4 , IPS w/1ms, 3yr Advance RMA/VESA - $340 w/ 10% newsletter code. Free Shipping. Link in comments for code"
-		},
-		{
-		  "author": "/u/jimbokimo3",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/jimbokimo3\"> /u/jimbokimo3 </a> <br/> <span><a href=\"https://www.newegg.com/asus-geforce-gtx-1050-ti-ph-gtx1050ti-4g/p/N82E16814126170\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nvjutv/gpu_asus_gtx_1050_ti_graphics_card_in_stock_19999/\">[comments]</a></span>",
-		  "date": 1623201743,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nvjutv",
-		  "hash": "4eb0ed04afec2d23ab7437570bcf78be",
-		  "id": 12843,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nvjutv/gpu_asus_gtx_1050_ti_graphics_card_in_stock_19999/",
-		  "tags": "",
-		  "title": "[GPU] Asus GTX 1050 Ti Graphics Card In Stock $199.99"
-		},
-		{
-		  "author": "/u/Ascendor81",
-		  "content": "<table> <tr><td> <a href=\"https://www.reddit.com/r/buildapcsales/comments/nvjkgt/monitor_samsung_24_crystalpro_monitor_fhd_75hz/\"> <img src=\"https://external-preview.redd.it/5GuutL-W4K6LiVZspYal-8-tlPt_E7lymUByCJgZu1o.jpg?width=108&amp;crop=smart&amp;auto=webp&amp;s=6483f2973e17eb0b65dec0ae7c304bad2dfe9844\" alt=\"[Monitor] Samsung 24&quot; CrystalPro Monitor- FHD, 75Hz, IPS - $89.99 (99.99 - 10% off) (Monoprice)\" title=\"[Monitor] Samsung 24&quot; CrystalPro Monitor- FHD, 75Hz, IPS - $89.99 (99.99 - 10% off) (Monoprice)\" /> </a> </td><td> &#32; submitted by &#32; <a href=\"https://www.reddit.com/user/Ascendor81\"> /u/Ascendor81 </a> <br/> <span><a href=\"https://www.monoprice.com/product?p_id=40772&amp;AID=11051853&amp;PID=46157\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nvjkgt/monitor_samsung_24_crystalpro_monitor_fhd_75hz/\">[comments]</a></span> </td></tr></table>",
-		  "date": 1623200844,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nvjkgt",
-		  "hash": "69c5dfd3aba07ec3c11a232083c00965",
-		  "id": 12844,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nvjkgt/monitor_samsung_24_crystalpro_monitor_fhd_75hz/",
-		  "tags": "",
-		  "title": "[Monitor] Samsung 24\" CrystalPro Monitor- FHD, 75Hz, IPS - $89.99 (99.99 - 10% off) (Monoprice)"
-		},
-		{
-		  "author": "/u/Evilsj",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/Evilsj\"> /u/Evilsj </a> <br/> <span><a href=\"https://www.amazon.com/Hbada-Computer-Z-Shape-Ergonomic-Headphone/dp/B08FWY3WPZ\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nvj8po/desk_hbada_43_zshape_gaming_desk_8499_normally/\">[comments]</a></span>",
-		  "date": 1623199703,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nvj8po",
-		  "hash": "4fe9daeca7c3c7dec6150e29ae3d30c5",
-		  "id": 12845,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nvj8po/desk_hbada_43_zshape_gaming_desk_8499_normally/",
-		  "tags": "",
-		  "title": "[Desk] Hbada 43\" Z-Shape Gaming Desk - $84.99 (Normally $119.99)"
-		},
-		{
-		  "author": "/u/db0at",
-		  "content": "<table> <tr><td> <a href=\"https://www.reddit.com/r/buildapcsales/comments/nviqu9/monitor_lg_24gn600b_24_ips_144hz_1ms_16900_19900/\"> <img src=\"https://external-preview.redd.it/BjbwfZ17SCJL1OjH5qiQ8JI43tSKpifph6cmB2DpDkc.jpg?width=320&amp;crop=smart&amp;auto=webp&amp;s=8c9456afa9d4927872a7464721be47b7a806bf04\" alt=\"[Monitor] LG 24GN600-B 24&quot;, IPS, 144Hz, 1ms - $169.00 (199.00 - 30.00) (Costco)\" title=\"[Monitor] LG 24GN600-B 24&quot;, IPS, 144Hz, 1ms - $169.00 (199.00 - 30.00) (Costco)\" /> </a> </td><td> &#32; submitted by &#32; <a href=\"https://www.reddit.com/user/db0at\"> /u/db0at </a> <br/> <span><a href=\"https://www.costco.com/lg-ultragear-24%22-class-ultragear-fhd-ips-gaming-monitor.product.100716738.html\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nviqu9/monitor_lg_24gn600b_24_ips_144hz_1ms_16900_19900/\">[comments]</a></span> </td></tr></table>",
-		  "date": 1623198054,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nviqu9",
-		  "hash": "608f4a3a5b6af5d3196ad8ce06fa764c",
-		  "id": 12846,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nviqu9/monitor_lg_24gn600b_24_ips_144hz_1ms_16900_19900/",
-		  "tags": "",
-		  "title": "[Monitor] LG 24GN600-B 24\", IPS, 144Hz, 1ms - $169.00 (199.00 - 30.00) (Costco)"
-		},
-		{
-		  "author": "/u/jimbokimo3",
-		  "content": "<table> <tr><td> <a href=\"https://www.reddit.com/r/buildapcsales/comments/nvhhle/networking_netgear_orbi_whole_home_mesh_wifi_6/\"> <img src=\"https://external-preview.redd.it/jLP8Vj5hNK0gryDklOsSojKLNnEVYq8R_z7BxPESCIY.jpg?width=320&amp;crop=smart&amp;auto=webp&amp;s=afac128df2408b4b24c90107e397cf311917a0db\" alt=\"[networking] NETGEAR Orbi Whole Home Mesh WiFi 6 System with Advanced Cyber Security, 3-pack - $399.99\" title=\"[networking] NETGEAR Orbi Whole Home Mesh WiFi 6 System with Advanced Cyber Security, 3-pack - $399.99\" /> </a> </td><td> &#32; submitted by &#32; <a href=\"https://www.reddit.com/user/jimbokimo3\"> /u/jimbokimo3 </a> <br/> <span><a href=\"https://www.costco.com/netgear-orbi-whole-home-mesh-wifi-6-system-with-advanced-cyber-security-3-pack.product.100533367.html\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nvhhle/networking_netgear_orbi_whole_home_mesh_wifi_6/\">[comments]</a></span> </td></tr></table>",
-		  "date": 1623194309,
-		  "date_added": 1623285482,
-		  "feed_id": 4,
-		  "guid": "t3_nvhhle",
-		  "hash": "7a70261486d49bc5b2777dd2b0a0dc93",
-		  "id": 12847,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nvhhle/networking_netgear_orbi_whole_home_mesh_wifi_6/",
-		  "tags": "",
-		  "title": "[networking] NETGEAR Orbi Whole Home Mesh WiFi 6 System with Advanced Cyber Security, 3-pack - $399.99"
-		},
-		{
-		  "author": "/u/thvbh",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/thvbh\"> /u/thvbh </a> <br/> <span><a href=\"https://www.newegg.com/p/2RM-001D-001D0\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/ntxz8o/cooler_noctua_nhp1_fanless_100_new_release/\">[comments]</a></span>",
-		  "date": 1623020217,
-		  "date_added": 1623020314,
-		  "feed_id": 4,
-		  "guid": "t3_ntxz8o",
-		  "hash": "6d4baf936c707779dee4b8a63775be38",
-		  "id": 12822,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/ntxz8o/cooler_noctua_nhp1_fanless_100_new_release/",
-		  "tags": "",
-		  "title": "[COOLER] Noctua NH-P1 Fanless - $100 (New release)"
-		},
-		{
-		  "author": "/u/swdep1",
-		  "content": "<table> <tr><td> <a href=\"https://www.reddit.com/r/buildapcsales/comments/ntvztg/laptop_gigabyte_aorus_15g_yc_156_fhd_ips/\"> <img src=\"https://external-preview.redd.it/O5dFaGLkuOgsd3nR0BeHXFWxSl2vlLVOgw341MDdHM4.jpg?width=640&amp;crop=smart&amp;auto=webp&amp;s=3139af0512e9d4d7f433b6f695f5462c3772c27f\" alt=\"[LAPTOP] GIGABYTE AORUS 15G YC 15.6 FHD IPS Anti-Glare 240Hz, Intel Core i7 10870H NVIDIA GeForce RTX 3080 Laptop GPU 8GB GDDR6, 32GB RAM, 1TB SSD, Win10 Home ($2299,99-100-200 after rebate card = $1999,99)\" title=\"[LAPTOP] GIGABYTE AORUS 15G YC 15.6 FHD IPS Anti-Glare 240Hz, Intel Core i7 10870H NVIDIA GeForce RTX 3080 Laptop GPU 8GB GDDR6, 32GB RAM, 1TB SSD, Win10 Home ($2299,99-100-200 after rebate card = $1999,99)\" /> </a> </td><td> &#32; submitted by &#32; <a href=\"https://www.reddit.com/user/swdep1\"> /u/swdep1 </a> <br/> <span><a href=\"https://www.newegg.com/p/N82E16834725124?item=N82E16834725124\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/ntvztg/laptop_gigabyte_aorus_15g_yc_156_fhd_ips/\">[comments]</a></span> </td></tr></table>",
-		  "date": 1623014526,
-		  "date_added": 1623014782,
-		  "feed_id": 4,
-		  "guid": "t3_ntvztg",
-		  "hash": "997fbe5606fafe663ff064382d830b5d",
-		  "id": 12821,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/ntvztg/laptop_gigabyte_aorus_15g_yc_156_fhd_ips/",
-		  "tags": "",
-		  "title": "[LAPTOP] GIGABYTE AORUS 15G YC 15.6 FHD IPS Anti-Glare 240Hz, Intel Core i7 10870H NVIDIA GeForce RTX 3080 Laptop GPU 8GB GDDR6, 32GB RAM, 1TB SSD, Win10 Home ($2299,99-100-200 after rebate card = $1999,99)"
-		},
-		{
-		  "author": "/u/backkom",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/backkom\"> /u/backkom </a> <br/> <span><a href=\"https://www.amazon.com/GA15DK-Desktop-GeForce-Windows-GA15DK-AS776/dp/B08ZRTRLR9\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/ntosmg/prebuilt_asus_rog_strix_ga15dk_gaming_desktop_pc/\">[comments]</a></span>",
-		  "date": 1622994836,
-		  "date_added": 1622995081,
-		  "feed_id": 4,
-		  "guid": "t3_ntosmg",
-		  "hash": "4dcd442305e0e86337b27a3dcb205294",
-		  "id": 12820,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/ntosmg/prebuilt_asus_rog_strix_ga15dk_gaming_desktop_pc/",
-		  "tags": "",
-		  "title": "[Prebuilt] ASUS ROG Strix GA15DK Gaming Desktop PC, AMD Ryzen 7 5800X, GeForce RTX 3070, 16GB DDR4 RAM, 512GB SSD + 1TB HDD, Wi-Fi 5, Windows 10 Home $1569"
-		},
-		{
-		  "author": "/u/myonlychan",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/myonlychan\"> /u/myonlychan </a> <br/> <span><a href=\"https://www.amazon.com/AMD-Ryzen-5950X-32-Thread-Processor/dp/B0815Y8J9N/ref=sr_1_2?dchild=1&amp;keywords=5950&amp;qid=1622993681&amp;sr=8-2\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/ntoekc/cpu_ryzen_9_5950x_799_select_amazon_from_other/\">[comments]</a></span>",
-		  "date": 1622993760,
-		  "date_added": 1622993859,
-		  "feed_id": 4,
-		  "guid": "t3_ntoekc",
-		  "hash": "fb3b401c3c95e23cdf1bfc85ec7da72d",
-		  "id": 12819,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/ntoekc/cpu_ryzen_9_5950x_799_select_amazon_from_other/",
-		  "tags": "",
-		  "title": "[CPU] Ryzen 9 5950X - $799 (Select Amazon from \"Other Sellers\")"
-		},
-		{
-		  "author": "/u/Reddimick",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/Reddimick\"> /u/Reddimick </a> <br/> <span><a href=\"https://www.amazon.com/dp/B075CDFB2X\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/ntmkl7/fan_arctic_bionix_f120_pwm_120mm_case_fan/\">[comments]</a></span>",
-		  "date": 1622988549,
-		  "date_added": 1622988635,
-		  "feed_id": 4,
-		  "guid": "t3_ntmkl7",
-		  "hash": "0334ea9bc95db6ee4dae412bfda69769",
-		  "id": 12818,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/ntmkl7/fan_arctic_bionix_f120_pwm_120mm_case_fan/",
-		  "tags": "",
-		  "title": "[Fan] Arctic BioniX F120 PWM 120mm Case Fan, Green/Black - $8.17"
-		},
-		{
-		  "author": "/u/ih8schumer",
-		  "content": "<table> <tr><td> <a href=\"https://www.reddit.com/r/buildapcsales/comments/ntln32/monitor_samsung_odyssey_g9_49_inch_ultra_wide/\"> <img src=\"https://external-preview.redd.it/p-r-5IBpYegVHeHPl3umKRZrAzjYgzRaGLc3h4Bv5ss.jpg?width=320&amp;crop=smart&amp;auto=webp&amp;s=5ac19e06304671396a0637d96cd7d37dfee05c02\" alt=\"[monitor] Samsung odyssey g9 49 inch ultra wide 240hz, certified refurbished with 2 year warranty $999.99(500 off New)\" title=\"[monitor] Samsung odyssey g9 49 inch ultra wide 240hz, certified refurbished with 2 year warranty $999.99(500 off New)\" /> </a> </td><td> &#32; submitted by &#32; <a href=\"https://www.reddit.com/user/ih8schumer\"> /u/ih8schumer </a> <br/> <span><a href=\"https://www.ebay.com/itm/133698918192?chn=ps&amp;norover=1&amp;mkevt=1&amp;mkrid=711-222657-2056-0&amp;mkcid=2&amp;itemid=133698918192&amp;targetid=1267522138537&amp;device=m&amp;mktype=pla&amp;googleloc=9008611&amp;poi=&amp;campaignid=7865763770&amp;mkgroupid=122792081712&amp;rlsatarget=pla-1267522138537&amp;abcId=1145976&amp;merchantid=114712306&amp;gclid=Cj0KCQjw5PGFBhC2ARIsAIFIMNeqrqnmnnVsZZf8beYWcbzN8rNsXgFhfL9nqz8sx8BwQQHncD3dCskaAjd5EALw_wcB\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/ntln32/monitor_samsung_odyssey_g9_49_inch_ultra_wide/\">[comments]</a></span> </td></tr></table>",
-		  "date": 1622985736,
-		  "date_added": 1622985850,
-		  "feed_id": 4,
-		  "guid": "t3_ntln32",
-		  "hash": "5808c7ce75e70c01a4d820fbbd1c694f",
-		  "id": 12817,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/ntln32/monitor_samsung_odyssey_g9_49_inch_ultra_wide/",
-		  "tags": "",
-		  "title": "[monitor] Samsung odyssey g9 49 inch ultra wide 240hz, certified refurbished with 2 year warranty $999.99(500 off New)"
-		},
-		{
-		  "author": "/u/madkinggizmo",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/madkinggizmo\"> /u/madkinggizmo </a> <br/> <span><a href=\"https://www.newegg.com/p/N82E16824737008\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/ntklb2/monitor_pixio_px278_27_1440p_144hz_tn_1ms/\">[comments]</a></span>",
-		  "date": 1622982248,
-		  "date_added": 1622982432,
-		  "feed_id": 4,
-		  "guid": "t3_ntklb2",
-		  "hash": "3236b287c9f7033db95104e82bf80372",
-		  "id": 12816,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/ntklb2/monitor_pixio_px278_27_1440p_144hz_tn_1ms/",
-		  "tags": "",
-		  "title": "[Monitor] Pixio PX278 27'' 1440p 144Hz TN 1ms Freesync - $250 ($320-$70)"
-		},
-		{
-		  "author": "/u/Tenx82",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/Tenx82\"> /u/Tenx82 </a> <br/> <span><a href=\"https://www.amazon.com/dp/B07ZRMYT7K/ref=cm_sw_r_cp_apa_glt_fabc_Z53TC9MAD0NH0S7BWBYG\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/ntkc22/ssd_sata_ortial_256gb_ssd_2595_for_sata_2695_for/\">[comments]</a></span>",
-		  "date": 1622981285,
-		  "date_added": 1622981493,
-		  "feed_id": 4,
-		  "guid": "t3_ntkc22",
-		  "hash": "e4b1db8c3f6653f2eca0999ce6e6850b",
-		  "id": 12815,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/ntkc22/ssd_sata_ortial_256gb_ssd_2595_for_sata_2695_for/",
-		  "tags": "",
-		  "title": "[SSD - SATA] Ortial 256GB SSD - $25.95 for SATA, $26.95 for m.2"
-		},
-		{
-		  "author": "/u/Snuffy2g",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/Snuffy2g\"> /u/Snuffy2g </a> <br/> <span><a href=\"https://www.newegg.com/enermax-liquid-cooling-system-liqmax-iii-argb-360/p/17Z-00B8-00006?Description=aio&amp;cm_re=aio-_-17Z-00B8-00006-_-Product\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/ntkali/aio_enermax_liqmax_iii_argb_360_7999_99992000_20/\">[comments]</a></span>",
-		  "date": 1622981133,
-		  "date_added": 1622981178,
-		  "feed_id": 4,
-		  "guid": "t3_ntkali",
-		  "hash": "4722f5a3abfb587393428d78dbbd1585",
-		  "id": 12814,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/ntkali/aio_enermax_liqmax_iii_argb_360_7999_99992000_20/",
-		  "tags": "",
-		  "title": "[AIO] Enermax LIQMAX III ARGB 360 $79.99 (99.99-20.00) + $20 off w/ promo code EN25HDADK, limited offer"
-		},
-		{
-		  "author": "/u/bikeskater",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/bikeskater\"> /u/bikeskater </a> <br/> <span><a href=\"https://smile.amazon.com/gp/product/B08ZB6YVPW/ref=ox_sc_act_title_1?smid=A3QR4864ATM9Z9&amp;psc=1\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/ntjbxg/ssd_ssstc_cl1_pcie_gen3_x_4_128gb_nvme_m2_2230/\">[comments]</a></span>",
-		  "date": 1622977513,
-		  "date_added": 1622977772,
-		  "feed_id": 4,
-		  "guid": "t3_ntjbxg",
-		  "hash": "12630f67bb3df121962c2ea95522c465",
-		  "id": 12813,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/ntjbxg/ssd_ssstc_cl1_pcie_gen3_x_4_128gb_nvme_m2_2230/",
-		  "tags": "",
-		  "title": "[SSD] SSSTC CL1 PCIe Gen3 x 4 128GB NVMe M.2 2230 SSD - $15"
-		},
-		{
-		  "author": "/u/mockingbird-",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/mockingbird-\"> /u/mockingbird- </a> <br/> <span><a href=\"https://www.hp.com/us-en/shop/ConfigureView?langId=-1&amp;catalogId=10051&amp;catEntryId=3074457345619965322\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/ntfis4/prebuilt_hp_pavilion_gaming_desktop_tg012170m/\">[comments]</a></span>",
-		  "date": 1622961388,
-		  "date_added": 1622961532,
-		  "feed_id": 4,
-		  "guid": "t3_ntfis4",
-		  "hash": "d931c5e351c85a0643d9ea65ca101bc9",
-		  "id": 12812,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/ntfis4/prebuilt_hp_pavilion_gaming_desktop_tg012170m/",
-		  "tags": "",
-		  "title": "[Prebuilt] HP Pavilion Gaming Desktop TG01-2170m: Ryzen 7 5700G, 16GB DDR4, 1TB SSD, GeForce RTX 3060 - $1268.99 (Coupon Code: 10GAMER2021)"
-		},
-		{
-		  "author": "/u/jimbokimo3",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/jimbokimo3\"> /u/jimbokimo3 </a> <br/> <span><a href=\"https://www.amazon.com/Pre-Installed-Water-Cooling-LANCOOL-205-MESH/dp/B093TNMQ9W?\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/ntfbfr/case_micro_center_via_amazon_amazoncom_has_the/\">[comments]</a></span>",
-		  "date": 1622960542,
-		  "date_added": 1622960619,
-		  "feed_id": 4,
-		  "guid": "t3_ntfbfr",
-		  "hash": "eafcebbf020af9a61de437fd7e5202b5",
-		  "id": 12811,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/ntfbfr/case_micro_center_via_amazon_amazoncom_has_the/",
-		  "tags": "",
-		  "title": "[CASE] Micro Center via Amazon [amazon.com] has the Lian Li 205 Mesh ATX Computer Case with 3 AGRB Fans and Tempered Glass Side Panel for $94.99 after Code 205MESHATX. Shipping is free."
-		},
-		{
-		  "author": "/u/DivineWanderlust",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/DivineWanderlust\"> /u/DivineWanderlust </a> <br/> <span><a href=\"https://deals.dell.com/en-us/mpp/productdetail/909f\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/ntaaf0/monitor_dell_s2721dgf_27_1440p_165_hz_ips_1ms_340/\">[comments]</a></span>",
-		  "date": 1622942363,
-		  "date_added": 1622942571,
-		  "feed_id": 4,
-		  "guid": "t3_ntaaf0",
-		  "hash": "ff7ad739c71b5ec98c7342d32edc7324",
-		  "id": 12810,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/ntaaf0/monitor_dell_s2721dgf_27_1440p_165_hz_ips_1ms_340/",
-		  "tags": "",
-		  "title": "[Monitor] Dell S2721DGF 27'' 1440p 165 Hz IPS 1ms - $340 ($610-$232-$38 (10% newsletter code))"
-		},
-		{
-		  "author": "/u/BlackestNight21",
-		  "content": "<table> <tr><td> <a href=\"https://www.reddit.com/r/buildapcsales/comments/nt9lor/desk_x_rocker_721601_hex_pc_gaming_desk_5025_6701/\"> <img src=\"https://external-preview.redd.it/NOqgR1dC8KJpnCSyOjMrbG1BO7kNw_9-1EwLtqA4pf8.jpg?width=640&amp;crop=smart&amp;auto=webp&amp;s=c9b43f1b4a4110d9de225d97d27c6510cb8505b7\" alt=\"[Desk] X Rocker, 721601, Hex PC Gaming Desk - $50.25 (67.01 - 16.76)\" title=\"[Desk] X Rocker, 721601, Hex PC Gaming Desk - $50.25 (67.01 - 16.76)\" /> </a> </td><td> &#32; submitted by &#32; <a href=\"https://www.reddit.com/user/BlackestNight21\"> /u/BlackestNight21 </a> <br/> <span><a href=\"https://sellout.woot.com/offers/hex-pc-gaming-desk-2\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nt9lor/desk_x_rocker_721601_hex_pc_gaming_desk_5025_6701/\">[comments]</a></span> </td></tr></table>",
-		  "date": 1622940030,
-		  "date_added": 1622940101,
-		  "feed_id": 4,
-		  "guid": "t3_nt9lor",
-		  "hash": "6e28121cd6daac6a5ac79262018bdb43",
-		  "id": 12809,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nt9lor/desk_x_rocker_721601_hex_pc_gaming_desk_5025_6701/",
-		  "tags": "",
-		  "title": "[Desk] X Rocker, 721601, Hex PC Gaming Desk - $50.25 (67.01 - 16.76)"
-		},
-		{
-		  "author": "/u/eredloh",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/eredloh\"> /u/eredloh </a> <br/> <span><a href=\"https://www.cyberpowerpc.com/saved/1P4CBE\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nt8yvt/prebuilt_cyberpowerpc_i511600kf_16_gb_ddr4_3200/\">[comments]</a></span>",
-		  "date": 1622937932,
-		  "date_added": 1622937978,
-		  "feed_id": 4,
-		  "guid": "t3_nt8yvt",
-		  "hash": "1b1ade9bbc46a95dde33ab4d1fc501cf",
-		  "id": 12808,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nt8yvt/prebuilt_cyberpowerpc_i511600kf_16_gb_ddr4_3200/",
-		  "tags": "",
-		  "title": "[Prebuilt] CyberPowerPC | i5-11600KF | 16 GB DDR4 3200 | RTX 3080 | 1TB NVMe SSD | $1929 | Code: SUMMIT"
-		},
-		{
-		  "author": "/u/JTB77",
-		  "content": "<table> <tr><td> <a href=\"https://www.reddit.com/r/buildapcsales/comments/nt84bq/cpu_300_i9_10850k_at_microcenter/\"> <img src=\"https://external-preview.redd.it/yt_wWrHR5qC2aA0vQLVwTqqdBcMNDZ5xFkDVg6jL5kw.jpg?width=108&amp;crop=smart&amp;auto=webp&amp;s=8c4291413e1d59cd0e2749f32bcfc52707283686\" alt=\"[CPU] $300 i9 10850k at micro-center\" title=\"[CPU] $300 i9 10850k at micro-center\" /> </a> </td><td> &#32; submitted by &#32; <a href=\"https://www.reddit.com/user/JTB77\"> /u/JTB77 </a> <br/> <span><a href=\"https://www.microcenter.com/product/626745/intel-core-i9-10850k-comet-lake-36ghz-ten-core-lga-1200-boxed-processor?sku=152066&amp;utm_source=20210604_eNews_Computer_Parts_R6107&amp;utm_medium=email&amp;utm_campaign=R6107&amp;MccGuid=7a1d13c0-1d48-4a0f-8bfb-e22bb178ae1e\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nt84bq/cpu_300_i9_10850k_at_microcenter/\">[comments]</a></span> </td></tr></table>",
-		  "date": 1622935183,
-		  "date_added": 1622935219,
-		  "feed_id": 4,
-		  "guid": "t3_nt84bq",
-		  "hash": "90d09f6b2860467d06fe85e009da6c6c",
-		  "id": 12807,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nt84bq/cpu_300_i9_10850k_at_microcenter/",
-		  "tags": "",
-		  "title": "[CPU] $300 i9 10850k at micro-center"
-		},
-		{
-		  "author": "/u/jimbokimo3",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/jimbokimo3\"> /u/jimbokimo3 </a> <br/> <span><a href=\"https://www.newegg.com/oloy-32gb-288-pin-ddr4-sdram/p/N82E16820821383\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nt6rlq/ram_oloy_blade_ddr4_3200_32gb_2_x_16gb_desktop/\">[comments]</a></span>",
-		  "date": 1622931032,
-		  "date_added": 1622931249,
-		  "feed_id": 4,
-		  "guid": "t3_nt6rlq",
-		  "hash": "f15844619588b73398376752982d4c9b",
-		  "id": 12806,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nt6rlq/ram_oloy_blade_ddr4_3200_32gb_2_x_16gb_desktop/",
-		  "tags": "",
-		  "title": "[RAM] OLOy Blade, DDR4 3200, 32GB (2 x 16GB) Desktop Memory ($160-$25) $135 AC EMCEXEU34"
-		},
-		{
-		  "author": "/u/Coomer-Boomer",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/Coomer-Boomer\"> /u/Coomer-Boomer </a> <br/> <span><a href=\"https://www.hp.com/us-en/shop/pdp/omen-30l-desktop-gt13-0380t-2h4a2av-1\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nt6poj/prebuilt_hp_omen_nvidia_geforce_rtx_3090_wifi/\">[comments]</a></span>",
-		  "date": 1622930871,
-		  "date_added": 1622930940,
-		  "feed_id": 4,
-		  "guid": "t3_nt6poj",
-		  "hash": "533ea1fd9116241922f0f8d85af06593",
-		  "id": 12805,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nt6poj/prebuilt_hp_omen_nvidia_geforce_rtx_3090_wifi/",
-		  "tags": "",
-		  "title": "[PREBUILT] HP OMEN - NVIDIA® GeForce RTX™ 3090, Wifi + Bluetooth, Intel i7-10700K - $2703.40 before tax. See Comments for Full Explanation"
-		},
-		{
-		  "author": "/u/myonlychan",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/myonlychan\"> /u/myonlychan </a> <br/> <span><a href=\"https://www.amazon.com/ASUS-Gaming-B550M-ZAKU-Gundam-Motherboard/dp/B094X2BYX3/ref=sr_1_2?dchild=1&amp;keywords=Asus+Gundam&amp;qid=1622925999&amp;sr=8-2\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nt50bh/motherboard_asus_x_gundam_b550mzaku_21999_preorder/\">[comments]</a></span>",
-		  "date": 1622926111,
-		  "date_added": 1622926339,
-		  "feed_id": 4,
-		  "guid": "t3_nt50bh",
-		  "hash": "b9125864b90864347575b96173994f3d",
-		  "id": 12804,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nt50bh/motherboard_asus_x_gundam_b550mzaku_21999_preorder/",
-		  "tags": "",
-		  "title": "[Motherboard] Asus X Gundam B550M-ZAKU - $219.99 (Preorder)"
-		},
-		{
-		  "author": "/u/PsychoticYuppie",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/PsychoticYuppie\"> /u/PsychoticYuppie </a> <br/> <span><a href=\"https://www.amazon.com/dp/B08ZM87LJH?smid=ATVPDKIKX0DER&amp;ref_=chk_typ_imgToDp&amp;th=1\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nt4z2m/mousepad_asus_x_gundam_mousepad_2999_preorder/\">[comments]</a></span>",
-		  "date": 1622926006,
-		  "date_added": 1622926037,
-		  "feed_id": 4,
-		  "guid": "t3_nt4z2m",
-		  "hash": "99320a40ad7115871df84cd3d6dcc48a",
-		  "id": 12802,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nt4z2m/mousepad_asus_x_gundam_mousepad_2999_preorder/",
-		  "tags": "",
-		  "title": "[Mousepad] Asus X Gundam Mousepad - $29.99 (Preorder)"
-		},
-		{
-		  "author": "/u/baseball-is-praxis",
-		  "content": "<table> <tr><td> <a href=\"https://www.reddit.com/r/buildapcsales/comments/nt4xf1/cpu_ryzen_5900x_authorized_amd_dealer_antonline/\"> <img src=\"https://external-preview.redd.it/u8k4y-3ASAC4s5-g90lKqrpxQ-MNr9q0L4VbY4bWSq0.jpg?width=320&amp;crop=smart&amp;auto=webp&amp;s=871ef6fc3e52133e265359f49a0a304fefcf18a7\" alt=\"[CPU] Ryzen 5900X (authorized AMD dealer antonline on Ebay, fair bit of stock) free 3-day shipping - $599\" title=\"[CPU] Ryzen 5900X (authorized AMD dealer antonline on Ebay, fair bit of stock) free 3-day shipping - $599\" /> </a> </td><td> &#32; submitted by &#32; <a href=\"https://www.reddit.com/user/baseball-is-praxis\"> /u/baseball-is-praxis </a> <br/> <span><a href=\"https://www.ebay.com/itm/293882212178\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nt4xf1/cpu_ryzen_5900x_authorized_amd_dealer_antonline/\">[comments]</a></span> </td></tr></table>",
-		  "date": 1622925868,
-		  "date_added": 1622926037,
-		  "feed_id": 4,
-		  "guid": "t3_nt4xf1",
-		  "hash": "8698791ee4dcdad99117e9eb327c2bb0",
-		  "id": 12803,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nt4xf1/cpu_ryzen_5900x_authorized_amd_dealer_antonline/",
-		  "tags": "",
-		  "title": "[CPU] Ryzen 5900X (authorized AMD dealer antonline on Ebay, fair bit of stock) free 3-day shipping - $599"
-		},
-		{
-		  "author": "/u/--Wonder-_-bread--",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/--Wonder-_-bread--\"> /u/--Wonder-_-bread-- </a> <br/> <span><a href=\"https://www.bestbuy.com/site/netgear-nighthawk-ax5200-wi-fi-6-router/6428135.p?skuId=6428135\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nt4vj9/networking_netgear_nighthawk_ax5200_wifi_6_router/\">[comments]</a></span>",
-		  "date": 1622925713,
-		  "date_added": 1622925733,
-		  "feed_id": 4,
-		  "guid": "t3_nt4vj9",
-		  "hash": "3fcdd09b46246c47232cad846b0380d2",
-		  "id": 12801,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nt4vj9/networking_netgear_nighthawk_ax5200_wifi_6_router/",
-		  "tags": "",
-		  "title": "[Networking] NETGEAR - Nighthawk AX5200 Wi-Fi 6 Router - $199 ($100 off )"
-		},
-		{
-		  "author": "/u/Brookenium",
-		  "content": "<table> <tr><td> <a href=\"https://www.reddit.com/r/buildapcsales/comments/nsxsav/prebuilt_hp_gaming_pc_nvidia_geforce_rtx_3060/\"> <img src=\"https://external-preview.redd.it/1orfqSPbIDqTv1HLV9a_lDLViGgqJAX-g6nxW5wPoIk.jpg?width=320&amp;crop=smart&amp;auto=webp&amp;s=f9c3090756828ffffa18a9996681d1e20550fc10\" alt=\"[Prebuilt] HP Gaming PC - NVIDIA® GeForce RTX™ 3060, Wifi + Bluetooth, Ryzen 5 5300G - $798.07 See Comments for Full Explanation\" title=\"[Prebuilt] HP Gaming PC - NVIDIA® GeForce RTX™ 3060, Wifi + Bluetooth, Ryzen 5 5300G - $798.07 See Comments for Full Explanation\" /> </a> </td><td> &#32; submitted by &#32; <a href=\"https://www.reddit.com/user/Brookenium\"> /u/Brookenium </a> <br/> <span><a href=\"https://www.hp.com/us-en/shop/ConfigureView?langId=-1&amp;storeId=10151&amp;catalogId=10051&amp;catEntryId=3074457345619965322\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nsxsav/prebuilt_hp_gaming_pc_nvidia_geforce_rtx_3060/\">[comments]</a></span> </td></tr></table>",
-		  "date": 1622905740,
-		  "date_added": 1622905860,
-		  "feed_id": 4,
-		  "guid": "t3_nsxsav",
-		  "hash": "74e668ee2789c9f2d5154d501076b52e",
-		  "id": 12800,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nsxsav/prebuilt_hp_gaming_pc_nvidia_geforce_rtx_3060/",
-		  "tags": "",
-		  "title": "[Prebuilt] HP Gaming PC - NVIDIA® GeForce RTX™ 3060, Wifi + Bluetooth, Ryzen 5 5300G - $798.07 See Comments for Full Explanation"
-		},
-		{
-		  "author": "/u/timetrvlr_",
-		  "content": "&#32; submitted by &#32; <a href=\"https://www.reddit.com/user/timetrvlr_\"> /u/timetrvlr_ </a> <br/> <span><a href=\"https://www.newegg.com/oloy-16gb-288-pin-ddr4-sdram/p/N82E16820821384?Description=OLOy%20Blade%2016GB%20(2%20x%208GB)%20288-Pin%20DDR4&amp;cm_re=OLOy_Blade%2016GB%20(2%20x%208GB)%20288-Pin%20DDR4-_-20-821-384-_-Product\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nsxprt/ram_oloy_blade_16gb_2_x_8gb_288pin_ddr4_sdram/\">[comments]</a></span>",
-		  "date": 1622905539,
-		  "date_added": 1622905557,
-		  "feed_id": 4,
-		  "guid": "t3_nsxprt",
-		  "hash": "c7bd983c9e25c493a60dbcf90ab3cd96",
-		  "id": 12798,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nsxprt/ram_oloy_blade_16gb_2_x_8gb_288pin_ddr4_sdram/",
-		  "tags": "",
-		  "title": "[RAM] OLOy Blade 16GB (2 x 8GB) 288-Pin DDR4 SDRAM DDR4 3600MHz - $79.99 ($15 Off w/code: EMCEXEU35)"
-		},
-		{
-		  "author": "/u/Brookenium",
-		  "content": "<table> <tr><td> <a href=\"https://www.reddit.com/r/buildapcsales/comments/nsxpod/prebuilt_hp_gaming_pc_nvidia_geforce_rtx_3060/\"> <img src=\"https://external-preview.redd.it/1orfqSPbIDqTv1HLV9a_lDLViGgqJAX-g6nxW5wPoIk.jpg?width=320&amp;crop=smart&amp;auto=webp&amp;s=f9c3090756828ffffa18a9996681d1e20550fc10\" alt=\"[Prebuilt] HP Gaming PC - NVIDIA® GeForce RTX™ 3060, Wifi + Bluetooth, Ryzen 5 5300G, 8GB RAM, 256GB SSD - $1,019.99 - $100 (Instant Savings) - $46 (5% HP21MD5) - $75.92 (BeFrugal Cash Back) = $798.07 See Comments for Full Explanation\" title=\"[Prebuilt] HP Gaming PC - NVIDIA® GeForce RTX™ 3060, Wifi + Bluetooth, Ryzen 5 5300G, 8GB RAM, 256GB SSD - $1,019.99 - $100 (Instant Savings) - $46 (5% HP21MD5) - $75.92 (BeFrugal Cash Back) = $798.07 See Comments for Full Explanation\" /> </a> </td><td> &#32; submitted by &#32; <a href=\"https://www.reddit.com/user/Brookenium\"> /u/Brookenium </a> <br/> <span><a href=\"https://www.hp.com/us-en/shop/ConfigureView?langId=-1&amp;storeId=10151&amp;catalogId=10051&amp;catEntryId=3074457345619965322&amp;urlLangId=&amp;\">[link]</a></span> &#32; <span><a href=\"https://www.reddit.com/r/buildapcsales/comments/nsxpod/prebuilt_hp_gaming_pc_nvidia_geforce_rtx_3060/\">[comments]</a></span> </td></tr></table>",
-		  "date": 1622905532,
-		  "date_added": 1622905557,
-		  "feed_id": 4,
-		  "guid": "t3_nsxpod",
-		  "hash": "dbbaf28b29310067a7551f126b7cb24c",
-		  "id": 12799,
-		  "is_read": false,
-		  "is_removed": false,
-		  "is_starred": false,
-		  "link": "https://www.reddit.com/r/buildapcsales/comments/nsxpod/prebuilt_hp_gaming_pc_nvidia_geforce_rtx_3060/",
-		  "tags": "",
-		  "title": "[Prebuilt] HP Gaming PC - NVIDIA® GeForce RTX™ 3060, Wifi + Bluetooth, Ryzen 5 5300G, 8GB RAM, 256GB SSD - $1,019.99 - $100 (Instant Savings) - $46 (5% HP21MD5) - $75.92 (BeFrugal Cash Back) = $798.07 See Comments for Full Explanation"
-		}
-	];
-
 	displayedColumns: string[] = ['from', 'title', 'date_added', 'link'];
 
-	constructor() {}
+	constructor(public background: BackgroundService) {}
 
-	ngOnInit(): void {}
-
-	getFeedById(feed_id: number) {
-		return this.feeds.find(v => v.id == feed_id);
+	ngOnInit(): void {
+		//
 	}
+
+	getLocaleDateString(date: number): string {
+		return new Date(date * 1000).toLocaleString();
+	}
+
+	sorted_feeds(): FeedGrouping[] {
+		let groupings: FeedGrouping[] = [];
+
+		let current_section = -1;
+
+		this.background.feed_items.forEach(r => {
+			let section = get_section_from_date(r.date * 1000);
+
+			if (section != current_section) {
+				current_section = section;
+
+				groupings.push({
+					title: SECTION_NAMES[section],
+					feed_items: []
+				});
+			}
+
+			groupings[groupings.length - 1].feed_items.push(r);
+		});
+
+		return groupings;
+	}
+
+	public parse_timestamp(date: number): string {
+		date = date * 1000;
+
+		if (date + (1000 * 60 * 60 * 24) > Date.now()) {
+			return elapsed_to_time_ago(Date.now() - date);
+		} else {
+			return new Date(date).toLocaleString()
+		}
+	}
+}
+
+const SECTION_NAMES = [
+	'Today',
+	'Yesterday',
+	'This Week',
+	'This Month',
+	'Last Month',
+	'This Year',
+	'Last Year'
+];
+
+function get_section_from_date(timestamp: number): number {
+	const now = Date.now();
+	const day = 1000 * 60 * 60 * 24;
+
+	// Last Year
+	if (timestamp < now - (day * 365 * 2)) return 6;
+
+	// This Year
+	if (timestamp < now - (day * 365 * 2)) return 5;
+
+	// Last Month
+	if (timestamp < now - (day * 30 * 2)) return 4;
+
+	// This Month
+	if (timestamp < now - (day * 30)) return 3;
+
+	// This Week
+	if (timestamp < now - (day * 7)) return 2;
+
+	// Yesterday
+	if (timestamp < now - day) return 1;
+
+	return 0;
+}
+
+function elapsed_to_time_ago(elapsed: number): string {
+	let msPerMinute = 60 * 1000;
+	let msPerHour = msPerMinute * 60;
+
+	if (elapsed < msPerMinute) {
+		return Math.floor(elapsed/1000) + 's ago';
+	}
+
+	if (elapsed < msPerHour) {
+		return Math.floor(elapsed/msPerMinute) + 'm ago';
+	}
+
+	return `${Math.floor(elapsed/msPerHour)}h, ${Math.floor(elapsed/msPerMinute) % 60}m ago`;
 }

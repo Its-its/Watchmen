@@ -2,33 +2,41 @@
 
 <mat-drawer-container class="feeder-main-container">
 	<mat-drawer mode="side" opened>
-		<span>Sidebar stuff</span>
+		<h2>Watchmen</h2>
+
+		<mat-action-list>
+			<button mat-list-item>All</button>
+			<button mat-list-item>Cosmic</button>
+			<button mat-list-item>Reddit</button>
+		</mat-action-list>
 	</mat-drawer>
 	<mat-drawer-content>
-		<span>Main Stuff</span>
+		<div *ngFor="let grouping of sorted_feeds()">
+			<h2>{{ grouping.title }}</h2>
 
-		<mat-list>
-			<table mat-table [dataSource]="feed_items">
-				<ng-container matColumnDef="from">
-					<td mat-cell *matCellDef="let item">{{ getFeedById(item.feed_id)!.title }}</td>
-				</ng-container>
+			<mat-list>
+				<table mat-table [dataSource]="grouping.feed_items">
+					<ng-container matColumnDef="from">
+						<td mat-cell *matCellDef="let item">{{ background.get_feed_by_id(item.feed_id)!.title }}</td>
+					</ng-container>
 
-				<ng-container matColumnDef="title">
-					<td mat-cell *matCellDef="let item">{{ item.title }}</td>
-				</ng-container>
+					<ng-container matColumnDef="title">
+						<td mat-cell *matCellDef="let item">{{ item.title }}</td>
+					</ng-container>
 
-				<ng-container matColumnDef="date_added">
-					<td mat-cell *matCellDef="let item">{{ item.date_added }}</td>
-				</ng-container>
+					<ng-container matColumnDef="date_added">
+						<td mat-cell *matCellDef="let item" title="{{ getLocaleDateString(item.date) }}">{{ parse_timestamp(item.date) }}</td>
+					</ng-container>
 
-				<ng-container matColumnDef="link">
-					<td mat-cell *matCellDef="let item">
-						<a href="{{ item.link }}">Link</a>
-					</td>
-				</ng-container>
+					<ng-container matColumnDef="link">
+						<td mat-cell *matCellDef="let item">
+							<a href="{{ item.link }}">Link</a>
+						</td>
+					</ng-container>
 
-				<tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-			</table>
-		 </mat-list>
+					<tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+				</table>
+			 </mat-list>
+		</div>
 	</mat-drawer-content>
 </mat-drawer-container>
