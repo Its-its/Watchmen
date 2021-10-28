@@ -321,7 +321,7 @@ impl WeakFeederCore {
 				let mut items = Vec::new();
 
 				for filter in objects::get_filters(conn)? {
-					let feeds = objects::get_filters_from_filter_id(filter.id, conn)?
+					let feeds = objects::get_feed_filters_from_filter_id(filter.id, conn)?
 						.into_iter()
 						.map(|f| f.feed_id)
 						.collect();

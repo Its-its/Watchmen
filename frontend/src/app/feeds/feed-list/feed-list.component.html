@@ -1,4 +1,9 @@
-<app-toolbar [items] = '[ ["Dashboard", "/dashboard"] ]'></app-toolbar>
+<app-toolbar [items] = '[
+	["Dashboard", "/dashboard"],
+	["Watching", "/feeds/watching"],
+	["Editor", "/feeds/editor"],
+	["Filter", "/feeds/filter"]
+]'></app-toolbar>
 
 <mat-drawer-container class="feeder-main-container">
 	<mat-drawer mode="side" opened>
@@ -29,7 +34,10 @@
 					</ng-container>
 
 					<ng-container matColumnDef="date_added">
-						<td mat-cell *matCellDef="let item" title="{{ getLocaleDateString(item.date) }}">{{ parse_timestamp(item.date) }}</td>
+						<td
+							mat-cell
+							title="{{ getLocaleDateString(item.date) }}"
+							*matCellDef="let item">{{ parse_timestamp(item.date) }}</td>
 					</ng-container>
 
 					<ng-container matColumnDef="link">

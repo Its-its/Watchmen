@@ -69,6 +69,7 @@ interface ModelEditCategory {
 interface ModelListener {
 	id?: number;
 
+	enabled: boolean;
 	title: string;
 	url: string;
 	description: string;
@@ -82,6 +83,8 @@ interface ModelListener {
 }
 
 interface ModelEditListener {
+	enabled?: boolean;
+
 	title?: string;
 	description?: string;
 	generator?: string;

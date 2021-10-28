@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { BackgroundService } from '../background.service';
-import { WebsocketService } from '../websocket.service';
+import { BackgroundService } from '../../background.service';
+import { WebsocketService } from '../../websocket.service';
 
 interface Feed {
 	id?: number;

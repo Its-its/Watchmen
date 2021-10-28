@@ -257,7 +257,7 @@ pub fn get_filters_from_feed_id(f_feed_id: QueryId, conn: &SqliteConnection) -> 
 	feed_filters.filter(feed_id.eq(f_feed_id)).get_results(conn)
 }
 
-pub fn get_filters_from_filter_id(f_filter_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<FeedFilterModel>> {
+pub fn get_feed_filters_from_filter_id(f_filter_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<FeedFilterModel>> {
 	use self::feed_filters::dsl::*;
 
 	feed_filters.filter(filter_id.eq(f_filter_id)).get_results(conn)

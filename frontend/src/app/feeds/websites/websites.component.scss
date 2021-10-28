@@ -1,0 +1,18 @@
+:host {
+	display: flex;
+	flex-direction: column;
+}
+
+.feed-website-container {
+	width: 100%;
+	background-color: rgb(41, 41, 41);
+	margin-bottom: 10px;
+}
+
+.example-chip-list {
+	width: 100%;
+}
+
+mat-list {
+	width: 100%;
+}

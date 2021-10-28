@@ -1,0 +1,72 @@
+<app-toolbar [items] = '[
+	["Dashboard", "/dashboard"],
+	["Feed", "/feeds"],
+	["Editor", "/feeds/editor"],
+	["Filter", "/feeds/filter"]
+]'></app-toolbar>
+
+<mat-drawer-container class="feeder-main-container">
+	<mat-drawer mode="side" opened>
+		<h2>Watchmen</h2>
+	</mat-drawer>
+	<mat-drawer-content>
+		<mat-list>
+			<mat-list-item *ngFor="let feed of background.feed_list" class="feed-website-container">
+				<mat-list>
+					<h1 matLine>{{ feed.title }}</h1>
+
+					<p matLine>{{ feed.description }}</p>
+					<p matLine>URL: {{ feed.url }}</p>
+					<p matLine>Interval: {{ feed.sec_interval / 60 }} minutes</p>
+					<p matLine>Showing {{ feed.global_show ? 'Globally' : 'in Categories' }}</p>
+
+					<p matLine *ngIf="feed.remove_after == 0; then thenRemBlock else elseRemBlock"></p>
+					<ng-template #thenRemBlock>Never removing old items, {{ feed.ignore_if_not_new ? 'Fetching only NEW items' : 'Fetching ALL items' }}</ng-template>
+					<ng-template #elseRemBlock>Removing feeds after {{ feed.remove_after }} seconds, {{ feed.ignore_if_not_new ? 'Fetching only NEW items' : 'Fetching ALL items' }}</ng-template>
+
+					<br><br>
+
+					<mat-form-field class="example-chip-list" appearance="fill">
+						<mat-label>Filtering</mat-label>
+
+						<mat-chip-list #chipList aria-label="Filter selection">
+							<mat-chip
+								*ngFor="let filter of background.get_enabled_filters_by_feed_id(feed.id)"
+								selectable=true
+								removable=true
+								(removed)="remove(feed.id, filter)"
+							>
+								{{ filter.filter.title }}
+								<button matChipRemove><mat-icon>cancel</mat-icon></button>
+							</mat-chip>
+
+							<input
+								placeholder="New filter..."
+								[matAutocomplete]="auto"
+								[matChipInputFor]="chipList"
+								[matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+							>
+						</mat-chip-list>
+
+						<mat-autocomplete #auto="matAutocomplete" (optionSelected)="selected(feed.id, $event)">
+							<mat-option
+								*ngFor="let item of background.get_disabled_filters_by_feed_id(feed.id)"
+								[value]="item.filter.title"
+								[attr.data-filter-id]="item.filter.id"
+							>
+								{{ item.filter.title }}
+							</mat-option>
+						</mat-autocomplete>
+
+						<!--  -->
+					</mat-form-field>
+
+					<mat-list>
+						<button mat-raised-button *ngIf="feed.enabled" (click) = "toggedWebsite(feed.id, false)">Enabled</button>
+						<button mat-raised-button color="warn" *ngIf="!feed.enabled" (click) = "toggedWebsite(feed.id, true)">Disabled</button>
+					</mat-list>
+				</mat-list>
+			</mat-list-item>
+		</mat-list>
+	</mat-drawer-content>
+</mat-drawer-container>

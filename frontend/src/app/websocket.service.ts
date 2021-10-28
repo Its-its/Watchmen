@@ -1,5 +1,4 @@
 import { Injectable } from "@angular/core";
-import * as Rx from "rxjs";
 
 import { webSocket, WebSocketSubject } from "rxjs/webSocket";
 
@@ -9,8 +8,7 @@ import { webSocket, WebSocketSubject } from "rxjs/webSocket";
 })
 
 export class WebsocketService {
-	// 'ws://' + window.location.host + '/ws/'
-	private subject: WebSocketSubject<any> = webSocket('ws://192.168.1.51:8080/ws/');
+	private subject: WebSocketSubject<any> = webSocket(`ws://${window.location.host}/ws/`);
 
 	private debug = true;
 
@@ -257,7 +255,7 @@ export class WebsocketService {
 	}
 
 	public send_remove_feed_filter(feed_id: number, filter_id: number): Promise<any> {
-		return this.send('remove_filter', {
+		return this.send('remove_feed_filter', {
 			feed_id,
 			filter_id
 		});
