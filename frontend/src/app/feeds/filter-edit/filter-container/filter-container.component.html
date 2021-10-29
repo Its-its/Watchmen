@@ -1,0 +1,96 @@
+<div class="title">
+	<h3>{{ filterName }}</h3>
+	<button mat-raised-button color="warn" (click) = "true">Remove</button>
+</div>
+
+<div [ngSwitch]="filterName" class="contents">
+	<ng-container *ngSwitchCase="'And'">
+		<ng-container *ngFor="let item of as_array_objects()">
+			<filter-container *ngFor="let value of item | keyvalue" [filterName]="value.key" [container]="value.value"></filter-container>
+		</ng-container>
+
+		<button mat-button [matMenuTriggerFor]="menu" color="accent">Add Filter</button>
+		<mat-menu #menu="matMenu">
+			<button mat-menu-item>And</button>
+			<button mat-menu-item>Or</button>
+			<button mat-menu-item>Contains</button>
+			<button mat-menu-item>Starts With</button>
+			<button mat-menu-item>Ends With</button>
+			<button mat-menu-item>Regex</button>
+		</mat-menu>
+	</ng-container>
+
+	<ng-container *ngSwitchCase="'Or'">
+		<ng-container *ngFor="let item of as_array_objects()">
+			<filter-container *ngFor="let value of item | keyvalue" [filterName]="value.key" [container]="value.value"></filter-container>
+		</ng-container>
+
+		<button mat-button [matMenuTriggerFor]="menu" color="accent">Add Filter</button>
+		<mat-menu #menu="matMenu">
+			<button mat-menu-item>And</button>
+			<button mat-menu-item>Or</button>
+			<button mat-menu-item>Contains</button>
+			<button mat-menu-item>Starts With</button>
+			<button mat-menu-item>Ends With</button>
+			<button mat-menu-item>Regex</button>
+		</mat-menu>
+	</ng-container>
+
+	<ng-container *ngSwitchCase="'Contains'">
+		<form>
+			<mat-form-field appearance="outline">
+				<mat-label>Contains Value</mat-label>
+				<input matInput placeholder="Value" value="{{ get_array_value(0) }}">
+			</mat-form-field>
+
+			<br>
+
+			<mat-checkbox [checked] = "get_array_value(1)">Case Sensitive</mat-checkbox>
+		</form>
+	</ng-container>
+
+	<ng-container *ngSwitchCase="'Regex'">
+		regex
+	</ng-container>
+
+	<ng-container *ngSwitchCase="'StartsWith'">
+		<form>
+			<mat-form-field appearance="outline">
+				<mat-label>Contains Value</mat-label>
+				<input matInput placeholder="Value" value="{{ get_array_value(0) }}">
+			</mat-form-field>
+
+			<br>
+
+			<mat-checkbox [checked] = "get_array_value(1)">Case Sensitive</mat-checkbox>
+		</form>
+	</ng-container>
+
+	<ng-container *ngSwitchCase="'EndsWith'">
+		<form>
+			<mat-form-field appearance="outline">
+				<mat-label>Contains Value</mat-label>
+				<input matInput placeholder="Value" value="{{ get_array_value(0) }}">
+			</mat-form-field>
+
+			<br>
+
+			<mat-checkbox [checked] = "get_array_value(1)">Case Sensitive</mat-checkbox>
+		</form>
+	</ng-container>
+</div>
+
+<!-- <br> -->
+
+
+<!-- <ng-container *ngIf="!isStartingFilter">
+	<button mat-button [matMenuTriggerFor]="menu">Add Filter</button>
+	<mat-menu #menu="matMenu">
+		<button mat-menu-item>And</button>
+		<button mat-menu-item>Or</button>
+		<button mat-menu-item>Contains</button>
+		<button mat-menu-item>Starts With</button>
+		<button mat-menu-item>Ends With</button>
+		<button mat-menu-item>Regex</button>
+	</mat-menu>
+</ng-container> -->

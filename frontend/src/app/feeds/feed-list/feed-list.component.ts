@@ -52,14 +52,10 @@ interface FeedGrouping {
 	styleUrls: ['./feed-list.component.scss']
 })
 
-export class FeedListComponent implements OnInit {
+export class FeedListComponent {
 	displayedColumns: string[] = ['from', 'title', 'date_added', 'link'];
 
 	constructor(public background: BackgroundService) {}
-
-	ngOnInit(): void {
-		//
-	}
 
 	getLocaleDateString(date: number): string {
 		return new Date(date * 1000).toLocaleString();

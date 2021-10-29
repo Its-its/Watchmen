@@ -1,0 +1,30 @@
+:host {
+	display: flex;
+	flex-direction: column;
+	background-color: #212121;
+	padding: 3px;
+	margin-bottom: 4px;
+}
+
+.title {
+	display: flex;
+	flex-direction: row;
+	// justify-content: center;
+	padding: 3px 3px 0px 1em;
+	height: 36px;
+	margin-bottom: 4px;
+
+	// background-color: #424242;
+
+	h3 {
+		flex-grow: 1;
+		margin: 0;
+		margin-top: 3px;
+	}
+}
+
+.contents {
+	padding: 4px;
+	margin-left: 1.5em;
+	background-color: #424242;
+}

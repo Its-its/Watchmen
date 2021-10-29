@@ -1,0 +1,38 @@
+<app-toolbar [items] = '[
+	["Dashboard", "/dashboard"],
+	["Feed", "/feeds"],
+	["Watching", "/feeds/watching"],
+	["Editor", "/feeds/editor"]
+]'></app-toolbar>
+
+<mat-drawer-container class="feeder-main-container">
+	<mat-drawer mode="side" opened>
+		<h2>Watchmen</h2>
+
+		<mat-action-list *ngFor="let filter of background.filter_list">
+			<button mat-list-item (click) = "setEditFilter(filter.filter)">{{ filter.filter.title }}</button>
+		</mat-action-list>
+	</mat-drawer>
+
+	<mat-drawer-content>
+		<ng-container *ngIf="editingFilter == null"><h1>Please select a Filter</h1></ng-container>
+		<ng-container *ngIf="editingFilter != null">
+			<mat-list>
+				<form>
+					<mat-form-field appearance="fill">
+						<mat-label>Name</mat-label>
+						<input matInput placeholder="Title Name" value="{{ editingFilter.title }}">
+					</mat-form-field>
+				</form>
+
+				<button mat-raised-button (click) = "true">Update</button>
+				<button mat-raised-button (click) = "true">Clone</button>
+				<button mat-raised-button (click) = "true">Delete</button>
+
+				<br><br>
+
+				<filter-container *ngFor="let item of editingFilter.filter | keyvalue" [filterName]="item.key" [container]="item.value" [isStartingFilter] = "true"></filter-container>
+			</mat-list>
+		</ng-container>
+	</mat-drawer-content>
+</mat-drawer-container>
