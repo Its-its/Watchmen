@@ -1,38 +1,48 @@
 <div class="title">
 	<h3>{{ filterName }}</h3>
-	<button mat-raised-button color="warn" (click) = "true">Remove</button>
+	<button mat-raised-button color="warn" (click) = "onClickDeleteButton()">Remove</button>
 </div>
 
 <div [ngSwitch]="filterName" class="contents">
 	<ng-container *ngSwitchCase="'And'">
-		<ng-container *ngFor="let item of as_array_objects()">
-			<filter-container *ngFor="let value of item | keyvalue" [filterName]="value.key" [container]="value.value"></filter-container>
+		<ng-container *ngFor="let item of as_array_objects(); index as i">
+			<filter-container
+				*ngFor="let value of item | keyvalue"
+				[filterName]="value.key"
+				[container]="value.value"
+				(deleteButtonClicked)="onDeleteChild(i)"
+			></filter-container>
 		</ng-container>
 
 		<button mat-button [matMenuTriggerFor]="menu" color="accent">Add Filter</button>
 		<mat-menu #menu="matMenu">
-			<button mat-menu-item>And</button>
-			<button mat-menu-item>Or</button>
-			<button mat-menu-item>Contains</button>
-			<button mat-menu-item>Starts With</button>
-			<button mat-menu-item>Ends With</button>
-			<button mat-menu-item>Regex</button>
+			<button mat-menu-item (click) = "onAddFilter('And')">And</button>
+			<button mat-menu-item (click) = "onAddFilter('Or')">Or</button>
+			<button mat-menu-item (click) = "onAddFilter('Contains')">Contains</button>
+			<button mat-menu-item (click) = "onAddFilter('StartsWith')">Starts With</button>
+			<button mat-menu-item (click) = "onAddFilter('EndsWith')">Ends With</button>
+			<button mat-menu-item (click) = "onAddFilter('Regex')">Regex</button>
 		</mat-menu>
 	</ng-container>
 
 	<ng-container *ngSwitchCase="'Or'">
-		<ng-container *ngFor="let item of as_array_objects()">
-			<filter-container *ngFor="let value of item | keyvalue" [filterName]="value.key" [container]="value.value"></filter-container>
+		<ng-container *ngFor="let item of as_array_objects(); index as i">
+			<filter-container
+				*ngFor="let value of item | keyvalue"
+				[filterName]="value.key"
+				[container]="value.value"
+				(deleteButtonClicked)="onDeleteChild(i)"
+			></filter-container>
 		</ng-container>
 
 		<button mat-button [matMenuTriggerFor]="menu" color="accent">Add Filter</button>
 		<mat-menu #menu="matMenu">
-			<button mat-menu-item>And</button>
-			<button mat-menu-item>Or</button>
-			<button mat-menu-item>Contains</button>
-			<button mat-menu-item>Starts With</button>
-			<button mat-menu-item>Ends With</button>
-			<button mat-menu-item>Regex</button>
+			<button mat-menu-item (click) = "onAddFilter('And')">And</button>
+			<button mat-menu-item (click) = "onAddFilter('Or')">Or</button>
+			<button mat-menu-item (click) = "onAddFilter('Contains')">Contains</button>
+			<button mat-menu-item (click) = "onAddFilter('StartsWith')">Starts With</button>
+			<button mat-menu-item (click) = "onAddFilter('EndsWith')">Ends With</button>
+			<button mat-menu-item (click) = "onAddFilter('Regex')">Regex</button>
 		</mat-menu>
 	</ng-container>
 
@@ -50,7 +60,20 @@
 	</ng-container>
 
 	<ng-container *ngSwitchCase="'Regex'">
-		regex
+		<mat-form-field appearance="outline">
+			<mat-label>Regex Query</mat-label>
+			<input matInput placeholder="Value" value="{{ get_array_value(0) }}">
+		</mat-form-field>
+
+		<mat-selection-list #shoes>
+			<mat-list-option value = "octal">Octal</mat-list-option>
+			<mat-list-option value = "unicode">Unicode</mat-list-option>
+			<mat-list-option value = "swap_greed">Swap Greed</mat-list-option>
+			<mat-list-option value = "multi_line">Multi Line</mat-list-option>
+			<mat-list-option value = "case_insensitive">Case Insensitive</mat-list-option>
+			<mat-list-option value = "ignore_whitespace">Ingore Whitespace</mat-list-option>
+			<mat-list-option value = "dot_matches_new_line">Dot Matches New Line</mat-list-option>
+		</mat-selection-list>
 	</ng-container>
 
 	<ng-container *ngSwitchCase="'StartsWith'">

@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, OnInit, Output } from '@angular/core';
 
 @Component({
 	selector: 'filter-container',
@@ -6,14 +6,18 @@ import { Component, Input, OnInit } from '@angular/core';
 	styleUrls: ['./filter-container.component.scss']
 })
 
-export class FilterContainerComponent implements OnInit {
-	ngOnInit(): void {
-		console.log(this.filterName, this.container);
-	}
-
+export class FilterContainerComponent implements OnChanges {
 	@Input() isStartingFilter: boolean = false;
 	@Input() filterName: string = '';
 	@Input() container: rust.EnumValue = {};
+
+	@Output() deleteButtonClicked = new EventEmitter<undefined>();
+
+	constructor(private elementRef: ElementRef) {}
+
+	ngOnChanges(): void {
+		console.log(this.filterName, this.container);
+	}
 
 
 	as_array_objects(): rust.EnumObject[] {
@@ -28,16 +32,21 @@ export class FilterContainerComponent implements OnInit {
 		return this.as_array_values()[index] as any;
 	}
 
-	getFilterByString() {
-		switch (this.filterName) {
-			case FilterBy.And.toString(): return FilterBy.And;
-			case FilterBy.Or.toString(): return FilterBy.Or;
-			case FilterBy.Contains.toString(): return FilterBy.Contains;
-			case FilterBy.Regex.toString(): return FilterBy.Regex;
-			case FilterBy.StartsWith.toString(): return FilterBy.StartsWith;
-			case FilterBy.EndsWith.toString(): return FilterBy.EndsWith;
-			default: throw 'Unreachable';
-		}
+
+	// Events
+
+	onDeleteChild(index: number) {
+		this.as_array_objects().splice(index, 1);
+	}
+
+	onAddFilter(filter: string) {
+		this.as_array_objects().push({
+			[filter]: defaultFilterOptions(getFilterByString(filter))
+		});
+	}
+
+	onClickDeleteButton() {
+		this.deleteButtonClicked.emit();
 	}
 }
 
@@ -48,6 +57,38 @@ export enum FilterBy {
 	EndsWith,
 	And,
 	Or
+}
+
+
+function getFilterByString(filterName: string) {
+	switch (filterName) {
+		case "And": return FilterBy.And;
+		case "Or": return FilterBy.Or;
+		case "Contains": return FilterBy.Contains;
+		case "Regex": return FilterBy.Regex;
+		case "StartsWith": return FilterBy.StartsWith;
+		case "EndsWith": return FilterBy.EndsWith;
+		default: throw 'Unreachable';
+	}
+}
+
+function defaultFilterOptions(filter: FilterBy): any {
+	switch (filter) {
+		case FilterBy.And: return [];
+		case FilterBy.Or: return [];
+		case FilterBy.Contains: return [ '', false ];
+		case FilterBy.Regex: return {
+			dot_matches_new_line: false,
+			ignore_whitespace: false,
+			case_insensitive: true,
+			multi_line: false,
+			swap_greed: false,
+			unicode: true,
+			octal: false
+		};
+		case FilterBy.StartsWith: return [ '', false ];
+		case FilterBy.EndsWith: return [ '', false ];
+	}
 }
 
 // "filter": {
