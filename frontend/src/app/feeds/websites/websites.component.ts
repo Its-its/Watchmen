@@ -30,7 +30,7 @@ export class WebsitesComponent implements OnInit {
 
 		if (index != -1) {
 			filter_group.feeds.splice(index, 1);
-			this.websocket.send_remove_feed_filter(feed_id, filter_group.filter.id).then(console.log, console.error);
+			this.websocket.send_remove_feed_filter(feed_id, filter_group.filter.id!).then(console.log, console.error);
 		}
 	}
 
@@ -41,7 +41,7 @@ export class WebsitesComponent implements OnInit {
 
 		if (filter != null) {
 			filter.feeds.push(feed_id);
-			this.websocket.send_new_feed_filter(feed_id, filter.filter.id).catch(console.error);
+			this.websocket.send_new_feed_filter(feed_id, filter.filter.id!).catch(console.error);
 		}
 	}
 

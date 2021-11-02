@@ -151,9 +151,9 @@ interface ModelEditCustomItem {
 }
 
 interface FilterModel {
-	id: number;
+	id?: number;
 	title: string;
-	filter: rust.EnumObject;
+	filter?: rust.EnumObject;
 }
 
 interface FilterGroupListener {

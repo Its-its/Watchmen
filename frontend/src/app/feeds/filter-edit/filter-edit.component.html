@@ -15,24 +15,74 @@
 	</mat-drawer>
 
 	<mat-drawer-content>
-		<ng-container *ngIf="editingFilter == null"><h1>Please select a Filter</h1></ng-container>
-		<ng-container *ngIf="editingFilter != null">
+		<!-- Editing Filter -->
+		<ng-container *ngIf="editingFilter != null; else noEditingContainer">
 			<mat-list>
 				<form>
 					<mat-form-field appearance="fill">
 						<mat-label>Name</mat-label>
-						<input matInput placeholder="Title Name" value="{{ editingFilter.title }}">
+						<input matInput placeholder="Title Name" [value]="editingFilter.title" type="text" (input)="onTitleChange($event)">
 					</mat-form-field>
 				</form>
 
-				<button mat-raised-button (click) = "true">Update</button>
-				<button mat-raised-button (click) = "true">Clone</button>
-				<button mat-raised-button (click) = "true">Delete</button>
+				<!-- Contains Base Filter -->
+				<ng-container *ngIf="editingFilter.filter != null; else noBaseFilter">
+					<button mat-raised-button color="primary" (click) = "onButtonUpdate()" *ngIf="editingFilter.id != null; else createOrUpdateButton">Update</button>
+					<ng-template #createOrUpdateButton><button mat-raised-button color="primary" (click) = "onButtonUpdate()">Create</button></ng-template>
+
+					<button mat-raised-button color="accent" (click) = "onButtonClone()">Clone</button>
+					<button mat-raised-button color="warn" (click) = "onButtonDelete()">Delete</button>
+
+					<br><br>
+
+					<filter-container
+						*ngFor="let item of editingFilter.filter | keyvalue"
+						[filterName]="item.key"
+						[container]="item.value"
+						(deleteButtonClicked)="onDeleteFilter()"
+					></filter-container>
+				</ng-container>
+
+				<!-- No base filter. -->
+				<ng-template #noBaseFilter>
+					<br><br>
+
+					<button mat-button [matMenuTriggerFor]="menu" color="accent">New Filter</button>
+					<mat-menu #menu="matMenu">
+						<button mat-menu-item (click) = "onCreateFilter('And')">And</button>
+						<button mat-menu-item (click) = "onCreateFilter('Or')">Or</button>
+						<button mat-menu-item (click) = "onCreateFilter('Contains')">Contains</button>
+						<button mat-menu-item (click) = "onCreateFilter('StartsWith')">Starts With</button>
+						<button mat-menu-item (click) = "onCreateFilter('EndsWith')">Ends With</button>
+						<button mat-menu-item (click) = "onCreateFilter('Regex')">Regex</button>
+					</mat-menu>
+				</ng-template>
+
+			</mat-list>
+		</ng-container>
+
+		<!-- Not editing anything -->
+		<ng-template #noEditingContainer>
+			<mat-list>
+				<form>
+					<mat-form-field appearance="fill">
+						<mat-label>Name</mat-label>
+						<input matInput placeholder="New Filter Name" value="">
+					</mat-form-field>
+				</form>
 
 				<br><br>
 
-				<filter-container *ngFor="let item of editingFilter.filter | keyvalue" [filterName]="item.key" [container]="item.value" [isStartingFilter] = "true"></filter-container>
+				<button mat-button [matMenuTriggerFor]="menu" color="accent">New Filter</button>
+				<mat-menu #menu="matMenu">
+					<button mat-menu-item (click) = "onCreateFilter('And')">And</button>
+					<button mat-menu-item (click) = "onCreateFilter('Or')">Or</button>
+					<button mat-menu-item (click) = "onCreateFilter('Contains')">Contains</button>
+					<button mat-menu-item (click) = "onCreateFilter('StartsWith')">Starts With</button>
+					<button mat-menu-item (click) = "onCreateFilter('EndsWith')">Ends With</button>
+					<button mat-menu-item (click) = "onCreateFilter('Regex')">Regex</button>
+				</mat-menu>
 			</mat-list>
-		</ng-container>
+		</ng-template>
 	</mat-drawer-content>
 </mat-drawer-container>

@@ -16,12 +16,12 @@
 
 		<button mat-button [matMenuTriggerFor]="menu" color="accent">Add Filter</button>
 		<mat-menu #menu="matMenu">
-			<button mat-menu-item (click) = "onAddFilter('And')">And</button>
-			<button mat-menu-item (click) = "onAddFilter('Or')">Or</button>
-			<button mat-menu-item (click) = "onAddFilter('Contains')">Contains</button>
-			<button mat-menu-item (click) = "onAddFilter('StartsWith')">Starts With</button>
-			<button mat-menu-item (click) = "onAddFilter('EndsWith')">Ends With</button>
-			<button mat-menu-item (click) = "onAddFilter('Regex')">Regex</button>
+			<button mat-menu-item (click)="onAddFilter('And')">And</button>
+			<button mat-menu-item (click)="onAddFilter('Or')">Or</button>
+			<button mat-menu-item (click)="onAddFilter('Contains')">Contains</button>
+			<button mat-menu-item (click)="onAddFilter('StartsWith')">Starts With</button>
+			<button mat-menu-item (click)="onAddFilter('EndsWith')">Ends With</button>
+			<button mat-menu-item (click)="onAddFilter('Regex')">Regex</button>
 		</mat-menu>
 	</ng-container>
 
@@ -37,12 +37,12 @@
 
 		<button mat-button [matMenuTriggerFor]="menu" color="accent">Add Filter</button>
 		<mat-menu #menu="matMenu">
-			<button mat-menu-item (click) = "onAddFilter('And')">And</button>
-			<button mat-menu-item (click) = "onAddFilter('Or')">Or</button>
-			<button mat-menu-item (click) = "onAddFilter('Contains')">Contains</button>
-			<button mat-menu-item (click) = "onAddFilter('StartsWith')">Starts With</button>
-			<button mat-menu-item (click) = "onAddFilter('EndsWith')">Ends With</button>
-			<button mat-menu-item (click) = "onAddFilter('Regex')">Regex</button>
+			<button mat-menu-item (click)="onAddFilter('And')">And</button>
+			<button mat-menu-item (click)="onAddFilter('Or')">Or</button>
+			<button mat-menu-item (click)="onAddFilter('Contains')">Contains</button>
+			<button mat-menu-item (click)="onAddFilter('StartsWith')">Starts With</button>
+			<button mat-menu-item (click)="onAddFilter('EndsWith')">Ends With</button>
+			<button mat-menu-item (click)="onAddFilter('Regex')">Regex</button>
 		</mat-menu>
 	</ng-container>
 
@@ -50,29 +50,29 @@
 		<form>
 			<mat-form-field appearance="outline">
 				<mat-label>Contains Value</mat-label>
-				<input matInput placeholder="Value" value="{{ get_array_value(0) }}">
+				<input matInput placeholder="Value" [value]="get_array_value(0)" (input)="onChange(0, $event)">
 			</mat-form-field>
 
 			<br>
 
-			<mat-checkbox [checked] = "get_array_value(1)">Case Sensitive</mat-checkbox>
+			<mat-checkbox [checked]="get_array_value(1)" (change)="onChange(1, $event)">Case Sensitive</mat-checkbox>
 		</form>
 	</ng-container>
 
 	<ng-container *ngSwitchCase="'Regex'">
 		<mat-form-field appearance="outline">
 			<mat-label>Regex Query</mat-label>
-			<input matInput placeholder="Value" value="{{ get_array_value(0) }}">
+			<input matInput placeholder="Value" [value]="get_array_value(0)" (input)="onChange(0, $event)">
 		</mat-form-field>
 
-		<mat-selection-list #shoes>
-			<mat-list-option value = "octal">Octal</mat-list-option>
-			<mat-list-option value = "unicode">Unicode</mat-list-option>
-			<mat-list-option value = "swap_greed">Swap Greed</mat-list-option>
-			<mat-list-option value = "multi_line">Multi Line</mat-list-option>
-			<mat-list-option value = "case_insensitive">Case Insensitive</mat-list-option>
-			<mat-list-option value = "ignore_whitespace">Ingore Whitespace</mat-list-option>
-			<mat-list-option value = "dot_matches_new_line">Dot Matches New Line</mat-list-option>
+		<mat-selection-list #shoes (selectionChange)="onChange(1, $event)">
+			<mat-list-option value = "octal" [selected]="get_regex_object()[1].octal">Octal</mat-list-option>
+			<mat-list-option value = "unicode" [selected]="get_regex_object()[1].unicode">Unicode</mat-list-option>
+			<mat-list-option value = "swap_greed" [selected]="get_regex_object()[1].swap_greed">Swap Greed</mat-list-option>
+			<mat-list-option value = "multi_line" [selected]="get_regex_object()[1].multi_line">Multi Line</mat-list-option>
+			<mat-list-option value = "case_insensitive" [selected]="get_regex_object()[1].case_insensitive">Case Insensitive</mat-list-option>
+			<mat-list-option value = "ignore_whitespace" [selected]="get_regex_object()[1].ignore_whitespace">Ingore Whitespace</mat-list-option>
+			<mat-list-option value = "dot_matches_new_line" [selected]="get_regex_object()[1].dot_matches_new_line">Dot Matches New Line</mat-list-option>
 		</mat-selection-list>
 	</ng-container>
 
@@ -80,12 +80,12 @@
 		<form>
 			<mat-form-field appearance="outline">
 				<mat-label>Contains Value</mat-label>
-				<input matInput placeholder="Value" value="{{ get_array_value(0) }}">
+				<input matInput placeholder="Value" [value]="get_array_value(0)" (input)="onChange(0, $event)">
 			</mat-form-field>
 
 			<br>
 
-			<mat-checkbox [checked] = "get_array_value(1)">Case Sensitive</mat-checkbox>
+			<mat-checkbox [checked]="get_array_value(1)" (change)="onChange(1, $event)">Case Sensitive</mat-checkbox>
 		</form>
 	</ng-container>
 
@@ -93,27 +93,12 @@
 		<form>
 			<mat-form-field appearance="outline">
 				<mat-label>Contains Value</mat-label>
-				<input matInput placeholder="Value" value="{{ get_array_value(0) }}">
+				<input matInput placeholder="Value" [value]="get_array_value(0)" (input)="onChange(0, $event)">
 			</mat-form-field>
 
 			<br>
 
-			<mat-checkbox [checked] = "get_array_value(1)">Case Sensitive</mat-checkbox>
+			<mat-checkbox [checked]="get_array_value(1)" (change)="onChange(1, $event)">Case Sensitive</mat-checkbox>
 		</form>
 	</ng-container>
 </div>
-
-<!-- <br> -->
-
-
-<!-- <ng-container *ngIf="!isStartingFilter">
-	<button mat-button [matMenuTriggerFor]="menu">Add Filter</button>
-	<mat-menu #menu="matMenu">
-		<button mat-menu-item>And</button>
-		<button mat-menu-item>Or</button>
-		<button mat-menu-item>Contains</button>
-		<button mat-menu-item>Starts With</button>
-		<button mat-menu-item>Ends With</button>
-		<button mat-menu-item>Regex</button>
-	</mat-menu>
-</ng-container> -->

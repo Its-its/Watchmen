@@ -1,4 +1,6 @@
 import { Component, ElementRef, EventEmitter, Input, OnChanges, OnInit, Output } from '@angular/core';
+import { MatCheckboxChange } from '@angular/material/checkbox';
+import { MatSelectionListChange } from '@angular/material/list';
 
 @Component({
 	selector: 'filter-container',
@@ -6,19 +8,13 @@ import { Component, ElementRef, EventEmitter, Input, OnChanges, OnInit, Output }
 	styleUrls: ['./filter-container.component.scss']
 })
 
-export class FilterContainerComponent implements OnChanges {
-	@Input() isStartingFilter: boolean = false;
+export class FilterContainerComponent {
 	@Input() filterName: string = '';
 	@Input() container: rust.EnumValue = {};
 
 	@Output() deleteButtonClicked = new EventEmitter<undefined>();
 
-	constructor(private elementRef: ElementRef) {}
-
-	ngOnChanges(): void {
-		console.log(this.filterName, this.container);
-	}
-
+	constructor() {}
 
 	as_array_objects(): rust.EnumObject[] {
 		return this.container as rust.EnumObject[];
@@ -32,8 +28,22 @@ export class FilterContainerComponent implements OnChanges {
 		return this.as_array_values()[index] as any;
 	}
 
+	get_regex_object(): [string, { [name: string]: boolean }] {
+		return this.container as any;
+	}
+
 
 	// Events
+
+	onChange(index: number, event: Event | MatCheckboxChange | MatSelectionListChange) {
+		if (event instanceof Event) {
+			this.as_array_values()[index] = (event.target as any).value;
+		} else if (event instanceof MatCheckboxChange) {
+			this.as_array_values()[index] = event.checked;
+		} else if (event instanceof MatSelectionListChange) {
+			event.options.forEach(v => this.get_regex_object()[1][v.value] = v.selected);
+		}
+	}
 
 	onDeleteChild(index: number) {
 		this.as_array_objects().splice(index, 1);
@@ -77,7 +87,7 @@ function defaultFilterOptions(filter: FilterBy): any {
 		case FilterBy.And: return [];
 		case FilterBy.Or: return [];
 		case FilterBy.Contains: return [ '', false ];
-		case FilterBy.Regex: return {
+		case FilterBy.Regex: return [ '', {
 			dot_matches_new_line: false,
 			ignore_whitespace: false,
 			case_insensitive: true,
@@ -85,7 +95,7 @@ function defaultFilterOptions(filter: FilterBy): any {
 			swap_greed: false,
 			unicode: true,
 			octal: false
-		};
+		}];;
 		case FilterBy.StartsWith: return [ '', false ];
 		case FilterBy.EndsWith: return [ '', false ];
 	}
