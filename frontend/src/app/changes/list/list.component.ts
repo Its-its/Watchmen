@@ -1,73 +1,47 @@
 import { Component, OnInit } from '@angular/core';
-import { BackgroundService } from '../../background.service';
-import { WebsocketService } from '../../websocket.service';
-
-interface Feed {
-	id?: number;
-
-	url: string;
-	title: string;
-	description: string;
-
-	generator: string;
-
-	global_show: boolean;
-	ignore_if_not_new: boolean;
-
-	remove_after: number;
-	sec_interval: number;
-
-	date_added: number;
-	last_called: number;
-}
-
-interface FeedItem {
-	id?: number;
-
-	guid: string;
-	title: string;
-	author: string;
-	content: string;
-	link: string;
-	date: number;
-	hash: string;
-
-	date_added: number;
-	is_read: boolean;
-	is_starred: boolean;
-	is_removed: boolean;
-	tags: string;
-	feed_id: number;
-}
-
-interface FeedGrouping {
-	title: string;
-	feed_items: FeedItem[];
-}
-
+import { BackgroundService } from 'src/app/background.service';
+import { WebsocketService } from 'src/app/websocket.service';
 
 @Component({
-	selector: 'app-feed-list',
-	templateUrl: './feed-list.component.html',
-	styleUrls: ['./feed-list.component.scss']
+  selector: 'app-list',
+  templateUrl: './list.component.html',
+  styleUrls: ['./list.component.scss']
 })
 
-export class FeedListComponent {
-	displayedColumns: string[] = ['from', 'title', 'date_added', 'link'];
+export class ListComponent {
+	displayedColumns: string[] = ['active', 'title', 'message', 'activity', 'link'];
 
-	constructor(public background: BackgroundService) {}
+
+
+	constructor(public background: BackgroundService, public websocket: WebsocketService) {}
 
 	getLocaleDateString(date: number): string {
 		return new Date(date * 1000).toLocaleString();
 	}
 
-	sorted_feeds(): FeedGrouping[] {
-		let groupings: FeedGrouping[] = [];
+	toggleEnabled(id: number, value: boolean) {
+		let listener = this.background.watching_listeners.find(v => v[0].id == id);
 
+		if (listener != null) {
+			listener[0].enabled = value;
+			this.websocket.send_edit_watcher(listener[0].id!, { enabled: listener[0].enabled })
+				.then(console.log, console.error);
+		}
+	}
+
+	sorted_watching(): FeedGrouping[] {
+		console.log('asdf');
 		let current_section = -1;
 
-		this.background.feed_items.forEach(r => {
-			let section = get_section_from_date(r.date * 1000);
+		let groupings: FeedGrouping[] = [];
+
+		let rows = this.background.watching_listeners;
+		rows.sort((a, b) => b[1].date_added - a[1].date_added);
+
+		rows.forEach(r => {
+			let section = get_section_from_date(r[1].date_added * 1000);
+
+			console.log(new Date(r[1].date_added * 1000).toLocaleTimeString() + ' - ' + section);
 
 			if (section != current_section) {
 				current_section = section;
@@ -94,6 +68,12 @@ export class FeedListComponent {
 		}
 	}
 }
+
+interface FeedGrouping {
+	title: string;
+	feed_items: [ModelWatcher, ModelWatchHistory][];
+}
+
 
 const SECTION_NAMES = [
 	'Today',

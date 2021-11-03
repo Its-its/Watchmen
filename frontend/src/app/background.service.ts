@@ -16,7 +16,7 @@ export class BackgroundService {
 
 	public filter_list: FilterGroupListener[] = [];
 
-	watching_listeners = <[ModelWatcher, ModelWatchHistory][]>[];
+	public watching_listeners = <[ModelWatcher, ModelWatchHistory][]>[];
 
 	constructor(private websocket: WebsocketService) {
 		console.log('Created Background Service');

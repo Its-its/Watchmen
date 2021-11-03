@@ -1,0 +1,20 @@
+<app-toolbar [items] = '[
+	["Dashboard", "/dashboard"],
+	["Feed", "/feeds"],
+	["Watching", "/feeds/watching"],
+	["Filter", "/feeds/filter"]
+]'></app-toolbar>
+
+<mat-drawer-container class="feeder-main-container">
+	<mat-drawer mode="side" opened>
+		<h2>Watchmen</h2>
+
+		<mat-action-list>
+			<button mat-list-item>Websites here</button>
+		</mat-action-list>
+	</mat-drawer>
+
+	<mat-drawer-content>
+		<h1>Editor</h1>
+	</mat-drawer-content>
+</mat-drawer-container>

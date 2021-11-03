@@ -37,6 +37,8 @@ import { FilterContainerComponent } from './feeds/filter-edit/filter-container/f
 
 import { BackgroundService } from './background.service';
 import { WebsitesComponent } from './feeds/websites/websites.component';
+import { EditorComponent } from './feeds/editor/editor.component';
+import { ListComponent } from './changes/list/list.component';
 
 
 @NgModule({
@@ -48,6 +50,8 @@ import { WebsitesComponent } from './feeds/websites/websites.component';
    		WebsitesComponent,
 		FilterEditComponent,
 		FilterContainerComponent,
+  EditorComponent,
+  ListComponent,
 	],
 
 	imports: [

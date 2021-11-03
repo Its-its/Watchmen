@@ -1,0 +1,32 @@
+:host {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+table {
+	background: inherit;
+	width: 100%;
+
+	tr {
+		td {
+			overflow: hidden;
+			padding: 0px 5px !important;
+
+			&.mat-column-link a,
+			&.mat-column-title a {
+				text-decoration: none;
+				color: inherit;
+			}
+
+			&.mat-column-activity {
+				text-align: right;
+				min-width: 160px;
+			}
+		}
+
+		td:nth-child(1) {
+			padding-left: 0;
+		}
+	}
+}
