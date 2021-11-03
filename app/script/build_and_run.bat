@@ -1,1 +1,0 @@
-cd ../.. && git pull && sass ./app/scss/core.scss ./app/compiled/css/core.css && npx tsc && cargo run

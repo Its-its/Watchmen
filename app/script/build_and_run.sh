@@ -1,3 +1,7 @@
+#!/usr/bin/env bash
+
+cd $(dirname "$0")
+
 cd ../..
 
 echo "Retrieving latest GIT"
@@ -8,10 +12,14 @@ echo "Compiling SASS files"
 
 sass ./app/scss/core.scss ./app/compiled/css/core.css
 
-echo "Compiling Typescript files"
+echo "Compiling Angular"
 
-npx tsc
+cd frontend
+npm install
+node_modules/.bin/ng build --configuration development
+cd ..
 
 echo "Running Watchmen"
 
-cargo run
+cd backend
+cargo run --release
