@@ -18,9 +18,13 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatSelectModule } from '@angular/material/select';
 
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+
+import { DateAgoPipe } from './pipes/date-ago';
+import { DateGroupSectioning } from './pipes/date-group-sectioning';
 
 
 import { AppRoutingModule } from './app-routing.module';
@@ -46,12 +50,15 @@ import { ListComponent } from './changes/list/list.component';
 		AppComponent,
 		DashboardComponent,
 		FeedListComponent,
-  		ToolbarComponent,
-   		WebsitesComponent,
+		ToolbarComponent,
+		WebsitesComponent,
 		FilterEditComponent,
 		FilterContainerComponent,
-  EditorComponent,
-  ListComponent,
+		EditorComponent,
+		ListComponent,
+
+		DateAgoPipe,
+		DateGroupSectioning
 	],
 
 	imports: [
@@ -64,6 +71,7 @@ import { ListComponent } from './changes/list/list.component';
 		MatToolbarModule,
 		MatSidenavModule,
 		MatButtonModule,
+		MatSelectModule,
 		MatInputModule,
 		MatChipsModule,
 		MatTableModule,

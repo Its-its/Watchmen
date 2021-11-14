@@ -9,12 +9,126 @@
 	<mat-drawer mode="side" opened>
 		<h2>Watchmen</h2>
 
-		<mat-action-list>
-			<button mat-list-item>Websites here</button>
+		<mat-action-list *ngFor="let item of background.custom_items">
+			<button mat-list-item (click) = "setEditing(item)">{{ item.title }}</button>
 		</mat-action-list>
 	</mat-drawer>
 
 	<mat-drawer-content>
-		<h1>Editor</h1>
+		<div class="frame-container">
+			<iframe frameborder="0" sandbox="allow-same-origin" #frame></iframe>
+		</div>
+
+		<div>
+			<button mat-raised-button color="accent" (click)="save()">Save</button>
+			<!-- <button mat-raised-button (click)="test()">Test</button> -->
+			<button mat-raised-button color="accent" (click)="previewIframe()">Load Preview</button>
+			<button mat-raised-button color="accent" (click)="previewUpdateMain()">Update Preview</button>
+		</div>
+
+		<form class="editor-form-list">
+			<h2>Website Watching Info</h2>
+
+			<mat-form-field appearance="fill">
+				<mat-label>Website Preview URL</mat-label>
+				<input matInput placeholder="URL" name="preview-url" [value]="preview_url" (input)="preview_url = $any($event.target).value" #previewInput>
+			</mat-form-field>
+
+			<mat-form-field appearance="fill">
+				<mat-label>Custom Site</mat-label>
+				<input matInput placeholder="Title" [value]="editing.title" (change)="editing.title = $any($event.target).value">
+			</mat-form-field>
+
+			<mat-form-field appearance="fill">
+				<mat-label>Description</mat-label>
+				<input matInput placeholder="Description" [value]="editing.description" (change)="editing.description = $any($event.target).value">
+			</mat-form-field>
+
+			<mat-form-field appearance="fill">
+				<mat-label>URL Matching</mat-label>
+				<input matInput name="regex" placeholder="Regex Match" [value]="editing.match_url" (change)="editing.match_url = $any($event.target).value">
+			</mat-form-field>
+
+
+			<h2>Xpath Queries</h2>
+
+			<mat-form-field appearance="fill">
+				<mat-label>Find Items</mat-label>
+				<input matInput name="xpath" placeholder="XPATH Query" [value]="editing.search_opts.items || ''" (change)="editing.search_opts.items = $any($event.target).value">
+			</mat-form-field>
+			<!-- TODO: Add colored button to update query before input. -->
+			<!-- TODO: Add a "scroll to" for the found items -->
+			<div class="editor-border-items">Found: {{ displaying.items ? displaying.items.length : 0 }}</div>
+
+			<div class="indent" *ngFor="let key of ITEMS">
+				<!-- Search Opts exists -->
+				<ng-container *ngIf="editing.search_opts[key] != null; else noSearchOpts">
+					<mat-form-field appearance="fill">
+						<mat-label>{{ key.toUpperCase() }}</mat-label>
+						<input matInput name="xpath" placeholder="XPATH Query" [value]="$any(editing.search_opts[key]).xpath" (change)="setSearchItemXpath(key, $any($event.target).value)">
+					</mat-form-field>
+
+					<br>
+
+					<div class="parser-item" *ngIf="getSearchItemParser(key); let opts">
+						<mat-form-field appearance="fill">
+							<mat-label>Result Formatting</mat-label>
+							<!-- TODO: Not visually updating -->
+							<mat-select (value)="opts.name" (valueChange)="setSearchItemParser(key, $event)">
+								<mat-option value="None">None</mat-option>
+								<mat-option value="Regex">Regex</mat-option>
+								<mat-option value="TimeFormat">Time Format</mat-option>
+							</mat-select>
+						</mat-form-field>
+
+						<container-element [ngSwitch]="opts.name">
+							<!-- REGEX -->
+							<ng-container *ngSwitchCase="'Regex'">
+								<mat-form-field appearance="fill">
+									<mat-label>Regex</mat-label>
+									<input matInput name="regex" placeholder="Regex Query" [value]="opts.value" (change)="opts.value = $any($event.target).value">
+								</mat-form-field>
+							</ng-container>
+
+							<!-- TIME FORMAT -->
+							<ng-container *ngSwitchCase="'TimeFormat'">
+								<mat-form-field appearance="fill">
+									<mat-label>Time Format</mat-label>
+									<input matInput name="time_format" placeholder="Time Format" defaultValue="%b-%e %R" [value]="opts.value[0]" (change)="opts.value[0] = $any($event.target).value">
+								</mat-form-field>
+
+								<mat-form-field appearance="fill">
+									<mat-label>Regex</mat-label>
+									<input matInput name="timezone" placeholder="Timezone of the Date/Time (ex: UTC)" defaultValue="UTC" [value]="opts.value[1]" (change)="opts.value[1] = $any($event.target).value">
+								</mat-form-field>
+							</ng-container>
+						</container-element>
+					</div>
+
+					<div class="editor-border-{{ key }}">Found: {{ displaying[key] ? displaying[key].length : 0 }}</div>
+				</ng-container>
+
+				<!-- Search Opts is NULL -->
+				<ng-template #noSearchOpts>
+					<mat-form-field appearance="fill">
+						<mat-label>{{ key.toUpperCase() }}</mat-label>
+						<input matInput name="xpath" placeholder="XPATH Query" (change)="setSearchItemXpath(key, $any($event.target).value)">
+					</mat-form-field>
+
+					<br>
+
+					<mat-form-field appearance="fill">
+						<mat-label>Result Formatting</mat-label>
+						<mat-select value="None" (valueChange)="setSearchItemParser(key, $event)">
+							<mat-option value="None">None</mat-option>
+							<mat-option value="Regex">Regex</mat-option>
+							<mat-option value="TimeFormat">Time Format</mat-option>
+						</mat-select>
+					</mat-form-field>
+
+					<div class="editor-border-{{ key }}">Found: 0</div>
+				</ng-template>
+			</div>
+		</form>
 	</mat-drawer-content>
 </mat-drawer-container>

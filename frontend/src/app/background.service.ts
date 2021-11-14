@@ -8,23 +8,17 @@ import { WebsocketService } from './websocket.service';
 })
 
 export class BackgroundService {
-	@Output()
 	public feed_list: FeedListener[] = [];
 
-	@Output()
 	public feed_items: FeedItem[] = [];
 
 	public filter_list: FilterGroupListener[] = [];
 
 	public watching_listeners = <[ModelWatcher, ModelWatchHistory][]>[];
 
-	constructor(private websocket: WebsocketService) {
-		console.log('Created Background Service');
+	public custom_items: ModelCustomItem[] = [];
 
-		// this.websocket.send_get_feed_list()
-		// 	.then(v => this.feed_list = v.items)
-		// 	.catch(console.error);
-	}
+	constructor(private websocket: WebsocketService) {}
 
 	// Initial call when loading website.
 	private async init_feeds() {
@@ -36,12 +30,9 @@ export class BackgroundService {
 		console.log('Feeds:', this.feed_list);
 
 		let viewing_category = null;
-		// Set the viewing_category only if viewing table. Otherwise get all.
-		// if (core.view != null && core.view instanceof FeedItemsView) {
-		// 	viewing_category = core.view.table.viewing_category;
-		// }
 
 		this.filter_list = (await this.websocket.send_get_filter_list()).items;
+		this.custom_items = (await this.websocket.send_get_custom_items_list()).items;
 
 		let feed_item_list_resp = await this.websocket.send_get_item_list(viewing_category, undefined, undefined);
 
@@ -113,6 +104,8 @@ export class BackgroundService {
 				alerting_items.push(item);
 			}
 		});
+
+		this.feed_items.sort((a, b) => b.date_added - a.date_added);
 
 		return alerting_items;
 	}

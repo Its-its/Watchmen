@@ -15,7 +15,7 @@
 	</mat-drawer>
 
 	<mat-drawer-content>
-		<div *ngFor="let grouping of sorted_feeds()">
+		<div *ngFor="let grouping of background.feed_items | dateGroupSectioning">
 			<h2>{{ grouping.title }}</h2>
 
 			<mat-list>
@@ -36,7 +36,7 @@
 						<td
 							mat-cell
 							title="{{ getLocaleDateString(item.date) }}"
-							*matCellDef="let item">{{ parse_timestamp(item.date) }}</td>
+							*matCellDef="let item">{{ item.date | dateAgo }}</td>
 					</ng-container>
 
 					<ng-container matColumnDef="link">
