@@ -139,8 +139,8 @@ impl WeakFeederCore {
 			// Feed Variants
 
 			Front2CoreNotification::FeedUpdates { since } => {
-				let new_feeds = objects::get_item_count_since(since, &conn)?;
-				let new_watches = objects::get_watch_history_count_since(since, &conn)?;
+				let new_feeds = objects::get_item_count_since(since, conn)?;
+				let new_watches = objects::get_watch_history_count_since(since, conn)?;
 
 				let updates = Core2FrontNotification::FeedUpdates {
 					since,
@@ -152,8 +152,8 @@ impl WeakFeederCore {
 			}
 
 			Front2CoreNotification::ItemList { category_id, item_count, skip_count } => {
-				let total_items = objects::get_item_total(category_id, &conn)?;
-				let items = objects::get_items_in_range(category_id, item_count, skip_count, &conn)?;
+				let total_items = objects::get_item_total(category_id, conn)?;
+				let items = objects::get_items_in_range(category_id, item_count, skip_count, conn)?;
 
 				// ID's of items that should be alerted.
 				let notification_ids = filter_items(&items, conn)?.into_iter().map(|i| i.id).collect();
@@ -181,8 +181,8 @@ impl WeakFeederCore {
 
 			Front2CoreNotification::CategoryList(..) => {
 				let list = Core2FrontNotification::CategoryList {
-					categories: objects::get_categories(&conn)?,
-					category_feeds: objects::get_feed_categories(&conn)?
+					categories: objects::get_categories(conn)?,
+					category_feeds: objects::get_feed_categories(conn)?
 				};
 
 				ctx.respond_with(msg_id_opt, list);

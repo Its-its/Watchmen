@@ -130,7 +130,7 @@ impl RequestManager {
 		let feeds: Vec<_> = get_listeners(connection)
 			.unwrap()
 			.into_iter()
-			.filter(|i| timestamp - i.last_called - i.sec_interval as i64 > 0)
+			.filter(|i| i.enabled && timestamp - i.last_called - i.sec_interval as i64 > 0)
 			.collect();
 
 
