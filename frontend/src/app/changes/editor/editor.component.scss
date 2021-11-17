@@ -1,0 +1,92 @@
+:host {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+mat-drawer-content {
+	display: flex;
+	flex-direction: column;
+}
+
+.frame-container {
+	max-height: 30em;
+	margin-bottom: 1em;
+
+	iframe {
+		width: 100%;
+		height: 100%;
+		border: none;
+	}
+
+	// .overlay {
+	// 	position: absolute;
+	// 	width: 100%;
+	// 	height: 100%;
+	// 	top: 0;
+	// 	left: 0;
+	// 	z-index: 100;
+	// }
+}
+
+.editor-form-list {
+	display: flex;
+	flex-direction: column;
+
+
+	.indent {
+		margin-left: 4em;
+
+		.parser-item {
+			display: flex;
+			flex-direction: row;
+
+			mat-form-field {
+				margin-right: 10px;
+			}
+
+			container-element {
+				display: flex;
+				flex-direction: column;
+			}
+		}
+	}
+}
+
+
+// Clone of CUSTOM_IFRAME_CSS in .ts file.
+
+.editor-border-items {
+	color: #F22;
+	font-weight: bold;
+}
+
+.editor-border-title {
+	color: #0A0;
+	font-weight: bold;
+}
+
+.editor-border-link {
+	color: #00A;
+	font-weight: bold;
+}
+
+.editor-border-guid {
+	color: #AA0;
+	font-weight: bold;
+}
+
+.editor-border-date {
+	color: #A0A;
+	font-weight: bold;
+}
+
+.editor-border-author {
+	color: #0AA;
+	font-weight: bold;
+}
+
+.editor-border-content {
+	color: #A50;
+	font-weight: bold;
+}

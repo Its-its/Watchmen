@@ -12,19 +12,7 @@ use diesel::prelude::*;
 
 use crate::FilterType;
 use super::schema::*;
-use super::models::{
-	QueryId,
-	CustomItemModel, NewCustomItemModel, EditCustomItemModel,
-	FilterModel, NewFilterModel, EditFilterModel,
-	FeedFilterModel, NewFeedFilterModel,
-	FeedItemModel, NewFeedItemModel,
-	FeedModel, EditFeedModel,
-	CategoryModel, NewCategoryModel, EditCategoryModel,
-	FeedCategoryModel, NewFeedCategoryModel,
-	WatchingModel, NewWatchingModel, EditWatchingModel,
-	WatchParserItemModel, NewWatchParserItemModel,
-	WatchHistoryModel, NewWatchHistoryModel
-};
+use super::models::{CategoryModel, CustomItemModel, EditCategoryModel, EditCustomItemModel, EditFeedModel, EditFilterModel, EditWatchParserItemModel, EditWatchingModel, FeedCategoryModel, FeedFilterModel, FeedItemModel, FeedModel, FilterModel, NewCategoryModel, NewCustomItemModel, NewFeedCategoryModel, NewFeedFilterModel, NewFeedItemModel, NewFilterModel, NewWatchHistoryModel, NewWatchParserItemModel, NewWatchingModel, QueryId, WatchHistoryModel, WatchParserItemModel, WatchingModel};
 
 use crate::request::feeds::custom::{CustomItem as CustomItemBase, FoundItem as CustomFoundItem};
 use crate::request::watcher::{self, WatchParserItem as WatchParserItemBase};
@@ -33,14 +21,14 @@ use crate::request::watcher::{self, WatchParserItem as WatchParserItemBase};
 
 // Custom Item
 
-impl Into<CustomItemBase> for CustomItemModel {
-	fn into(self) -> CustomItemBase {
+impl From<CustomItemModel> for CustomItemBase {
+	fn from(val: CustomItemModel) -> Self {
 		CustomItemBase {
-			id: Some(self.id),
-			title: self.title,
-			match_url: self.match_url,
-			description: self.description,
-			search_opts: serde_json::from_str(&self.search_opts).unwrap()
+			id: Some(val.id),
+			title: val.title,
+			match_url: val.match_url,
+			description: val.description,
+			search_opts: serde_json::from_str(&val.search_opts).unwrap()
 		}
 	}
 }
@@ -675,14 +663,14 @@ pub fn create_watcher(watcher: &NewWatchingModel, conn: &SqliteConnection) -> Qu
 
 // Watch Parser
 
-impl Into<WatchParserItemBase> for WatchParserItemModel {
-	fn into(self) -> WatchParserItemBase {
+impl From<WatchParserItemModel> for WatchParserItemBase {
+	fn from(val: WatchParserItemModel) -> Self {
 		WatchParserItemBase {
-			id: Some(self.id),
-			title: self.title,
-			match_url: self.match_url,
-			description: self.description,
-			match_opts: serde_json::from_str(&self.match_opts).unwrap()
+			id: Some(val.id),
+			title: val.title,
+			match_url: val.match_url,
+			description: val.description,
+			match_opts: serde_json::from_str(&val.match_opts).unwrap()
 		}
 	}
 }
@@ -692,6 +680,19 @@ pub fn create_watch_parser(item: &NewWatchParserItemModel, conn: &SqliteConnecti
 
 	diesel::insert_into(watch_parser).values(item).execute(conn)
 }
+
+pub fn update_watch_parser(f_id: QueryId, item: &EditWatchParserItemModel, conn: &SqliteConnection) -> QueryResult<usize> {
+	use self::watch_parser::dsl::*;
+
+	diesel::update(watch_parser.filter(id.eq(f_id))).set(item).execute(conn)
+}
+
+pub fn delete_watch_parser(f_id: QueryId, conn: &SqliteConnection) -> QueryResult<usize> {
+	use self::watch_parser::dsl::*;
+
+	diesel::delete(watch_parser.filter(id.eq(f_id))).execute(conn)
+}
+
 
 pub fn get_watch_parser_by_id(f_id: QueryId, conn: &SqliteConnection) -> QueryResult<WatchParserItemBase> {
 	use self::watch_parser::dsl::*;

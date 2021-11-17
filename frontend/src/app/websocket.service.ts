@@ -325,9 +325,22 @@ export class WebsocketService {
 		return this.send('test_watcher', opts);
 	}
 
-	public send_new_watch_parser(item: ModelWatchParser): Promise<CreateCustomItemResponse> {
+	public send_new_watch_parser(item: ModelWatchParser): Promise<CreateWatchParserResponse> {
 		return this.send('new_watch_parser', {
 			item
+		});
+	}
+
+	public send_update_watch_parser(id: number, item: ModelEditWatchParser): Promise<UpdateWatchParserResponse> {
+		return this.send('update_watch_parser', {
+			id,
+			item
+		});
+	}
+
+	public send_remove_watch_parser(id: number): Promise<RemoveWatchParserResponse> {
+		return this.send('remove_watch_parser', {
+			id
 		});
 	}
 

@@ -41,8 +41,9 @@ import { FilterContainerComponent } from './feeds/filter-edit/filter-container/f
 
 import { BackgroundService } from './background.service';
 import { WebsitesComponent } from './feeds/websites/websites.component';
-import { EditorComponent } from './feeds/editor/editor.component';
-import { ListComponent } from './changes/list/list.component';
+import { EditorComponent as FeedEditorComponent } from './feeds/editor/editor.component';
+import { ChangesListComponent } from './changes/list/list.component';
+import { ChangesEditorComponent } from './changes/editor/editor.component';
 
 
 @NgModule({
@@ -54,8 +55,9 @@ import { ListComponent } from './changes/list/list.component';
 		WebsitesComponent,
 		FilterEditComponent,
 		FilterContainerComponent,
-		EditorComponent,
-		ListComponent,
+		FeedEditorComponent,
+		ChangesListComponent,
+		ChangesEditorComponent,
 
 		DateAgoPipe,
 		DateGroupSectioning

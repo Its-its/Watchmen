@@ -8,9 +8,8 @@ import { WebsocketService } from 'src/app/websocket.service';
   styleUrls: ['./list.component.scss']
 })
 
-export class ListComponent {
+export class ChangesListComponent {
 	displayedColumns: string[] = ['active', 'title', 'message', 'activity', 'link'];
-
 
 
 	constructor(public background: BackgroundService, public websocket: WebsocketService) {}
@@ -30,7 +29,6 @@ export class ListComponent {
 	}
 
 	sorted_watching(): FeedGrouping[] {
-		console.log('asdf');
 		let current_section = -1;
 
 		let groupings: FeedGrouping[] = [];
@@ -40,8 +38,6 @@ export class ListComponent {
 
 		rows.forEach(r => {
 			let section = get_section_from_date(r[1].date_added * 1000);
-
-			console.log(new Date(r[1].date_added * 1000).toLocaleTimeString() + ' - ' + section);
 
 			if (section != current_section) {
 				current_section = section;

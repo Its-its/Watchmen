@@ -16,7 +16,9 @@ export class BackgroundService {
 
 	public watching_listeners = <[ModelWatcher, ModelWatchHistory][]>[];
 
+	// Editor (TODO: Place in to respective files.)
 	public custom_items: ModelCustomItem[] = [];
+	public watch_parser: ModelWatchParser[] = [];
 
 	constructor(private websocket: WebsocketService) {}
 
@@ -33,6 +35,7 @@ export class BackgroundService {
 
 		this.filter_list = (await this.websocket.send_get_filter_list()).items;
 		this.custom_items = (await this.websocket.send_get_custom_items_list()).items;
+		this.watch_parser = (await this.websocket.send_get_watch_parser_list()).items;
 
 		let feed_item_list_resp = await this.websocket.send_get_item_list(viewing_category, undefined, undefined);
 

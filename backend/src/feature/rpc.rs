@@ -6,11 +6,7 @@ use crate::request::feeds::custom::{
 	CustomItem
 };
 
-use crate::request::watcher::{
-	WatchParserItem,
-	MatchParser,
-	FoundItem
-};
+use crate::request::watcher::{FoundItem, MatchParser, UpdateableWatchParser, WatchParserItem};
 
 use super::models::{
 	QueryId,
@@ -180,12 +176,23 @@ pub enum Front2CoreNotification {
 		editing: EditWatchingModel
 	},
 
+
 	// Parser
 	WatchParserList(Empty),
 
 	NewWatchParser {
 		item: WatchParserItem
 	},
+
+	UpdateWatchParser {
+		id: QueryId,
+		item: UpdateableWatchParser
+	},
+
+	RemoveWatchParser {
+		id: QueryId
+	},
+
 
 	// History
 	WatchHistoryList {
@@ -351,6 +358,15 @@ pub enum Core2FrontNotification {
 
 	NewWatchParser {
 		item: WatchParserItem,
+		affected: usize
+	},
+
+	UpdateWatchParser {
+		item: UpdateableWatchParser,
+		affected: usize
+	},
+
+	RemoveWatchParser {
 		affected: usize
 	},
 

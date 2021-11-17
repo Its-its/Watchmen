@@ -488,9 +488,6 @@ impl WeakFeederCore {
 			}
 
 			Front2CoreNotification::NewWatchParser { item } => {
-				println!("NewWatchParser");
-				println!("{:#?}", item);
-
 				let model = item.clone().into();
 
 				let affected = objects::create_watch_parser(&model, conn)?;
@@ -498,6 +495,29 @@ impl WeakFeederCore {
 				let new_item = Core2FrontNotification::NewWatchParser {
 					affected,
 					item,
+				};
+
+				ctx.respond_with(msg_id_opt, new_item);
+			}
+
+			Front2CoreNotification::UpdateWatchParser { id, item } => {
+				let model = item.clone().into();
+
+				let affected = objects::update_watch_parser(id, &model, conn)?;
+
+				let new_item = Core2FrontNotification::UpdateWatchParser {
+					affected,
+					item
+				};
+
+				ctx.respond_with(msg_id_opt, new_item);
+			}
+
+			Front2CoreNotification::RemoveWatchParser { id } => {
+				let affected = objects::delete_watch_parser(id, conn)?;
+
+				let new_item = Core2FrontNotification::RemoveWatchParser {
+					affected
 				};
 
 				ctx.respond_with(msg_id_opt, new_item);

@@ -8,7 +8,8 @@ import { EditorComponent as FeedEditorComponent } from './feeds/editor/editor.co
 import { FilterEditComponent as FeedFilterEditComponent } from './feeds/filter-edit/filter-edit.component';
 import { WebsitesComponent as FeedWebsitesComponent } from './feeds/websites/websites.component';
 
-import { ListComponent as ChangesListComponent } from './changes/list/list.component';
+import { ChangesListComponent } from './changes/list/list.component';
+import { ChangesEditorComponent } from './changes/editor/editor.component';
 
 
 const routes: Routes = [
@@ -20,6 +21,7 @@ const routes: Routes = [
 	{ path: 'feeds/editor', component: FeedEditorComponent },
 
 	{ path: 'changes', component: ChangesListComponent },
+	{ path: 'changes/editor', component: ChangesEditorComponent },
 
 	{ path: '',   redirectTo: '/dashboard', pathMatch: 'full' }
 ];

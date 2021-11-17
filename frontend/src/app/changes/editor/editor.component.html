@@ -9,7 +9,7 @@
 	<mat-drawer mode="side" opened>
 		<h2>Watchmen</h2>
 
-		<mat-action-list *ngFor="let item of background.custom_items">
+		<mat-action-list *ngFor="let item of background.watch_parser">
 			<button mat-list-item (click) = "setEditing(item)">{{ item.title }}</button>
 		</mat-action-list>
 	</mat-drawer>
@@ -21,8 +21,13 @@
 
 		<div>
 			<button mat-raised-button color="accent" (click)="save()">Save</button>
+			<!-- <button mat-raised-button color="accent" (click)="clone()">Clone</button> -->
 			<!-- <button mat-raised-button (click)="test()">Test</button> -->
-			<button mat-raised-button color="accent" (click)="previewIframe()">Load Preview</button>
+			<button mat-raised-button color="warn" (click)="delete()">Delete</button>
+		</div>
+
+		<div>
+			<button mat-raised-button color="accent" (click)="previewIframe()">Load Webpage</button>
 			<button mat-raised-button color="accent" (click)="previewUpdateMain()">Update Preview</button>
 		</div>
 
@@ -54,7 +59,7 @@
 
 			<mat-form-field appearance="fill">
 				<mat-label>Find Items</mat-label>
-				<input matInput name="xpath" placeholder="XPATH Query" [value]="editing.search_opts.items || ''" (change)="editing.search_opts.items = $any($event.target).value">
+				<input matInput name="xpath" placeholder="XPATH Query" [value]="editing.match_opts.items || ''" (change)="editing.match_opts.items = $any($event.target).value">
 			</mat-form-field>
 			<!-- TODO: Add colored button to update query before input. -->
 			<!-- TODO: Add a "scroll to" for the found items -->
@@ -62,10 +67,10 @@
 
 			<div class="indent" *ngFor="let key of ITEMS">
 				<!-- Search Opts exists -->
-				<ng-container *ngIf="editing.search_opts[key] != null; else noSearchOpts">
+				<ng-container *ngIf="editing.match_opts[key] != null; else noSearchOpts">
 					<mat-form-field appearance="fill">
 						<mat-label>{{ key.toUpperCase() }}</mat-label>
-						<input matInput name="xpath" placeholder="XPATH Query" [value]="$any(editing.search_opts[key]).xpath" (change)="setSearchItemXpath(key, $any($event.target).value)">
+						<input matInput name="xpath" placeholder="XPATH Query" [value]="$any(editing.match_opts[key]).xpath" (change)="setSearchItemXpath(key, $any($event.target).value)">
 					</mat-form-field>
 
 					<br>

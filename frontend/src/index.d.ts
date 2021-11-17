@@ -225,9 +225,33 @@ interface CreateCustomItemResponse {
 	category: ModelCustomItem;
 }
 
+interface UpdateCustomItemResponse {
+	affected: number;
+	category: ModelCustomItem;
+}
+
+interface RemoveCustomItemResponse {
+	affected: number;
+}
+
 interface CustomItemListResponse {
 	items: ModelCustomItem[];
 }
+
+interface CreateWatchParserResponse {
+	affected: number;
+	item: ModelWatchParser;
+}
+
+interface UpdateWatchParserResponse {
+	affected: number;
+	item: ModelWatchParser;
+}
+
+interface RemoveWatchParserResponse {
+	affected: number;
+}
+
 
 
 
@@ -302,6 +326,20 @@ interface ModelWatchParser {
 	match_url: string;
 
 	match_opts: {
+		[name: string]: Nullable<string | {
+			xpath: string
+			parse_type: rust.EnumNone | rust.EnumObject
+		} | rust.EnumNone>;
+	}
+}
+
+
+interface ModelEditWatchParser {
+	title?: string;
+	description?: string;
+	match_url?: string;
+
+	match_opts?: {
 		[name: string]: Nullable<string | {
 			xpath: string
 			parse_type: rust.EnumNone | rust.EnumObject

@@ -6,12 +6,7 @@ use diesel::SqliteConnection;
 
 
 use crate::feature::schema::{watching as WatchingSchema};
-use crate::feature::models::{
-	QueryId,
-	WatchingModel, NewWatchingModel,
-	NewWatchHistoryModel,
-	NewWatchParserItemModel
-};
+use crate::feature::models::{EditWatchParserItemModel, NewWatchHistoryModel, NewWatchParserItemModel, NewWatchingModel, QueryId, WatchingModel};
 use crate::{Result, Error};
 use super::feeds::custom::ParseOpts;
 use super::{RequestResults, ItemResults, RequestItemResults, InnerRequestResults};
@@ -38,16 +33,38 @@ pub struct WatchParserItem {
 	pub match_opts: MatchParser
 }
 
-impl Into<NewWatchParserItemModel> for WatchParserItem {
-	fn into(self) -> NewWatchParserItemModel {
+impl From<WatchParserItem> for NewWatchParserItemModel {
+	fn from(val: WatchParserItem) -> Self {
 		NewWatchParserItemModel {
-			title: self.title,
-			description: self.description,
-			match_url: self.match_url,
-			match_opts: serde_json::to_string(&self.match_opts).unwrap()
+			title: val.title,
+			description: val.description,
+			match_url: val.match_url,
+			match_opts: serde_json::to_string(&val.match_opts).unwrap()
 		}
 	}
 }
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct UpdateableWatchParser {
+	pub title: Option<String>,
+	pub description: Option<String>,
+	pub match_url: Option<String>,
+
+	pub match_opts: Option<MatchParser>
+}
+
+
+impl From<UpdateableWatchParser> for EditWatchParserItemModel {
+	fn from(val: UpdateableWatchParser) -> Self {
+		EditWatchParserItemModel {
+			title: val.title,
+			description: val.description,
+			match_url: val.match_url,
+			match_opts: val.match_opts.as_ref().map(serde_json::to_string).and_then(|v| v.ok())
+		}
+	}
+}
+
 
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
