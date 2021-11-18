@@ -18,7 +18,7 @@ export interface Fruit {
 	styleUrls: ['./websites.component.scss']
 })
 
-export class WebsitesComponent implements OnInit {
+export class WebsitesComponent {
 	constructor(public background: BackgroundService, private websocket: WebsocketService) {}
 
 	addOnBlur = true;
@@ -54,12 +54,31 @@ export class WebsitesComponent implements OnInit {
 		}
 	}
 
+	updateInterval(feed_id: number, interval: number) {
+		let feed = this.background.feed_list.find(v => v.id == feed_id);
+
+		if (feed != null && interval != 0) {
+			feed.sec_interval = interval;
+			this.websocket.send_edit_listener(feed_id, { sec_interval: interval });
+		}
+	}
+
 	_filter(value: string): string[] {
 		const filterValue = value.toLowerCase();
 		return this.background.filter_list.map(v => v.filter.title).filter(item => item.toLowerCase().includes(filterValue));
 	}
 
-	ngOnInit(): void {
-		//
+	secondsToTimeAgo(value: number) {
+		let combined = '';
+
+		let hours = Math.floor(value / 3600);
+		let minutes = Math.floor((value % 3600) / 60);
+		let seconds = Math.floor(value % 60);
+
+		if (hours != 0) combined += `${hours} hours `;
+		if (minutes != 0) combined += `${minutes} minutes `;
+		if (seconds != 0) combined += `${seconds} seconds`;
+
+		return combined.trim();
 	}
 }

@@ -17,7 +17,7 @@
 
 					<p matLine>{{ feed.description }}</p>
 					<p matLine>URL: {{ feed.url }}</p>
-					<p matLine>Interval: {{ feed.sec_interval / 60 }} minutes</p>
+					<p matLine>Interval: {{ secondsToTimeAgo(feed.sec_interval) }}</p>
 					<p matLine>Showing {{ feed.global_show ? 'Globally' : 'in Categories' }}</p>
 
 					<p matLine *ngIf="feed.remove_after == 0; then thenRemBlock else elseRemBlock"></p>
@@ -26,8 +26,8 @@
 
 					<br><br>
 
-					<mat-form-field class="example-chip-list" appearance="fill">
-						<mat-label>Filtering</mat-label>
+					<mat-form-field appearance="fill">
+						<mat-label>Filters</mat-label>
 
 						<mat-chip-list #chipList aria-label="Filter selection">
 							<mat-chip
@@ -61,10 +61,17 @@
 						<!--  -->
 					</mat-form-field>
 
-					<mat-list>
+					<div>
 						<button mat-raised-button *ngIf="feed.enabled" (click) = "toggedWebsite(feed.id, false)">Enabled</button>
 						<button mat-raised-button color="warn" *ngIf="!feed.enabled" (click) = "toggedWebsite(feed.id, true)">Disabled</button>
-					</mat-list>
+
+						<form>
+							<mat-form-field appearance="fill">
+								<mat-label>Interval (seconds)</mat-label>
+								<input matInput [value]="feed.sec_interval" placeholder="Interval (seconds)" type="number" (input)="updateInterval(feed.id, $any($event.target).valueAsNumber)">
+							</mat-form-field>
+						</form>
+					</div>
 				</mat-list>
 			</mat-list-item>
 		</mat-list>
