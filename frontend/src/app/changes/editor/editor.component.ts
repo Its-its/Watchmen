@@ -95,13 +95,9 @@ export class ChangesEditorComponent {
 				this.previewUpdateChildren();
 
 				console.log(`Found: ${items.length}`);
-				// this.search_found.innerText = `Found: ${items.length}`;
 			} catch(e) {
 				console.error(e);
-				// this.search_found.innerText = e;
 			}
-		// } else {
-		// 	this.search_found.innerText = 'Found: 0';
 		}
 	}
 
@@ -120,7 +116,6 @@ export class ChangesEditorComponent {
 		}
 
 		if (this.editing.match_opts[child_name] == null || (this.editing.match_opts[child_name] as any).xpath.length == 0) {
-			// this.search_found.innerText = '';
 			return;
 		}
 
@@ -167,10 +162,8 @@ export class ChangesEditorComponent {
 			comp_item.forEach(i => i.getElement().classList.add(getFrameColor(child_name)));
 
 			console.log(`Found: ${comp_item.length}`);
-			// this.search_found.innerText = `Found: ${comp_item.length}`;
 		} catch(e) {
 			console.error(e);
-			// this.search_found.innerText = e;
 		}
 	}
 
