@@ -347,4 +347,24 @@ export class WebsocketService {
 	public send_get_watch_parser_list(): Promise<WatchParserListResponse> {
 		return this.send('watch_parser_list', {});
 	}
+
+
+	/// REQUEST HISTORY GROUP / ITEMS
+
+	public send_get_request_history_group_list(skip_count: Optional<number>, item_count: Optional<number>): Promise<RequestHistoryGroupListResponse> {
+		let opts = {
+			item_count,
+			skip_count
+		};
+
+		return this.send('request_history_list', opts);
+	}
+
+	public send_get_request_history_group_items(group_id: number): Promise<RequestHistoryItemListResponse> {
+		let opts = {
+			group_id
+		};
+
+		return this.send('request_history_group_items', opts);
+	}
 }

@@ -9,17 +9,21 @@ use crate::request::feeds::custom::{
 use crate::request::watcher::{FoundItem, MatchParser, UpdateableWatchParser, WatchParserItem};
 
 use super::models::{
-	QueryId,
+	CategoryModel,
+	EditCategoryModel,
+	EditFeedModel,
+	EditWatchingModel,
+	FeedCategoryModel,
 	FeedItemModel,
 	FeedModel,
-	NewFeedModel,
-	EditFeedModel,
-	CategoryModel,
-	FeedCategoryModel,
 	NewCategoryModel,
 	NewFeedCategoryModel,
-	EditCategoryModel,
-	NewWatchingModel, EditWatchingModel, WatchingModel
+	NewFeedModel,
+	NewWatchingModel,
+	QueryId,
+	RequestHistoryGroupModel,
+	RequestHistoryItemModel,
+	WatchingModel
 };
 
 use super::objects::{
@@ -38,6 +42,21 @@ pub struct Empty {}
 #[serde(rename_all = "snake_case")]
 #[serde(tag = "method", content = "params")]
 pub enum Front2CoreNotification {
+	// Dashboard
+
+	/// Most recent first
+	RequestHistoryList {
+		#[serde(default = "default_items")]
+		item_count: i64,
+		#[serde(default)]
+		skip_count: i64
+	},
+
+	RequestHistoryGroupItems {
+		id: QueryId
+	},
+
+
 	/// Add something else to listen to.
 	AddListener {
 		url: String,
@@ -218,6 +237,24 @@ pub enum Front2CoreNotification {
 #[serde(rename_all = "snake_case")]
 #[serde(tag = "method", content = "params")]
 pub enum Core2FrontNotification {
+	// Dashboard
+	RequestHistoryList {
+		groups: Vec<RequestHistoryGroupModel>,
+		items: Vec<RequestHistoryItemModel>,
+
+		item_count: i64,
+		skip_count: i64,
+
+		total_items: i64
+	},
+
+	RequestHistoryGroupItemsList {
+		group_id: QueryId,
+
+		items: Vec<RequestHistoryItemModel>
+	},
+
+
 	NewListener {
 		listener: NewFeedModel,
 		affected: usize

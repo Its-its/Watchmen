@@ -346,3 +346,40 @@ interface ModelEditWatchParser {
 		} | rust.EnumNone>;
 	}
 }
+
+
+
+//
+
+
+interface RequestHistoryGroupListResponse {
+	groups: ModelRequestHistoryGroup[];
+	items: ModelRequestHistoryItem[];
+}
+
+interface RequestHistoryItemListResponse {
+	items: ModelRequestHistoryItem[];
+}
+
+
+interface ModelRequestHistoryGroup {
+	id: number;
+	is_manual: boolean;
+	concurrency: number;
+	start_time: number;
+	duration: number;
+}
+
+interface ModelRequestHistoryItem {
+	id: number;
+	group_id: number;
+
+	feed_id: Optional<number>;
+	watch_id: Optional<number>;
+
+	new_items: Optional<number>;
+	start_time: Optional<number>;
+	duration: Optional<number>;
+
+	error: Optional<string>;
+}

@@ -1,4 +1,6 @@
 use std::sync::RwLock;
+use std::time::{Duration, Instant};
+
 
 
 #[cfg(feature = "website")]
@@ -70,20 +72,39 @@ impl CoreState {
 	}
 
 	//
-	pub fn run_all_requests(&mut self) -> Vec<RequestResults> {
-		vec![
+	pub fn run_all_requests(&mut self, is_manual: bool) -> RequestResponse {
+		let now = Instant::now();
+
+		let results = vec![
 			self.feed_requests.request_all_if_idle(
-				false,
+				is_manual,
 				self.connection.connection()
 			),
 			self.watcher_requests.request_all_if_idle(
-				false,
+				is_manual,
 				self.connection.connection()
 			)
-		]
+		];
+
+		RequestResponse {
+			start_time: now,
+			duration: now.elapsed(),
+			concurrency: 1,
+			is_manual,
+			results,
+		}
 	}
 
 	pub fn get_config(&self) -> Config {
 		self.config.read().unwrap().config()
 	}
+}
+
+
+pub struct RequestResponse {
+	pub start_time: Instant,
+	pub duration: Duration,
+	pub concurrency: usize,
+	pub is_manual: bool,
+	pub results: Vec<RequestResults>
 }

@@ -11,8 +11,11 @@ use diesel::{SqliteConnection, QueryResult};
 use diesel::prelude::*;
 
 use crate::FilterType;
+use crate::feature::models::{NewRequestHistoryGroupModel, RequestHistoryGroupModel};
+use crate::request::RequestResults;
+use crate::state::RequestResponse;
 use super::schema::*;
-use super::models::{CategoryModel, CustomItemModel, EditCategoryModel, EditCustomItemModel, EditFeedModel, EditFilterModel, EditWatchParserItemModel, EditWatchingModel, FeedCategoryModel, FeedFilterModel, FeedItemModel, FeedModel, FilterModel, NewCategoryModel, NewCustomItemModel, NewFeedCategoryModel, NewFeedFilterModel, NewFeedItemModel, NewFilterModel, NewWatchHistoryModel, NewWatchParserItemModel, NewWatchingModel, QueryId, WatchHistoryModel, WatchParserItemModel, WatchingModel};
+use super::models::{CategoryModel, CustomItemModel, EditCategoryModel, EditCustomItemModel, EditFeedModel, EditFilterModel, EditWatchParserItemModel, EditWatchingModel, FeedCategoryModel, FeedFilterModel, FeedItemModel, FeedModel, FilterModel, NewCategoryModel, NewCustomItemModel, NewFeedCategoryModel, NewFeedFilterModel, NewFeedItemModel, NewFilterModel, NewRequestHistoryItemModel, NewWatchHistoryModel, NewWatchParserItemModel, NewWatchingModel, QueryId, RequestHistoryItemModel, WatchHistoryModel, WatchParserItemModel, WatchingModel};
 
 use crate::request::feeds::custom::{CustomItem as CustomItemBase, FoundItem as CustomFoundItem};
 use crate::request::watcher::{self, WatchParserItem as WatchParserItemBase};
@@ -745,7 +748,7 @@ pub fn get_watch_parsers(conn: &SqliteConnection) -> QueryResult<Vec<WatchParser
 
 
 
-// Watch History
+// Watch Item History
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WatchHistoryBase {
 	pub id: QueryId,
@@ -827,4 +830,174 @@ pub fn create_last_watch_history(item: &NewWatchHistoryModel, conn: &SqliteConne
 	use self::watch_history::dsl::*;
 
 	diesel::insert_into(watch_history).values(item).execute(conn)
+}
+
+
+
+// Request History
+
+pub fn insert_request_history(resp: RequestResponse, conn: &SqliteConnection) -> QueryResult<()> {
+	// Join request batches together (ex. RSS Feed Watcher & Changes)
+	// TODO: Remove tuple.
+	let (req_history_group, items_found) = resp.results.iter()
+		.fold(
+			(NewRequestHistoryGroupModel {
+				is_manual: false,
+				concurrency: 0,
+				start_time: i64::MAX,
+				duration: 0
+			}, 0),
+			|(mut model, mut items_found), res| {
+				match res {
+					RequestResults::Feed(item) => {
+						model.is_manual = item.was_manual;
+						model.concurrency = item.concurrency;
+
+						let start_time = item.start_time.duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as i64;
+						model.duration += item.duration.as_millis() as i32;
+
+						if start_time < model.start_time {
+							model.start_time = start_time;
+						}
+
+						items_found += item.items.len();
+					}
+
+					RequestResults::Watcher(item) => {
+						model.is_manual = item.was_manual;
+						model.concurrency = item.concurrency;
+
+						let start_time = item.start_time.duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as i64;
+						model.duration += item.duration.as_millis() as i32;
+
+						if start_time < model.start_time {
+							model.start_time = start_time;
+						}
+
+						items_found += item.items.len();
+					}
+				}
+
+				(model, items_found)
+			}
+		);
+
+	if items_found == 0 {
+		return Ok(());
+	}
+
+	create_request_history_group(&req_history_group, conn)?;
+	let group_id = get_request_history_group_by_start_time(req_history_group.start_time, conn)?.id;
+
+	for res in resp.results {
+		match res {
+			RequestResults::Feed(item) => {
+				let values = item.items.into_iter()
+					.map(|v| {
+						match v.results {
+							Ok(res) => NewRequestHistoryItemModel {
+								group_id,
+								new_items: Some(res.new_item_count as i32),
+								start_time: Some(res.start_time.duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as i64),
+								duration: Some(res.duration.as_millis() as i32),
+								error: None,
+
+								feed_id: Some(v.item.id),
+								watch_id: None
+							},
+							Err(e) => NewRequestHistoryItemModel {
+								group_id,
+								new_items: None,
+								start_time: None,
+								duration: None,
+								error: Some(e.to_string()),
+
+								feed_id: Some(v.item.id),
+								watch_id: None
+							}
+						}
+					})
+					.collect::<Vec<_>>();
+
+				insert_request_history_items(&values, conn)?;
+			}
+
+			RequestResults::Watcher(item) => {
+				let values = item.items.into_iter()
+					.map(|v| {
+						match v.results {
+							Ok(res) => NewRequestHistoryItemModel {
+								group_id,
+								new_items: Some(res.new_item_count as i32),
+								start_time: Some(res.start_time.duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as i64),
+								duration: Some(res.duration.as_millis() as i32),
+								error: None,
+
+								feed_id: None,
+								watch_id: Some(v.item.id)
+							},
+							Err(e) => NewRequestHistoryItemModel {
+								group_id,
+								new_items: None,
+								start_time: None,
+								duration: None,
+								error: Some(e.to_string()),
+
+								feed_id: None,
+								watch_id: Some(v.item.id)
+							}
+						}
+					})
+					.collect::<Vec<_>>();
+
+				insert_request_history_items(&values, conn)?;
+			}
+		}
+	}
+
+	Ok(())
+}
+
+
+pub fn create_request_history_group(value: &NewRequestHistoryGroupModel, conn: &SqliteConnection) -> QueryResult<usize> {
+	use self::request_history_group::dsl::*;
+
+	diesel::insert_into(request_history_group).values(value).execute(conn)
+}
+
+pub fn get_request_history_group_by_start_time(value: i64, conn: &SqliteConnection) -> QueryResult<RequestHistoryGroupModel> {
+	use self::request_history_group::dsl::*;
+
+	self::request_history_group::table.filter(start_time.eq(value)).get_result(conn)
+}
+
+pub fn get_request_history_groups(item_count: i64, skip_count: i64, conn: &SqliteConnection) -> QueryResult<Vec<RequestHistoryGroupModel>> {
+	use self::request_history_group::dsl::*;
+
+	self::request_history_group::table.filter(id.gt(0)).order(id.desc()).limit(item_count).offset(skip_count).get_results(conn)
+}
+
+pub fn count_request_history_groups(conn: &SqliteConnection) -> QueryResult<i64> {
+	self::request_history_group::table.count().get_result(conn)
+}
+
+
+
+
+pub fn insert_request_history_items(records: &[NewRequestHistoryItemModel], conn: &SqliteConnection) -> QueryResult<usize> {
+	use self::request_history_item::dsl::*;
+
+	diesel::insert_into(request_history_item).values(records).execute(conn)
+}
+
+pub fn get_request_history_multiple_group_items(f_group_ids: &[QueryId], conn: &SqliteConnection) -> QueryResult<Vec<RequestHistoryItemModel>> {
+	use self::request_history_item::dsl::*;
+
+	self::request_history_item::table.filter(group_id.eq_any(f_group_ids)).get_results(conn)
+}
+
+pub fn get_request_history_group_items(f_group_id: QueryId, conn: &SqliteConnection) -> QueryResult<Vec<RequestHistoryItemModel>> {
+	use self::request_history_item::dsl::*;
+
+	self::request_history_item::table.filter(group_id.eq(f_group_id)).get_results(conn)
 }

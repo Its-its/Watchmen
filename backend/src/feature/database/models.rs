@@ -378,3 +378,65 @@ pub struct EditWatchParserItemModel {
 
 	pub match_opts: Option<String>
 }
+
+
+
+// Request History
+
+
+#[derive(Serialize, Deserialize, Debug, Clone, Queryable, Identifiable)]
+#[table_name = "request_history_group"]
+pub struct RequestHistoryGroupModel {
+	pub id: QueryId,
+
+	pub is_manual: bool,
+	pub concurrency: i32,
+
+	pub start_time: i64,
+	pub duration: i32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
+#[table_name = "request_history_group"]
+pub struct NewRequestHistoryGroupModel {
+	pub is_manual: bool,
+	pub concurrency: i32,
+
+	pub start_time: i64,
+	pub duration: i32,
+}
+
+
+
+#[derive(Serialize, Deserialize, Debug, Clone, Queryable, Identifiable)]
+#[table_name = "request_history_item"]
+pub struct RequestHistoryItemModel {
+	pub id: QueryId,
+
+	pub group_id: QueryId,
+
+	pub feed_id: Option<QueryId>,
+	pub watch_id: Option<QueryId>,
+
+	pub new_items: Option<i32>,
+
+	pub start_time: Option<i64>,
+	pub duration: Option<i32>,
+
+	pub error: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
+#[table_name = "request_history_item"]
+pub struct NewRequestHistoryItemModel {
+	pub group_id: QueryId,
+
+	pub feed_id: Option<QueryId>,
+	pub watch_id: Option<QueryId>,
+
+	pub new_items: Option<i32>,
+	pub start_time: Option<i64>,
+	pub duration: Option<i32>,
+
+	pub error: Option<String>,
+}

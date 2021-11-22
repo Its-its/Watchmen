@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::{Duration, SystemTime};
 
 use log::{info};
 use diesel::{RunQueryDsl, SqliteConnection};
@@ -118,7 +118,7 @@ impl RequestManager {
 	pub fn request_all_if_idle(&mut self, is_manual: bool, connection: &SqliteConnection) -> RequestResults {
 		let mut results = InnerRequestResults {
 			general_error: None,
-			start_time: Instant::now(),
+			start_time: SystemTime::now(),
 			duration: Duration::new(0, 0),
 			was_manual: is_manual,
 			concurrency: 0,
@@ -179,7 +179,7 @@ impl RequestManager {
 			}
 		}
 
-		results.duration = results.start_time.elapsed();
+		results.duration = results.start_time.elapsed().unwrap();
 
 		self.is_idle = true;
 
@@ -192,7 +192,7 @@ pub fn request_feed(feed: &FeedModel, conn: &SqliteConnection) -> CollectedResul
 	info!(" - Requesting: {}", feed.url);
 
 	let mut feed_res = RequestItemResults {
-		start_time: Instant::now(),
+		start_time: SystemTime::now(),
 		duration: Duration::new(0, 0),
 		new_item_count: 0,
 		item_count: 0,
@@ -240,7 +240,7 @@ pub fn request_feed(feed: &FeedModel, conn: &SqliteConnection) -> CollectedResul
 		_ => return Err("Unknown Feed.. It didn't match the current supported ones.".into())
 	};
 
-	feed_res.duration = feed_res.start_time.elapsed();
+	feed_res.duration = feed_res.start_time.elapsed().unwrap();
 
 	Ok(feed_res)
 }

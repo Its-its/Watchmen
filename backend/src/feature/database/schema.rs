@@ -152,3 +152,39 @@ table! {
 		match_opts -> Text,
 	}
 }
+
+
+// Analytics
+
+table! {
+	request_history_group(id) {
+		id -> Integer,
+
+		is_manual -> Bool,
+		concurrency -> Integer,
+
+		start_time -> BigInt,
+		duration -> Integer,
+	}
+}
+
+
+table! {
+	request_history_item(id) {
+		id -> Integer,
+
+		group_id -> Integer,
+
+		feed_id -> Nullable<Integer>,
+		watch_id -> Nullable<Integer>,
+
+		// SUCCESS
+		new_items -> Nullable<Integer>,
+
+		start_time -> Nullable<BigInt>,
+		duration -> Nullable<Integer>,
+
+		// ERROR
+		error -> Nullable<Text>,
+	}
+}

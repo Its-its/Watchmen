@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::{Duration, SystemTime};
 
 use crate::feature::models::{
 	FeedModel, NewFeedItemModel,
@@ -22,7 +22,7 @@ pub enum RequestResults {
 pub struct InnerRequestResults<I, N> {
 	pub general_error: Option<String>,
 	pub was_manual: bool,
-	pub start_time: Instant,
+	pub start_time: SystemTime,
 	pub duration: Duration,
 	pub concurrency: i32,
 	pub items: Vec<ItemResults<I, N>>
@@ -30,7 +30,7 @@ pub struct InnerRequestResults<I, N> {
 
 #[derive(Debug)]
 pub struct RequestItemResults<I> {
-	pub start_time: Instant,
+	pub start_time: SystemTime,
 	pub duration: Duration,
 	pub new_item_count: usize,
 	pub item_count: i32,

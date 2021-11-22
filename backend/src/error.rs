@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, time::SystemTimeError};
 
 use regex::Error as RegexError;
 use xpather::Error as XpathError;
@@ -18,6 +18,7 @@ pub enum Error {
 	Io(IoError),
 	Json(JsonError),
 	Chrono(ChronoError),
+	SystemTime(SystemTimeError),
 
 	Diesel(DieselError),
 	Http(HttpError),
@@ -36,24 +37,31 @@ impl fmt::Display for Error {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		use Error::*;
 
-		match *self {
-			Chrono(ref e) => write!(f, "Chrono Error: {:?}", e),
-			Regex(ref e) => write!(f, "Regex Error: {:?}", e),
-			Xpath(ref e) => write!(f, "XPATH Error: {:?}", e),
+		match self {
+			Chrono(e) => write!(f, "Chrono Error: {:?}", e),
+			Regex(e) => write!(f, "Regex Error: {:?}", e),
+			Xpath(e) => write!(f, "XPATH Error: {:?}", e),
+			SystemTime(e) => write!(f, "System Time Error: {:?}", e),
 
-			Io(ref e) => write!(f, "IO Error: {:?}", e),
-			Json(ref e) => write!(f, "JSON Error: {:?}", e),
+			Io(e) => write!(f, "IO Error: {:?}", e),
+			Json(e) => write!(f, "JSON Error: {:?}", e),
 
-			Rss(ref e) => write!(f, "RSS Error: {:?}", e),
-			Atom(ref e) => write!(f, "Atom Error: {:?}", e),
-			Http(ref e) => write!(f, "HTTP Error: {:?}", e),
-			Diesel(ref e) => write!(f, "Diesel Error: {:?}", e),
+			Rss(e) => write!(f, "RSS Error: {:?}", e),
+			Atom(e) => write!(f, "Atom Error: {:?}", e),
+			Http(e) => write!(f, "HTTP Error: {:?}", e),
+			Diesel(e) => write!(f, "Diesel Error: {:?}", e),
 
-			Other(ref e) => write!(f, "Other Error: {:?}", e)
+			Other(e) => write!(f, "Other Error: {:?}", e)
 		}
 	}
 }
 
+
+impl From<SystemTimeError> for Error {
+    fn from(error: SystemTimeError) -> Self {
+        Error::SystemTime(error)
+    }
+}
 
 impl From<JsonError> for Error {
 	fn from(error: JsonError) -> Self {

@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::{Duration, SystemTime};
 use serde::{Serialize, Deserialize};
 use url::Url;
 use log::info;
@@ -135,7 +135,7 @@ impl RequestManager {
 	pub fn request_all_if_idle(&mut self, is_manual: bool, connection: &SqliteConnection) -> RequestResults {
 		let mut results = InnerRequestResults {
 			general_error: None,
-			start_time: Instant::now(),
+			start_time: SystemTime::now(),
 			duration: Duration::new(0, 0),
 			was_manual: is_manual,
 			concurrency: 0,
@@ -206,7 +206,7 @@ impl RequestManager {
 			}
 		}
 
-		results.duration = results.start_time.elapsed();
+		results.duration = results.start_time.elapsed().unwrap();
 
 		self.is_idle = true;
 
@@ -287,7 +287,7 @@ pub fn request_feed(feed: &WatchingModel, conn: &SqliteConnection) -> WatcherRes
 	info!(" - Requesting: {}", feed.url);
 
 	let mut feed_res = RequestItemResults {
-		start_time: Instant::now(),
+		start_time: SystemTime::now(),
 		duration: Duration::new(0, 0),
 		new_item_count: 0,
 		item_count: 0,
@@ -322,7 +322,7 @@ pub fn request_feed(feed: &WatchingModel, conn: &SqliteConnection) -> WatcherRes
 		}, conn)?;
 	}
 
-	feed_res.duration = feed_res.start_time.elapsed();
+	feed_res.duration = feed_res.start_time.elapsed()?;
 
 	Ok(feed_res)
 }

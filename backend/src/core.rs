@@ -36,9 +36,9 @@ impl FeederCore {
 					break;
 				}
 
-				let reqs = inner.run_all_requests();
+				let reqs = inner.run_all_requests(false);
 
-				for req in reqs {
+				for req in &reqs.results {
 					match req {
 						RequestResults::Feed(req) => {
 							if let Some(e) = req.general_error.as_ref() {
@@ -54,7 +54,7 @@ impl FeederCore {
 								}
 
 								if !encountered_error && !req.items.is_empty() {
-									info!("Feeds ran without error. Took: {}s", req.duration.as_secs());
+									info!("Feeds ran without error. Took: {:?}", req.duration);
 								}
 							}
 						}
@@ -73,11 +73,15 @@ impl FeederCore {
 								}
 
 								if !encountered_error && !req.items.is_empty() {
-									info!("Watchers ran without error. Took: {}s", req.duration.as_secs());
+									info!("Watchers ran without error. Took: {:?}", req.duration);
 								}
 							}
 						}
 					}
+				}
+
+				if let Err(e) = objects::insert_request_history(reqs, inner.connection.connection()) {
+					eprintln!("Error inserting request history into database: {:?}", e);
 				}
 			}
 
@@ -135,6 +139,39 @@ impl WeakFeederCore {
 		match rpc {
 			// Dashboard
 
+			Front2CoreNotification::RequestHistoryList { item_count, skip_count } => {
+				let total_items = objects::count_request_history_groups(conn)?;
+				let groups = objects::get_request_history_groups(item_count, skip_count, conn)?;
+
+				let items = objects::get_request_history_multiple_group_items(
+					&groups.iter().map(|v| v.id).collect::<Vec<_>>(),
+					conn
+				)?;
+
+				let list = Core2FrontNotification::RequestHistoryList {
+					groups,
+					items,
+
+					item_count,
+					skip_count,
+
+					total_items
+				};
+
+				ctx.respond_with(msg_id_opt, list);
+			}
+
+			Front2CoreNotification::RequestHistoryGroupItems { id } => {
+				let items = objects::get_request_history_group_items(id, conn)?;
+
+				let list = Core2FrontNotification::RequestHistoryGroupItemsList {
+					group_id: id,
+
+					items
+				};
+
+				ctx.respond_with(msg_id_opt, list);
+			}
 
 			// Feed Variants
 

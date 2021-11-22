@@ -1,3 +1,41 @@
-<app-toolbar [items] = '[ ["Feeds", "/feeds"], ["Changes", "/changes"] ]'></app-toolbar>
+<app-toolbar [items]='[ ["Feeds", "/feeds"], ["Changes", "/changes"] ]'></app-toolbar>
 
-<h1>Dashboard Currently Empty.</h1>
+<ng-container>
+	<div class="body">
+		<div class="body-title">
+			<h2>Dashboard</h2>
+		</div>
+		<div class="row">
+			<div class="grow"></div>
+			<div class="request-history-side-bar">
+				<h2>Recent Requests</h2>
+				<div class="request-history-list">
+					<div *ngFor="let cont of group_items" class="request-history-item" (click) = "cont.open = !cont.open">
+						<div class="header">
+							<h3 class="title">{{ dateToTimeAgo(cont.group.start_time) }} ago</h3>
+							<span class="requests">Requested {{ cont.items.length }} (<span class="success">{{ countSuccesses(cont.items) }}</span>, <span class="error">{{ countErrors(cont.items) }}</span>), Took {{ cont.group.duration }}ms</span>
+						</div>
+
+						<div *ngIf="cont.open" class="request-item-list">
+							<div *ngFor="let item of cont.items" class="request-item-list-item">
+								<ng-container *ngIf="findWatcherOrFeed(item.watch_id, item.feed_id); let search">
+									<h4 class="title">{{ search.title }}</h4>
+								</ng-container>
+
+								<!-- ERROR? -->
+								<ng-container *ngIf="item.error != null">
+									<span class="error">{{ item.error }}</span>
+								</ng-container>
+
+								<ng-container *ngIf="item.error == null">
+									<span>Added {{ item.new_items }} items, Taking {{ item.duration }}ms</span>
+								</ng-container>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+</ng-container>

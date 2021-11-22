@@ -210,24 +210,42 @@ impl Connection {
 				match_url        TEXT NOT NULL,
 				description      TEXT NOT NULL,
 
-				match_opts      TEXT NOT NULL
+				match_opts       TEXT NOT NULL
 			)"
 		)?;
 
 
 
-		// Analytics
-		// self.0.execute(
-		// 	"CREATE TABLE IF NOT EXISTS watch_parser (
-		// 		id               INTEGER PRIMARY KEY,
+		// Request History
+		self.0.execute(
+			"CREATE TABLE IF NOT EXISTS request_history_group (
+				id               INTEGER PRIMARY KEY,
 
-		// 		title            TEXT NOT NULL,
-		// 		match_url        TEXT NOT NULL,
-		// 		description      TEXT NOT NULL,
+				is_manual        BOOL NOT NULL,
+				concurrency      INTEGER NOT NULL,
+				start_time       LONG NOT NULL,
 
-		// 		created_at      LONG NOT NULL
-		// 	)"
-		// )?;
+				duration         INTEGER NOT NULL
+			)"
+		)?;
+
+		self.0.execute(
+			"CREATE TABLE IF NOT EXISTS request_history_item (
+				id               INTEGER PRIMARY KEY,
+
+				group_id         INTEGER NOT NULL,
+
+				feed_id         INTEGER,
+				watch_id        INTEGER,
+
+				new_items        INTEGER,
+				start_time       LONG,
+
+				duration         INTEGER,
+
+				error            TEXT
+			)"
+		)?;
 
 		Ok(())
 	}
