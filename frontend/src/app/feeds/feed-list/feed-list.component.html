@@ -36,7 +36,7 @@
 						<td
 							mat-cell
 							title="{{ getLocaleDateString(item.date) }}"
-							*matCellDef="let item">{{ item.date | dateAgo }}</td>
+							*matCellDef="let item">{{ item.date | dateAgo:'a' }}</td>
 					</ng-container>
 
 					<ng-container matColumnDef="link">

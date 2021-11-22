@@ -4,6 +4,8 @@ import { Pipe, PipeTransform } from '@angular/core';
 // Arguments:
 // 	- m: Date contains Milliseconds
 // 	- a: Add "ago" to string
+// 	- s: Value is seconds
+// 	- c: Utilize multiple variables. (1 hour, 2 minutes)
 
 const INCLUDES_MILLISECONDS = 'm';
 const ADD_AGO_TO_END = 'a';
