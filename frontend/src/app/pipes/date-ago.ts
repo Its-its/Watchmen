@@ -16,6 +16,9 @@ const MULTIPLE_INTERVALS = 'c';
 })
 export class DateAgoPipe implements PipeTransform {
 	transform(value: any, args?: any): any {
+		// Default args.
+		args = args || '';
+
 		if (value) {
 			let seconds;
 
@@ -24,7 +27,7 @@ export class DateAgoPipe implements PipeTransform {
 				seconds = value;
 			} else {
 				// Value contains Milliseconds, remove it.
-				if (args != null && args.includes(INCLUDES_MILLISECONDS)) {
+				if (args.includes(INCLUDES_MILLISECONDS)) {
 					value = Math.floor(value / 1000);
 				}
 
@@ -32,7 +35,7 @@ export class DateAgoPipe implements PipeTransform {
 			}
 
 			if (seconds == 0) {
-				return '0 seconds' + (args != null && args.includes(ADD_AGO_TO_END) ? ' ago' : '');
+				return '0 seconds' + (args.includes(ADD_AGO_TO_END) ? ' ago' : '');
 			}
 
 			let comp = '';
@@ -53,9 +56,9 @@ export class DateAgoPipe implements PipeTransform {
 					}
 
 					// Add "ago" to end of string
-					if (args != null && args.includes(ADD_AGO_TO_END)) comp += ' ago';
+					if (args.includes(ADD_AGO_TO_END)) comp += ' ago';
 
-					if (args != null && args.includes(MULTIPLE_INTERVALS)) {
+					if (args.includes(MULTIPLE_INTERVALS)) {
 						comp += ', ';
 					} else {
 						// Only using 1 interval. Return it.
