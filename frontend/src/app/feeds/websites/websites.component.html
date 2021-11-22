@@ -17,7 +17,7 @@
 
 					<p matLine>{{ feed.description }}</p>
 					<p matLine>URL: {{ feed.url }}</p>
-					<p matLine>Interval: {{ secondsToTimeAgo(feed.sec_interval) }}</p>
+					<p matLine>Interval: {{ feed.sec_interval | dateAgo:'sc' }}</p>
 					<p matLine>Showing {{ feed.global_show ? 'Globally' : 'in Categories' }}</p>
 
 					<p matLine *ngIf="feed.remove_after == 0; then thenRemBlock else elseRemBlock"></p>

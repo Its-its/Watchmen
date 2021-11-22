@@ -67,20 +67,4 @@ export class WebsitesComponent {
 		const filterValue = value.toLowerCase();
 		return this.background.filter_list.map(v => v.filter.title).filter(item => item.toLowerCase().includes(filterValue));
 	}
-
-	secondsToTimeAgo(value: number) {
-		let combined = '';
-
-		let days = Math.floor(value / 86_400);
-		let hours = Math.floor((value % 86_400) / 3_600);
-		let minutes = Math.floor((value % 3_600) / 60);
-		let seconds = Math.floor(value % 60);
-
-		if (days != 0) combined += `${days} days `;
-		if (hours != 0) combined += `${hours} hours `;
-		if (minutes != 0) combined += `${minutes} minutes `;
-		if (seconds != 0) combined += `${seconds} seconds`;
-
-		return combined.trim();
-	}
 }

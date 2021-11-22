@@ -12,7 +12,7 @@
 				<div class="request-history-list">
 					<div *ngFor="let cont of group_items" class="request-history-item" (click) = "cont.open = !cont.open">
 						<div class="header">
-							<h3 class="title">{{ dateToTimeAgo(cont.group.start_time) }} ago</h3>
+							<h3 class="title">{{ cont.group.start_time | dateAgo:'ma' }}</h3>
 							<span class="requests">Requested {{ cont.items.length }} (<span class="success">{{ countSuccesses(cont.items) }}</span>, <span class="error">{{ countErrors(cont.items) }}</span>), Took {{ cont.group.duration }}ms</span>
 						</div>
 
