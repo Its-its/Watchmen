@@ -64,7 +64,7 @@ impl FilterType {
 	pub fn filter(&self, item: &FeedItemModel) -> bool {
 		match self {
 			FilterType::Regex(regex, opts) => {
-				let mut builder = RegexBuilder::new(&regex);
+				let mut builder = RegexBuilder::new(regex);
 
 				builder.case_insensitive(opts.case_insensitive);
 				builder.multi_line(opts.multi_line);

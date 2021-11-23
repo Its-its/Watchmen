@@ -18,7 +18,7 @@ impl Connection {
 		let database_url = "../app/feeder.db"; // TODO: Add to config.
 
 		Self(
-			SqliteConnection::establish(&database_url)
+			SqliteConnection::establish(database_url)
 			.unwrap_or_else(|_| panic!("DB Establishing Connection: {}", database_url))
 		)
 	}

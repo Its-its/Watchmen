@@ -90,7 +90,7 @@ impl ParseOpts {
 		Ok(
 			match &self.parse_type {
 				Parse::Regex(expr) => {
-					RegexBuilder::new(&expr)
+					RegexBuilder::new(expr)
 						.case_insensitive(true)
 						.build()?
 						.captures(&value)

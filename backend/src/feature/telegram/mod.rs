@@ -114,13 +114,13 @@ impl TelegramState {
 
 				let conn = inner.connection.connection();
 
-				if let Ok(items) = objects::get_items_in_range(None, None, 1, 0, &conn) {
+				if let Ok(items) = objects::get_items_in_range(None, None, 1, 0, conn) {
 					if !items.is_empty() {
 						*last_grabbed.lock().unwrap() = Some(items[0].date);
 					}
 				}
 
-				if let Ok(items) = objects::get_watch_history_list(None, 1, 0, &conn) {
+				if let Ok(items) = objects::get_watch_history_list(None, 1, 0, conn) {
 					if !items.is_empty() {
 						let mut last = last_grabbed.lock().unwrap();
 
@@ -146,9 +146,9 @@ impl TelegramState {
 						let mut last_ran = *since.as_ref().unwrap();
 
 						// Feed Items
-						if let Ok(count) = objects::get_item_count_since(last_ran, &conn) {
+						if let Ok(count) = objects::get_item_count_since(last_ran, conn) {
 							if count != 0 {
-								if let Ok(items) = objects::get_items_in_range(None, None, count, 0, &conn) {
+								if let Ok(items) = objects::get_items_in_range(None, None, count, 0, conn) {
 									{ // Update last grabbed (ensuring newest first)
 										last_ran = newest_time(items.iter().map(|i| i.date));
 									}
@@ -188,9 +188,9 @@ impl TelegramState {
 						}
 
 						// Watching Items
-						if let Ok(count) = objects::get_watch_history_count_since(last_ran, &conn) {
+						if let Ok(count) = objects::get_watch_history_count_since(last_ran, conn) {
 							if count != 0 {
-								if let Ok(items) = objects::get_watch_history_list(None, count, 0, &conn) {
+								if let Ok(items) = objects::get_watch_history_list(None, count, 0, conn) {
 									{ // Update last grabbed (ensuring newest first)
 										let time = newest_time(items.iter().map(|i| i.date_added));
 

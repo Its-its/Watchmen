@@ -13,7 +13,7 @@ pub fn configure() {
         // depending on the terminals color scheme, this is the same as the background color
         .trace(Color::BrightBlack);
 
-	let colors_level: ColoredLevelConfig = colors_line.clone().info(Color::Green);
+	let colors_level: ColoredLevelConfig = colors_line.info(Color::Green);
 
 	Dispatch::new()
 		.chain(std::io::stdout())
