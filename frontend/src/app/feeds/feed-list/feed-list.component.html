@@ -9,6 +9,17 @@
 	<mat-drawer mode="side" opened>
 		<h2>Watchmen</h2>
 
+		<form class="search-field">
+			<mat-form-field appearance="fill">
+				<mat-label>Feed Search</mat-label>
+				<input
+					matInput
+					placeholder="Search for Feeds"
+					(input)="searchParams($any($event.target).value)"
+				>
+			</mat-form-field>
+		</form>
+
 		<h3>Categories</h3>
 		<mat-action-list>
 			<a mat-list-item class="mat-button" href="/feeds">All</a>

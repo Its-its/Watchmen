@@ -4,6 +4,13 @@
 	height: 100%;
 }
 
+.search-field {
+	padding: 0 10px;
+	mat-form-field {
+		width: 100%;
+	}
+}
+
 table {
 	background: inherit;
 	width: 100%;

@@ -289,7 +289,7 @@ pub fn remove_feed_and_filter_link(f_filter_id: QueryId, f_feed_id: QueryId, con
 
 // Feed Items
 
-pub fn get_item_total(category_id: Option<QueryId>, conn: &SqliteConnection) -> QueryResult<i64> {
+pub fn get_item_total(search_query: Option<&str>, category_id: Option<QueryId>, conn: &SqliteConnection) -> QueryResult<i64> {
 	use self::items::dsl::*;
 
 	match category_id {
@@ -297,19 +297,34 @@ pub fn get_item_total(category_id: Option<QueryId>, conn: &SqliteConnection) -> 
 			let feeds = get_category_feeds(cat_id, conn)?;
 			let feed_ids: Vec<QueryId> = feeds.iter().map(|f| f.id).collect();
 
-			self::items::table
-				.filter(feed_id.eq_any(feed_ids))
-				.count()
-				.get_result(conn)
+			match search_query {
+				Some(val) => {
+					self::items::table
+						.filter(feed_id.eq_any(feed_ids))
+						.filter(title.like(format!("%{}%", val)))
+						.count()
+						.get_result(conn)
+				}
+
+				None => {
+					self::items::table
+						.filter(feed_id.eq_any(feed_ids))
+						.count()
+						.get_result(conn)
+				}
+			}
 		}
 
 		None => {
-			self::items::table.count().get_result(conn)
+			match search_query {
+				Some(val) => self::items::table.filter(title.like(format!("%{}%", val))).count().get_result(conn),
+				None => self::items::table.count().get_result(conn),
+			}
 		}
 	}
 }
 
-pub fn get_items_in_range(category_id: Option<QueryId>, item_count: i64, skip_count: i64, conn: &SqliteConnection) -> QueryResult<Vec<FeedItemModel>> {
+pub fn get_items_in_range(search_query: Option<&str>, category_id: Option<QueryId>, item_count: i64, skip_count: i64, conn: &SqliteConnection) -> QueryResult<Vec<FeedItemModel>> {
 	use self::items::dsl::*;
 
 	match category_id {
@@ -317,20 +332,47 @@ pub fn get_items_in_range(category_id: Option<QueryId>, item_count: i64, skip_co
 			let feeds = get_category_feeds(cat_id, conn)?;
 			let feed_ids: Vec<QueryId> = feeds.iter().map(|f| f.id).collect();
 
-			self::items::table
-				.filter(feed_id.eq_any(feed_ids))
-				.limit(item_count)
-				.offset(skip_count)
-				.order(self::items::dsl::date.desc())
-				.load(conn)
+			match search_query {
+				Some(val) => {
+					self::items::table
+						.filter(feed_id.eq_any(feed_ids))
+						.filter(title.like(format!("%{}%", val)))
+						.limit(item_count)
+						.offset(skip_count)
+						.order(self::items::dsl::date.desc())
+						.load(conn)
+				}
+
+				None => {
+					self::items::table
+						.filter(feed_id.eq_any(feed_ids))
+						.limit(item_count)
+						.offset(skip_count)
+						.order(self::items::dsl::date.desc())
+						.load(conn)
+				}
+			}
 		}
 
 		None => {
-			self::items::table
-				.limit(item_count)
-				.offset(skip_count)
-				.order(self::items::dsl::date.desc())
-				.load(conn)
+			match search_query {
+				Some(val) => {
+					self::items::table
+						.filter(title.like(format!("%{}%", val)))
+						.limit(item_count)
+						.offset(skip_count)
+						.order(self::items::dsl::date.desc())
+						.load(conn)
+				}
+
+				None => {
+					self::items::table
+						.limit(item_count)
+						.offset(skip_count)
+						.order(self::items::dsl::date.desc())
+						.load(conn)
+				}
+			}
 		}
 	}
 }

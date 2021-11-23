@@ -24,6 +24,7 @@ export class BackgroundService {
 	public category_feeds: ModelFeedCategory[] = [];
 
 	viewing_category: number | null = null;
+	search_params: string | null = null;
 
 	constructor(private websocket: WebsocketService) {}
 
@@ -61,17 +62,11 @@ export class BackgroundService {
 				this.websocket.send_get_updates_since(this.get_newest_timestamp())
 				.then(update => {
 					if (update.new_feeds != 0) {
-						this.websocket.send_get_item_list(this.viewing_category, 0, update.new_feeds)
+						this.websocket.send_get_item_list(this.search_params, this.viewing_category, 0, update.new_feeds)
 						.then(resp => {
 							console.log('Update Items:', resp);
 
 							this.on_received_update_items(resp.items, resp.notification_ids);
-
-							// if (core.view != null && core.view instanceof FeedItemsView) {
-							// 	if (core.view.table.container.scrollTop < 40 * 4) {
-							// 		core.view.table.container.scrollTo({ top: 0, behavior: 'smooth' });
-							// 	}
-							// }
 						})
 						.catch(e => console.error('Grabbing Feed Items List', e));
 					}
@@ -96,7 +91,7 @@ export class BackgroundService {
 	async reset_feeds() {
 		this.feed_items = [];
 
-		let feed_item_list_resp = await this.websocket.send_get_item_list(this.viewing_category, undefined, undefined);
+		let feed_item_list_resp = await this.websocket.send_get_item_list(this.search_params, this.viewing_category, undefined, undefined);
 
 		this.add_or_update_feed_items(feed_item_list_resp.items, feed_item_list_resp.notification_ids);
 

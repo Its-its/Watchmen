@@ -188,9 +188,9 @@ impl WeakFeederCore {
 				ctx.respond_with(msg_id_opt, updates);
 			}
 
-			Front2CoreNotification::ItemList { category_id, item_count, skip_count } => {
-				let total_items = objects::get_item_total(category_id, conn)?;
-				let items = objects::get_items_in_range(category_id, item_count, skip_count, conn)?;
+			Front2CoreNotification::ItemList { search, category_id, item_count, skip_count } => {
+				let total_items = objects::get_item_total(search.as_deref(), category_id, conn)?;
+				let items = objects::get_items_in_range(search.as_deref(), category_id, item_count, skip_count, conn)?;
 
 				// ID's of items that should be alerted.
 				let notification_ids = filter_items(&items, conn)?.into_iter().map(|i| i.id).collect();

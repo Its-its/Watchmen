@@ -151,8 +151,9 @@ export class WebsocketService {
 
 
 	// items
-	public send_get_item_list(category_id: Nullable<number>, skip_count?: number, item_count?: number): Promise<ItemListResponse> {
+	public send_get_item_list(search: Nullable<string>, category_id: Nullable<number>, skip_count?: number, item_count?: number): Promise<ItemListResponse> {
 		let opts = {
+			search,
 			category_id,
 			item_count,
 			skip_count

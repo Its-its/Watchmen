@@ -114,7 +114,7 @@ impl TelegramState {
 
 				let conn = inner.connection.connection();
 
-				if let Ok(items) = objects::get_items_in_range(None, 1, 0, &conn) {
+				if let Ok(items) = objects::get_items_in_range(None, None, 1, 0, &conn) {
 					if !items.is_empty() {
 						*last_grabbed.lock().unwrap() = Some(items[0].date);
 					}
@@ -148,7 +148,7 @@ impl TelegramState {
 						// Feed Items
 						if let Ok(count) = objects::get_item_count_since(last_ran, &conn) {
 							if count != 0 {
-								if let Ok(items) = objects::get_items_in_range(None, count, 0, &conn) {
+								if let Ok(items) = objects::get_items_in_range(None, None, count, 0, &conn) {
 									{ // Update last grabbed (ensuring newest first)
 										last_ran = newest_time(items.iter().map(|i| i.date));
 									}

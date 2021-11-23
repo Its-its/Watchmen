@@ -104,6 +104,8 @@ pub enum Front2CoreNotification {
 
 
 	ItemList {
+		search: Option<String>,
+
 		category_id: Option<QueryId>,
 
 		#[serde(default = "default_items")]
