@@ -9,8 +9,10 @@
 	<mat-drawer mode="side" opened>
 		<h2>Watchmen</h2>
 
+		<h3>Categories</h3>
 		<mat-action-list>
-			<button mat-list-item>All</button>
+			<a mat-list-item class="mat-button" href="/feeds">All</a>
+			<a mat-list-item class="mat-button" *ngFor="let cat of this.background.categories" href="/feeds?cat={{ cat.id }}">{{ cat.name }}</a>
 		</mat-action-list>
 	</mat-drawer>
 

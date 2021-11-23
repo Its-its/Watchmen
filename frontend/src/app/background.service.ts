@@ -20,28 +20,29 @@ export class BackgroundService {
 	public custom_items: ModelCustomItem[] = [];
 	public watch_parser: ModelWatchParser[] = [];
 
+	public categories: ModelCategory[] = [];
+	public category_feeds: ModelFeedCategory[] = [];
+
+	viewing_category: number | null = null;
+
 	constructor(private websocket: WebsocketService) {}
 
 	// Initial call when loading website.
 	private async init_feeds() {
-		console.log('Refresh Feeds');
-
 		let feed_list_resp = await this.websocket.send_get_feed_list();
 
 		this.feed_list = feed_list_resp.items.map(v => new FeedListener(v));
 		console.log('Feeds:', this.feed_list);
 
-		let viewing_category = null;
-
 		this.filter_list = (await this.websocket.send_get_filter_list()).items;
 		this.custom_items = (await this.websocket.send_get_custom_items_list()).items;
 		this.watch_parser = (await this.websocket.send_get_watch_parser_list()).items;
 
-		let feed_item_list_resp = await this.websocket.send_get_item_list(viewing_category, undefined, undefined);
+		let cats = await this.websocket.send_get_category_list();
+		this.categories = cats.categories;
+		this.category_feeds = cats.category_feeds;
 
-		this.add_or_update_feed_items(feed_item_list_resp.items, feed_item_list_resp.notification_ids);
-
-		console.log(feed_item_list_resp);
+		await this.reset_feeds();
 
 		let watcher_list_resp = await this.websocket.send_get_watcher_list();
 		this.watching_listeners = watcher_list_resp.items;
@@ -60,7 +61,7 @@ export class BackgroundService {
 				this.websocket.send_get_updates_since(this.get_newest_timestamp())
 				.then(update => {
 					if (update.new_feeds != 0) {
-						this.websocket.send_get_item_list(null, 0, update.new_feeds)
+						this.websocket.send_get_item_list(this.viewing_category, 0, update.new_feeds)
 						.then(resp => {
 							console.log('Update Items:', resp);
 
@@ -90,6 +91,16 @@ export class BackgroundService {
 			})()
 			.catch(console.error);
 		}, 1000 * 30);
+	}
+
+	async reset_feeds() {
+		this.feed_items = [];
+
+		let feed_item_list_resp = await this.websocket.send_get_item_list(this.viewing_category, undefined, undefined);
+
+		this.add_or_update_feed_items(feed_item_list_resp.items, feed_item_list_resp.notification_ids);
+
+		console.log(feed_item_list_resp);
 	}
 
 	add_or_update_feed_items(feed_items: ModelItem[], notification_ids: number[]): FeedItem[] {
