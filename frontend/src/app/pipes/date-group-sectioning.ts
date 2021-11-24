@@ -1,11 +1,12 @@
 import { Pipe, PipeTransform } from '@angular/core';
+import { FeedItem } from '../item/feed-item';
 
 @Pipe({
 	name: 'dateGroupSectioning',
 	pure: false
 })
 export class DateGroupSectioning implements PipeTransform {
-	transform(value: ModelItem[], args?: any): FeedGrouping[] {
+	transform(value: FeedItem[], args?: any): FeedGrouping[] {
 		let groupings: FeedGrouping[] = [];
 
 		let current_section = -1;
@@ -31,7 +32,7 @@ export class DateGroupSectioning implements PipeTransform {
 
 interface FeedGrouping {
 	title: string;
-	feed_items: ModelItem[];
+	feed_items: FeedItem[];
 }
 
 const SECTION_NAMES = [

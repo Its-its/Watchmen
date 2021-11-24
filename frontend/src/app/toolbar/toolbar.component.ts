@@ -1,9 +1,4 @@
-import {
-	Component,
-	OnInit, AfterViewInit,
-	Input, ViewChildren,
-	ElementRef, QueryList
-} from '@angular/core';
+import { Component, Input } from '@angular/core';
 
 @Component({
 	selector: 'app-toolbar',
@@ -11,13 +6,18 @@ import {
 	styleUrls: ['./toolbar.component.scss']
 })
 
-export class ToolbarComponent implements OnInit, AfterViewInit {
-	@Input() items = <[string, string][]>[];
+export class ToolbarComponent {
+	items = [
+		["Dashboard", "/dashboard"],
+		null,
+		["Feed List", "/feeds"],
+		["Feed Watching", "/feeds/watching"],
+		["Feed Editor", "/feeds/editor"],
+		["Feed Filter", "/feeds/filter"],
+		null,
+		["Change List", "/changes"],
+		["Change Editor", "/changes/editor"]
+	];
 
 	constructor() {}
-
-	ngOnInit(): void {}
-
-	ngAfterViewInit(): void {
-	}
 }

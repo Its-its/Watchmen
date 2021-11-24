@@ -1,5 +1,10 @@
 <mat-toolbar>
 	<div *ngFor="let item of items">
-		<a mat-button href="{{ item[1] }}">{{ item[0] }}</a>
+		<ng-container *ngIf="item == null">
+			<mat-divider [vertical]="true"></mat-divider>
+		</ng-container>
+		<ng-container *ngIf="item != null">
+			<a mat-button href="{{ item[1] }}">{{ item[0] }}</a>
+		</ng-container>
 	</div>
 </mat-toolbar>
