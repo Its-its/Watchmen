@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use serde::{Serialize, Deserialize};
 use regex::RegexBuilder;
 use diesel::SqliteConnection;
@@ -61,7 +63,7 @@ impl FilterType {
 	}
 
 
-	pub fn filter(&self, item: &FeedItemModel) -> bool {
+	pub fn matches(&self, item: &FeedItemModel) -> bool {
 		match self {
 			FilterType::Regex(regex, opts) => {
 				let mut builder = RegexBuilder::new(regex);
@@ -103,14 +105,66 @@ impl FilterType {
 				}
 			}
 
-			FilterType::And(filters) => filters.iter().all(|f| f.filter(item)),
-			FilterType::Or(filters) => filters.iter().any(|f| f.filter(item)),
+			FilterType::And(filters) => filters.iter().all(|f| f.matches(item)),
+			FilterType::Or(filters) => filters.iter().any(|f| f.matches(item)),
 		}
 	}
 
-	// Display showing why said item is being filtered in or out. (new enum FilterDisplay ??)
-	pub fn display(&self, _item: &FeedItemModel) {
-		//
+	pub fn find(&self, item: &FeedItemModel) -> Option<Range<usize>> {
+		match self {
+			FilterType::Regex(regex, opts) => {
+				let mut builder = RegexBuilder::new(regex);
+
+				builder.case_insensitive(opts.case_insensitive);
+				builder.multi_line(opts.multi_line);
+				builder.dot_matches_new_line(opts.dot_matches_new_line);
+				builder.swap_greed(opts.swap_greed);
+				builder.ignore_whitespace(opts.ignore_whitespace);
+				builder.unicode(opts.unicode);
+				builder.octal(opts.octal);
+
+				let build = builder.build().unwrap();
+
+				build.find(&item.title).map(|m| m.range())
+			}
+
+			FilterType::Contains(value, case_sensitive) => {
+				if *case_sensitive {
+					item.title
+						.find(value.as_str())
+						.map(|s| s..value.len())
+				} else {
+					item.title.to_lowercase()
+						.find(value.to_lowercase().as_str())
+						.map(|s| s..value.len())
+				}
+			}
+
+			FilterType::StartsWith(value, case_sensitive) => {
+				let contains = if *case_sensitive {
+					item.title.starts_with(value.as_str())
+				} else {
+					item.title.to_lowercase().starts_with(value.to_lowercase().as_str())
+				};
+
+				Some(0..value.len()).filter(|_| contains)
+			}
+
+			FilterType::EndsWith(value, case_sensitive) => {
+				let contains = if *case_sensitive {
+					item.title.ends_with(value.as_str())
+				} else {
+					item.title.to_lowercase().ends_with(value.to_lowercase().as_str())
+				};
+
+				Some(item.title.len() - value.len()..item.title.len()).filter(|_| contains)
+			}
+
+			FilterType::And(filters) => filters.iter().filter_map(|f| f.find(item)).next(),
+			FilterType::Or(filters) => filters.iter().find_map(|f| f.find(item)),
+		};
+
+		None
 	}
 
 
@@ -172,8 +226,8 @@ pub fn filter_items<'a>(items: &'a [FeedItemModel], conn: &SqliteConnection) -> 
 		Ok(
 			items.iter()
 			.filter(|item| {
-				for ff in &feed_filters {
-					if ff.feed_id == item.feed_id && filter_models.iter().any(|fm| ff.filter_id == fm.id && fm.filter.filter(*item)) {
+				for feed_filter_model in &feed_filters {
+					if feed_filter_model.feed_id == item.feed_id && filter_models.iter().any(|filter_cont| feed_filter_model.filter_id == filter_cont.id && filter_cont.filter.matches(*item)) {
 						return true;
 					}
 				}
