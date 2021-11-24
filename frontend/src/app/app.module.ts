@@ -19,6 +19,7 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
+import { MatDividerModule } from '@angular/material/divider';
 
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
@@ -70,6 +71,7 @@ import { ChangesEditorComponent } from './changes/editor/editor.component';
 		MatFormFieldModule,
 		MatCheckboxModule,
 		MatGridListModule,
+		MatDividerModule,
 		MatToolbarModule,
 		MatSidenavModule,
 		MatButtonModule,
