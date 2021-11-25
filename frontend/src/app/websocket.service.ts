@@ -8,7 +8,7 @@ import { webSocket, WebSocketSubject } from "rxjs/webSocket";
 })
 
 export class WebsocketService {
-	private subject: WebSocketSubject<any> = webSocket(`ws://${window.location.host}/ws/`);
+	private subject: WebSocketSubject<any> | null = null;
 
 	private debug = true;
 
@@ -17,19 +17,40 @@ export class WebsocketService {
 	private awaiting_response: any[] = [];
 
 	constructor() {
-		console.log('Created WebsocketService');
+		this.reconnect();
+	}
+
+	private reconnect() {
+		console.log('Connecting to WebSocket');
+
+		this.subject = webSocket(`ws://${window.location.host}/ws/`);
 
 		this.subject.asObservable()
-		.subscribe(resp => {
-			// Only return if it's not going to be sending to fn.
-			if (resp.error != null && resp.message_id == null) {
-				return console.error(resp);
-			}
+		.subscribe({
+			next: resp => {
+				// Only return if it's not going to be sending to fn.
+				if (resp.error != null && resp.message_id == null) {
+					return console.error(resp);
+				}
 
-			if (resp.message_id != null) {
-				return this.update_response(resp);
-			} else {
-				console.log('Default:', resp);
+				if (resp.message_id != null) {
+					return this.update_response(resp);
+				} else {
+					console.log('Default:', resp);
+				}
+			},
+
+			error: e => {
+				console.error('Websocket', e);
+
+				// Continuously retries to connect even if backend is offline.
+				if (e.target.readyState == WebSocket.CLOSED) {
+					setTimeout(() => this.reconnect(), 5000);
+				}
+			},
+
+			complete: () => {
+				console.log('complete (idk what this is for)');
 			}
 		});
 	}
