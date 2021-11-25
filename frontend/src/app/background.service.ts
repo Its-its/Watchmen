@@ -1,4 +1,4 @@
-import { Injectable, Output } from '@angular/core';
+import { EventEmitter, Injectable, Output } from '@angular/core';
 import { FeedItem } from './item/feed-item';
 import { FeedListener } from './item/feed-listener';
 import { WebsocketService } from './websocket.service';
@@ -10,8 +10,6 @@ import { WebsocketService } from './websocket.service';
 export class BackgroundService {
 	public feed_list: FeedListener[] = [];
 
-	public feed_items: FeedItem[] = [];
-
 	public filter_list: FilterGroupListener[] = [];
 
 	public watching_listeners = <[ModelWatcher, ModelWatchHistory][]>[];
@@ -20,14 +18,9 @@ export class BackgroundService {
 	public custom_items: ModelCustomItem[] = [];
 	public watch_parser: ModelWatchParser[] = [];
 
-	public categories: ModelCategory[] = [];
-	public category_feeds: ModelFeedCategory[] = [];
+	last_feed_item_timestamp: number = 0;
 
-	viewing_category: number | null = null;
-	search_params: string | null = null;
-
-	public page_index: number = 0;
-	public page_size: number = 25;
+	@Output() new_feed_items = new EventEmitter<ItemListResponse>();
 
 	constructor(private websocket: WebsocketService) {}
 
@@ -36,20 +29,19 @@ export class BackgroundService {
 		let feed_list_resp = await this.websocket.send_get_feed_list();
 
 		this.feed_list = feed_list_resp.items.map(v => new FeedListener(v));
-		console.log('Feeds:', this.feed_list);
 
 		this.filter_list = (await this.websocket.send_get_filter_list()).items;
 		this.custom_items = (await this.websocket.send_get_custom_items_list()).items;
 		this.watch_parser = (await this.websocket.send_get_watch_parser_list()).items;
 
-		let cats = await this.websocket.send_get_category_list();
-		this.categories = cats.categories;
-		this.category_feeds = cats.category_feeds;
-
-		await this.reset_feeds();
-
 		let watcher_list_resp = await this.websocket.send_get_watcher_list();
 		this.watching_listeners = watcher_list_resp.items;
+
+		let item_list = await this.websocket.send_get_item_list(null, null, 0, 1);
+
+		if (item_list.items.length != 0) {
+			this.last_feed_item_timestamp = item_list.items[0].date;
+		}
 	}
 
 	public init(): void {
@@ -62,16 +54,19 @@ export class BackgroundService {
 		// TODO: Remove. Actually utilize websockets.
 		setInterval(() => {
 			(async () => { // TODO: Error handling.
-				this.websocket.send_get_updates_since(this.get_newest_timestamp())
+				this.websocket.send_get_updates_since(this.last_feed_item_timestamp)
 				.then(update => {
 					if (update.new_feeds != 0) {
-						this.websocket.send_get_item_list(this.search_params, this.viewing_category, 0, update.new_feeds)
-						.then(resp => {
-							console.log('Update Items:', resp);
+						console.log('New feed items');
+						// TODO: Replace with feed item timestamp below.
+						this.last_feed_item_timestamp = Math.floor(Date.now() / 1000);
 
-							this.on_received_update_items(resp.items, resp.notification_ids);
+						this.websocket.send_get_item_list(null, null, 0, update.new_feeds)
+						.then(resp => {
+							console.log('[BG]: New Items:', resp);
+							this.new_feed_items.emit(resp);
 						})
-						.catch(e => console.error('Grabbing Feed Items List', e));
+						.catch(e => console.error('[BG]: Grabbing Feed Items List', e));
 					}
 
 					if (update.new_watches != 0) {
@@ -79,48 +74,29 @@ export class BackgroundService {
 
 						this.websocket.send_get_watcher_list()
 						.then(resp => {
-							console.log('Watching:', resp);
+							console.log('[BG]: Watching:', resp);
 							this.watching_listeners = resp.items;
 						})
-						.catch(e => console.error('Grabbing Watcher List', e));
+						.catch(e => console.error('[BG]: Grabbing Watcher List', e));
 					}
 				})
-				.catch(e => console.error('Getting Newest Updates', e));
+				.catch(e => console.error('[BG]: Getting Newest Updates', e));
 			})()
 			.catch(console.error);
 		}, 1000 * 30);
 	}
 
-	async reset_feeds() {
-		this.feed_items = [];
+	// get_newest_timestamp(): number {
+	// 	let timestamp = 0;
 
-		let feed_item_list_resp = await this.websocket.send_get_item_list(this.search_params, this.viewing_category, this.page_index * this.page_size, this.page_size);
+	// 	this.feed_items.forEach(f => { if (f.date > timestamp) { timestamp = f.date; } });
 
-		this.add_or_update_feed_items(feed_item_list_resp.items, feed_item_list_resp.notification_ids);
+	// 	this.watching_listeners.forEach(f => {
+	// 		if (f[1] != null && f[1].date_added > timestamp) { timestamp = f[1].date_added; }
+	// 	});
 
-		console.log(feed_item_list_resp);
-	}
-
-	add_or_update_feed_items(feed_items: ModelItem[], notification_ids: number[]): FeedItem[] {
-		let alerting_items: FeedItem[] = [];
-
-		feed_items.map(v => new FeedItem(v, notification_ids.includes(v.id!)))
-		.forEach(item => {
-			let index_of = this.feed_items.findIndex(i => i.id == item.id);
-
-			if (index_of == -1) {
-				this.feed_items.push(item);
-			}
-
-			if (item.alert) {
-				alerting_items.push(item);
-			}
-		});
-
-		this.feed_items.sort((a, b) => b.date_added - a.date_added);
-
-		return alerting_items;
-	}
+	// 	return timestamp;
+	// }
 
 	get_feed_by_id(id: number): Optional<ModelListener> {
 		return this.feed_list.find(f => f.id == id);
@@ -136,31 +112,6 @@ export class BackgroundService {
 
 	get_disabled_filters_by_feed_id(id: number): FilterGroupListener[] {
 		return this.filter_list.filter(v => !v.feeds.includes(id));
-	}
-
-
-	//
-
-	on_received_update_items(items: ModelItem[], notification_ids: number[]) {
-		// Used for notifications when receiving new items from an update.
-
-		let alerting_items = this.add_or_update_feed_items(items, notification_ids);
-
-		if (alerting_items.length != 0 && this.has_notification_perms()) {
-			new Notification(`Received ${alerting_items.length} new items.`);
-		}
-	}
-
-	get_newest_timestamp(): number {
-		let timestamp = 0;
-
-		this.feed_items.forEach(f => { if (f.date > timestamp) { timestamp = f.date; } });
-
-		this.watching_listeners.forEach(f => {
-			if (f[1] != null && f[1].date_added > timestamp) { timestamp = f[1].date_added; }
-		});
-
-		return timestamp;
 	}
 
 	has_notification_perms(): boolean {

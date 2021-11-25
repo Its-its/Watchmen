@@ -16,12 +16,12 @@
 		<h3>Categories</h3>
 		<mat-action-list>
 			<a mat-list-item class="mat-button" href="/feeds">All</a>
-			<a mat-list-item class="mat-button" *ngFor="let cat of this.background.categories" href="/feeds?cat={{ cat.id }}">{{ cat.name }}</a>
+			<a mat-list-item class="mat-button" *ngFor="let cat of categories" href="/feeds?cat={{ cat.id }}">{{ cat.name }}</a>
 		</mat-action-list>
 	</mat-drawer>
 
 	<mat-drawer-content>
-		<div *ngFor="let grouping of background.feed_items | dateGroupSectioning">
+		<div *ngFor="let grouping of feed_items | dateGroupSectioning">
 			<h2>{{ grouping.title }}</h2>
 
 			<mat-list>
@@ -56,8 +56,8 @@
 			 </mat-list>
 		</div>
 
-		<mat-paginator [length]="100"
-			[pageSize]="background.page_size"
+		<mat-paginator [length]="total_item_count"
+			[pageSize]="page_size"
 			[pageSizeOptions]="[5, 10, 25, 100]"
 			(page) = "paginatorEvent($event)"
 			aria-label="Select page">
