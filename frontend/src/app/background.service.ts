@@ -26,6 +26,9 @@ export class BackgroundService {
 	viewing_category: number | null = null;
 	search_params: string | null = null;
 
+	public page_index: number = 0;
+	public page_size: number = 25;
+
 	constructor(private websocket: WebsocketService) {}
 
 	// Initial call when loading website.
@@ -91,7 +94,7 @@ export class BackgroundService {
 	async reset_feeds() {
 		this.feed_items = [];
 
-		let feed_item_list_resp = await this.websocket.send_get_item_list(this.search_params, this.viewing_category, undefined, undefined);
+		let feed_item_list_resp = await this.websocket.send_get_item_list(this.search_params, this.viewing_category, this.page_index * this.page_size, this.page_size);
 
 		this.add_or_update_feed_items(feed_item_list_resp.items, feed_item_list_resp.notification_ids);
 

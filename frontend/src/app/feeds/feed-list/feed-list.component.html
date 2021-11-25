@@ -55,5 +55,12 @@
 				</table>
 			 </mat-list>
 		</div>
+
+		<mat-paginator [length]="100"
+			[pageSize]="background.page_size"
+			[pageSizeOptions]="[5, 10, 25, 100]"
+			(page) = "paginatorEvent($event)"
+			aria-label="Select page">
+		</mat-paginator>
 	</mat-drawer-content>
 </mat-drawer-container>

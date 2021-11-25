@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { PageEvent } from '@angular/material/paginator';
 import { ActivatedRoute, Params, Router } from '@angular/router';
+import { FeedItem } from 'src/app/item/feed-item';
 import { BackgroundService } from '../../background.service';
 
 @Component({
@@ -48,5 +50,11 @@ export class FeedListComponent implements OnInit {
 		this.background.search_params = (value.length == 0 ? null : value);
 
 		this.background.reset_feeds();
+	}
+
+	paginatorEvent(event: PageEvent) {
+		this.background.page_index = event.pageIndex;
+		this.background.page_size = event.pageSize;
+		this.background.reset_feeds().catch(console.error);
 	}
 }

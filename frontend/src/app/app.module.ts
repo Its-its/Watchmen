@@ -20,6 +20,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatPaginatorModule } from '@angular/material/paginator';
 
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
@@ -68,6 +69,7 @@ import { ChangesEditorComponent } from './changes/editor/editor.component';
 		HttpClientModule,
 
 		MatAutocompleteModule,
+		MatPaginatorModule,
 		MatFormFieldModule,
 		MatCheckboxModule,
 		MatGridListModule,
