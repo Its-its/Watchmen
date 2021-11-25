@@ -47,7 +47,13 @@ export class FeedListComponent implements OnInit {
 			}
 		});
 
-		this.background.new_feed_items.subscribe(resp => this.handleListResponse(resp));
+		this.background.new_feed_items.subscribe(resp => {
+			if (this.page_index != 0 || this.search_params != null || this.viewing_category != null) {
+				return;
+			}
+
+			this.handleListResponse(resp);
+		});
 
 		this.refreshFeeds().catch(console.error);
 	}
@@ -71,10 +77,6 @@ export class FeedListComponent implements OnInit {
 	}
 
 	handleListResponse(resp: ItemListResponse) {
-		if (this.page_index != 0 || this.search_params != null || this.viewing_category != null) {
-			return;
-		}
-
 		this.total_item_count = resp.total_items;
 
 		resp.items.map(v => new FeedItem(v, resp.notification_ids.includes(v.id!)))
