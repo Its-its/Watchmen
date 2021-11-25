@@ -8,10 +8,6 @@ echo "Retrieving latest GIT"
 
 git pull
 
-echo "Compiling SASS files"
-
-sass ./app/scss/core.scss ./app/compiled/css/core.css
-
 echo "Compiling Angular"
 
 cd frontend
