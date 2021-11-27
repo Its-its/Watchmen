@@ -1,8 +1,10 @@
+use reqwest::Client;
 use serde::{Serialize, Deserialize};
 use url::Url;
 
 use regex::RegexBuilder;
-use xpather::{Node, Document, Value};
+use xpather::value::Node;
+use xpather::Document;
 use chrono::{DateTime, FixedOffset};
 
 use crate::feature::models::QueryId;
@@ -82,18 +84,18 @@ pub struct ParseOpts {
 }
 
 impl ParseOpts {
-	pub fn evaluate(&self, doc: &Document, node: Node) -> xpather::Result<Value> {
+	pub fn evaluate<'a>(&self, doc: &'a Document, node: &'a Node) -> xpather::Result<xpather::factory::ProduceIter<'a>> {
 		doc.evaluate_from(&self.xpath, node)
 	}
 
-	pub fn parse(&self, value: String) -> Result<String> {
+	pub fn parse(&self, value: &str) -> Result<String> {
 		Ok(
 			match &self.parse_type {
 				Parse::Regex(expr) => {
 					RegexBuilder::new(expr)
 						.case_insensitive(true)
 						.build()?
-						.captures(&value)
+						.captures(value)
 						.expect("capture")
 						.get(1)
 						.expect("get")
@@ -111,7 +113,7 @@ impl ParseOpts {
 					let value = if let Some(offset) = offset {
 						format!("{} {}", value, offset)
 					} else {
-						value
+						value.to_string()
 					};
 
 					let date: DateTime<FixedOffset> = DateTime::parse_from_str(&value, &parse)?;
@@ -119,7 +121,7 @@ impl ParseOpts {
 					date.to_rfc2822()
 				}
 
-				_ => value
+				_ => value.to_string()
 			}
 		)
 	}
@@ -207,65 +209,66 @@ pub fn new_from_feed(url: String, feed: CustomItem) -> NewFeedModel {
 }
 
 
-pub fn get_from_url(url: &str, conn: &diesel::SqliteConnection) -> CustomResult {
+pub async fn get_from_url(url: &str, req_client: &Client, conn: &diesel::SqliteConnection) -> CustomResult {
 	let found = get_custom_item_from_url(Url::parse(url).unwrap(), conn)?;
 
 	// turn found into SearchParser
 
-	get_from_url_parser(url, &found.search_opts)
+	get_from_url_parser(url, &found.search_opts, req_client).await
 }
 
-pub fn get_from_url_parser(url: &str, parser: &SearchParser) -> CustomResult {
-	let mut resp = reqwest::get(url)?;
+pub async fn get_from_url_parser(url: &str, parser: &SearchParser, req_client: &Client) -> CustomResult {
+	let resp = req_client.get(url).send().await?.text().await?;
 
-	let doc = xpather::parse_doc(&mut resp);
+	let mut reader = std::io::Cursor::new(resp);
 
+	let doc = xpather::parse_document(&mut reader)?;
 
 	Ok(
 		doc.evaluate(&parser.items)?
-		.into_iterset()?
-		.map::<Result<FoundItem>, _>(|node| { // TODO: Remove transpose.
-			let title = parser.title.evaluate(&doc, node.clone())
-				.and_then(|v| v.vec_string())?
-				.into_iter().next()
-				.map(|v| parser.title.parse(v))
+		.collect_nodes()?
+		.into_iter()
+		.map::<Result<FoundItem>, _>(|node| {
+			let title = parser.title.evaluate(&doc, &node)?
+				.next()
+				.transpose()?
+				.map(|v| Result::Ok(parser.title.parse(v.as_string()?)?))
 				.transpose()?;
 
 			let author = parser.author.as_ref()
-				.map(|i| i.evaluate(&doc, node.clone()))
+				.map(|i| i.evaluate(&doc, &node))
 				.transpose()?
-				.map(|v| v.vec_string())
+				.and_then(|mut v| v.next())
 				.transpose()?
-				.and_then(|v| v.into_iter().next())
-				.and_then(|v| parser.author.as_ref().map(|i| i.parse(v)))
+				.map(|v| Result::Ok(parser.author.as_ref().unwrap().parse(v.as_string()?)?))
 				.transpose()?;
 
 			let content = parser.content.as_ref()
-				.map(|i| i.evaluate(&doc, node.clone()))
-				.transpose()?
-				.map(|v| v.into_iterset())
+				.map(|i| i.evaluate(&doc, &node))
 				.transpose()?
 				.and_then(|mut v| v.next())
-				.and_then(|v| v.as_simple_html())
-				.and_then(|v| parser.content.as_ref().map(|i| i.parse(v)))
+				.transpose()?
+				.map(|v| Result::Ok(v.as_node()?.as_simple_html()))
+				.transpose()?.flatten()
+				.map(|v| Result::Ok(parser.content.as_ref().unwrap().parse(&v)?))
 				.transpose()?;
 
-			let date = parser.date.evaluate(&doc, node.clone())
-				.and_then(|v| v.vec_string())?
-				.into_iter().next()
-				.map(|v| parser.date.parse(v))
+			let date = parser.date.evaluate(&doc, &node)?
+				.next()
+				.transpose()?
+				.map(|v| Result::Ok(parser.date.parse(v.as_string()?)?))
 				.transpose()?;
 
-			let guid = parser.guid.evaluate(&doc, node.clone())
-				.and_then(|v| v.vec_string())?
-				.into_iter().next()
-				.map(|v| parser.guid.parse(v))
+			let guid = parser.guid.evaluate(&doc, &node)?
+				.next()
+				.transpose()?
+				.map(|v| Result::Ok(parser.guid.parse(v.as_string()?)?))
 				.transpose()?;
 
-			let link = parser.link.evaluate(&doc, node)
-				.and_then(|v| v.vec_string())?
-				.into_iter().next()
-				.map(|v| parser.link.parse(v))
+			let link = parser.link.evaluate(&doc, &node)?
+				.next()
+				.transpose()?
+				.map(|v| Result::Ok(parser.link.parse(v.as_string()?)?))
 				.transpose()?;
 
 			Ok(FoundItem {

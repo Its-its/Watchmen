@@ -1,4 +1,4 @@
-use std::io::Read;
+use reqwest::Client;
 
 use crate::Result;
 
@@ -32,11 +32,7 @@ pub fn new_from_feed(url: String, feed: atom_syndication::Feed) -> NewFeedModel 
 }
 
 
-pub fn get_from_url(url: &str) -> Result<atom_syndication::Feed> {
-	let mut content = Vec::new();
-
-	let mut resp = reqwest::get(url)?;
-	resp.read_to_end(&mut content)?;
-
-	Ok(atom_syndication::Feed::read_from(&content[..])?)
+pub async fn get_from_url(url: &str, req_client: &Client) -> Result<atom_syndication::Feed> {
+	let resp = req_client.get(url).send().await?.bytes().await?;
+	Ok(atom_syndication::Feed::read_from(&resp[..])?)
 }

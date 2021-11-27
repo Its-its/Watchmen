@@ -1,6 +1,7 @@
-use std::io::Read;
 use std::sync::{Arc, Mutex, MutexGuard, Weak};
+use std::time::Duration;
 
+use reqwest::Client;
 use url::Url;
 use log::info;
 
@@ -25,7 +26,7 @@ impl FeederCore {
 	}
 
 
-	pub fn run_loop(&self) {
+	pub async fn run_loop(&self) {
 		loop {
 			{
 				let mut inner = self.to_inner();
@@ -36,7 +37,7 @@ impl FeederCore {
 					break;
 				}
 
-				let reqs = inner.run_all_requests(false);
+				let reqs = inner.run_all_requests(false).await;
 
 				for req in &reqs.results {
 					match req {
@@ -125,7 +126,7 @@ impl WeakFeederCore {
 		self.0.upgrade().map(FeederCore)
 	}
 
-	pub fn handle_response(
+	pub async fn handle_response(
 		&self,
 		ctx: &mut dyn ResponseWrapper,
 		msg_id_opt: Option<MessageId>,
@@ -229,7 +230,10 @@ impl WeakFeederCore {
 			Front2CoreNotification::AddListener { url, custom_item_id } => {
 				use diesel::RunQueryDsl;
 
-				let feed = inner.feed_requests.create_new_feed(url, custom_item_id, conn)?;
+				// Reqwest Client
+				let req_client = Client::builder().connect_timeout(Duration::from_secs(10)).build().unwrap();
+
+				let feed = inner.feed_requests.create_new_feed(url, custom_item_id, &req_client, conn).await?;
 
 				let affected = diesel::insert_into(FeedsSchema::table)
 					.values(&feed)
@@ -315,10 +319,7 @@ impl WeakFeederCore {
 
 
 			Front2CoreNotification::GetWebpage { url } => {
-				let mut content = String::new();
-
-				let mut resp = reqwest::get(&url)?;
-				resp.read_to_string(&mut content)?;
+				let content = reqwest::get(&url).await?.text().await?;
 
 				ctx.respond_with(msg_id_opt, Core2FrontNotification::WebpageSource { html: content });
 			}
@@ -484,8 +485,11 @@ impl WeakFeederCore {
 
 					let new_watcher = objects::get_watcher_by_url(&watcher.url, conn)?;
 
+					// Reqwest Client
+					let req_client = Client::builder().connect_timeout(Duration::from_secs(10)).build().unwrap();
+
 					// let new_item = watcher::get_from_url(&new_watcher.url, conn)?;
-					let new_items = watcher::get_from_url_parser(&new_watcher.url, &parser.match_opts)?;
+					let new_items = watcher::get_from_url_parser(&req_client, &new_watcher.url, &parser.match_opts).await?;
 
 					objects::create_last_watch_history(&models::NewWatchHistoryModel {
 						watch_id: new_watcher.id,
@@ -571,7 +575,10 @@ impl WeakFeederCore {
 			// Test
 			Front2CoreNotification::TestWatcher { url, parser } => {
 				if let Some(parser) = parser {
-					let items = watcher::get_from_url_parser(&url, &parser)?;
+					// Reqwest Client
+					let req_client = Client::builder().connect_timeout(Duration::from_secs(10)).build().unwrap();
+
+					let items = watcher::get_from_url_parser(&req_client, &url, &parser).await?;
 
 					ctx.respond_with(msg_id_opt, Core2FrontNotification::TestWatcher { success: true, items });
 				} else {

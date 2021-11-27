@@ -1,4 +1,4 @@
-use std::io::Read;
+use reqwest::Client;
 
 use crate::Result;
 
@@ -32,11 +32,7 @@ pub fn new_from_feed(url: String, feed: rss::Channel) -> NewFeedModel {
 }
 
 
-pub fn get_from_url(url: &str) -> Result<rss::Channel> {
-	let mut content = Vec::new();
-
-	let mut resp = reqwest::get(url)?;
-	resp.read_to_end(&mut content)?;
-
-	Ok(rss::Channel::read_from(&content[..])?)
+pub async fn get_from_url(url: &str, req_client: &Client) -> Result<rss::Channel> {
+	let resp = req_client.get(url).send().await?.bytes().await?;
+	Ok(rss::Channel::read_from(&resp[..])?)
 }

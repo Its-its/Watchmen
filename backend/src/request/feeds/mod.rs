@@ -2,6 +2,7 @@ use std::time::{Duration, SystemTime};
 
 use log::{info};
 use diesel::{RunQueryDsl, SqliteConnection};
+use reqwest::Client;
 
 use crate::error::{Error, Result};
 use crate::feature::objects::get_listeners;
@@ -25,9 +26,9 @@ pub enum FeedType {
 }
 
 impl FeedType {
-	pub fn from_url(url: &str, conn: &SqliteConnection) -> FeedType {
+	pub async fn from_url(url: &str, req_client: &Client, conn: &SqliteConnection) -> FeedType {
 		// RSS
-		match rss::get_from_url(url) {
+		match rss::get_from_url(url, req_client).await {
 			Ok(c) => return FeedType::Rss(Ok(c)),
 
 			Err(e) => {
@@ -47,7 +48,7 @@ impl FeedType {
 		}
 
 		// ATOM
-		match atom::get_from_url(url) {
+		match atom::get_from_url(url, req_client).await {
 			Ok(c) => return FeedType::Atom(Ok(c)),
 
 			Err(e) => {
@@ -67,7 +68,7 @@ impl FeedType {
 		}
 
 		// CUSTOM
-		match custom::get_from_url(url, conn) {
+		match custom::get_from_url(url, req_client, conn).await {
 			Ok(i) => FeedType::Custom(Ok(i)),
 
 			Err(e) => {
@@ -77,11 +78,11 @@ impl FeedType {
 		}
 	}
 
-	pub fn req_from_feed_type(feed_type: i32, url: &str, conn: &SqliteConnection) -> FeedType {
+	pub async fn req_from_feed_type(feed_type: i32, url: &str, req_client: &Client, conn: &SqliteConnection) -> FeedType {
 		match feed_type {
-			0 => FeedType::Rss(rss::get_from_url(url)),
-			1 => FeedType::Atom(atom::get_from_url(url)),
-			2 => FeedType::Custom(custom::get_from_url(url, conn)),
+			0 => FeedType::Rss(rss::get_from_url(url, req_client).await),
+			1 => FeedType::Atom(atom::get_from_url(url, req_client).await),
+			2 => FeedType::Custom(custom::get_from_url(url, req_client, conn).await),
 			_ => FeedType::__Unknown
 		}
 	}
@@ -101,8 +102,8 @@ impl RequestManager {
 		}
 	}
 
-	pub fn create_new_feed(&self, url: String, custom_item_id: Option<QueryId>, conn: &SqliteConnection) -> Result<NewFeedModel> {
-		Ok(match FeedType::from_url(&url, conn) {
+	pub async fn create_new_feed(&self, url: String, custom_item_id: Option<QueryId>, req_client: &Client, conn: &SqliteConnection) -> Result<NewFeedModel> {
+		Ok(match FeedType::from_url(&url, req_client, conn).await {
 			FeedType::Rss(Ok(feed)) => rss::new_from_feed(url, feed),
 			FeedType::Atom(Ok(feed)) => atom::new_from_feed(url, feed),
 			FeedType::Custom(Ok(_)) => custom::new_from_url(url, custom_item_id, conn)?,
@@ -115,7 +116,7 @@ impl RequestManager {
 		})
 	}
 
-	pub fn request_all_if_idle(&mut self, is_manual: bool, connection: &SqliteConnection) -> RequestResults {
+	pub async fn request_all_if_idle(&mut self, is_manual: bool, req_client: &Client, connection: &SqliteConnection) -> RequestResults {
 		let mut results = InnerRequestResults {
 			general_error: None,
 			start_time: SystemTime::now(),
@@ -153,7 +154,7 @@ impl RequestManager {
 			let cloned_feed = (*feed).clone();
 
 			results.items.push(ItemResults {
-				results: request_feed(&cloned_feed, connection),
+				results: request_feed(&cloned_feed, req_client, connection).await,
 				item: cloned_feed
 			});
 		}
@@ -188,7 +189,7 @@ impl RequestManager {
 }
 
 
-pub fn request_feed(feed: &FeedModel, conn: &SqliteConnection) -> CollectedResult {
+pub async fn request_feed(feed: &FeedModel, req_client: &Client, conn: &SqliteConnection) -> CollectedResult {
 	info!(" - Requesting: {}", feed.url);
 
 	let mut feed_res = RequestItemResults {
@@ -199,7 +200,7 @@ pub fn request_feed(feed: &FeedModel, conn: &SqliteConnection) -> CollectedResul
 		to_insert: Vec::new()
 	};
 
-	match FeedType::req_from_feed_type(feed.feed_type, &feed.url, conn) {
+	match FeedType::req_from_feed_type(feed.feed_type, &feed.url, req_client, conn).await {
 		FeedType::Rss(Ok(channel)) => {
 			feed_res.to_insert = channel.items()
 			.iter()

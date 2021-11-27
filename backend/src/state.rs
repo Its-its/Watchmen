@@ -3,6 +3,8 @@ use std::time::{Duration, Instant};
 
 
 
+use reqwest::Client;
+
 #[cfg(feature = "website")]
 use crate::feature::FrontendCore;
 #[cfg(feature = "terminal")]
@@ -72,18 +74,27 @@ impl CoreState {
 	}
 
 	//
-	pub fn run_all_requests(&mut self, is_manual: bool) -> RequestResponse {
+	pub async fn run_all_requests(&mut self, is_manual: bool) -> RequestResponse {
 		let now = Instant::now();
+
+		// Reqwest Client
+		let req_client = Client::builder()
+			.timeout(Duration::from_secs(10))
+			.connection_verbose(true)
+			.build()
+			.unwrap();
 
 		let results = vec![
 			self.feed_requests.request_all_if_idle(
 				is_manual,
+				&req_client,
 				self.connection.connection()
-			),
+			).await,
 			self.watcher_requests.request_all_if_idle(
 				is_manual,
+				&req_client,
 				self.connection.connection()
-			)
+			).await
 		];
 
 		RequestResponse {

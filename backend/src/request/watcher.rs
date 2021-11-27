@@ -1,4 +1,5 @@
 use std::time::{Duration, SystemTime};
+use reqwest::Client;
 use serde::{Serialize, Deserialize};
 use url::Url;
 use log::info;
@@ -132,7 +133,7 @@ impl RequestManager {
 		Ok(watcher)
 	}
 
-	pub fn request_all_if_idle(&mut self, is_manual: bool, connection: &SqliteConnection) -> RequestResults {
+	pub async fn request_all_if_idle(&mut self, is_manual: bool, req_client: &Client, connection: &SqliteConnection) -> RequestResults {
 		let mut results = InnerRequestResults {
 			general_error: None,
 			start_time: SystemTime::now(),
@@ -179,7 +180,7 @@ impl RequestManager {
 			let feed_cloned = (*feed).clone();
 
 			results.items.push(ItemResults {
-				results: request_feed(&feed_cloned, connection),
+				results: request_feed(&feed_cloned, req_client, connection).await,
 				item: feed_cloned
 			});
 		}
@@ -215,52 +216,52 @@ impl RequestManager {
 }
 
 
-pub fn get_from_url_parser(url: &str, parser: &MatchParser) -> Result<Vec<FoundItem>> {
-	let mut resp = reqwest::get(url)?;
+pub async fn get_from_url_parser(req_client: &Client, url: &str, parser: &MatchParser) -> Result<Vec<FoundItem>> {
+	let resp = req_client.get(url).send().await?.text().await?;
+	let mut reader = std::io::Cursor::new(resp);
 
-	let doc = xpather::parse_doc(&mut resp);
+	let doc = xpather::parse_document(&mut reader)?;
 
 	Ok(doc.evaluate(&parser.items)?
-		.into_iterset()?
+		.collect_nodes()?
+		.into_iter()
 		.map::<Result<FoundItem>, _>(|node| { // TODO: Remove transpose.
 			// Find value.
-			let value = parser.value.evaluate(&doc, node.clone())?
-				.vec_string()?
-				.into_iter().next()
-				.ok_or_else(|| Error::Other("Unable to find Value.".into()))
-				.and_then(|v| parser.value.parse(v))
-				.map(|v| v.trim().escape_default().to_string())?;
+			let value = parser.value.evaluate(&doc, &node)?
+				.next()
+				.transpose()?
+				.map(|v| Result::Ok(parser.value.parse(v.as_string()?)?))
+				.transpose()?
+				.map(|v| v.trim().escape_default().to_string())
+				.ok_or_else(|| Error::Other("Missing Required Title.".into()))?;
 
 			// Find title.
 			let title = parser.title.as_ref()
-				.map(|v| v.evaluate(&doc, node.clone()))
+				.map(|i| i.evaluate(&doc, &node))
 				.transpose()?
-				.map(|v| v.vec_string())
+				.and_then(|mut v| v.next())
 				.transpose()?
-				.and_then(|v| v.first().cloned())
-				.map(|v| parser.title.as_ref().unwrap().parse(v))
+				.map(|v| Result::Ok(parser.title.as_ref().unwrap().parse(v.as_string()?)?))
 				.transpose()?
 				.map(|v| v.trim().escape_default().to_string());
 
 			// Find link.
 			let link = parser.link.as_ref()
-				.map(|v| v.evaluate(&doc, node.clone()))
+				.map(|i| i.evaluate(&doc, &node))
 				.transpose()?
-				.map(|v| v.vec_string())
+				.and_then(|mut v| v.next())
 				.transpose()?
-				.and_then(|v| v.first().cloned())
-				.map(|v| parser.link.as_ref().unwrap().parse(v))
+				.map(|v| Result::Ok(parser.link.as_ref().unwrap().parse(v.as_string()?)?))
 				.transpose()?
 				.map(|v| v.trim().escape_default().to_string());
 
 			// Unique ID
 			let unique_id = parser.unique_id.as_ref()
-				.map(|v| v.evaluate(&doc, node.clone()))
+				.map(|i| i.evaluate(&doc, &node))
 				.transpose()?
-				.map(|v| v.vec_string())
+				.and_then(|mut v| v.next())
 				.transpose()?
-				.and_then(|v| v.first().cloned())
-				.map(|v| parser.unique_id.as_ref().unwrap().parse(v))
+				.map(|v| Result::Ok(parser.unique_id.as_ref().unwrap().parse(v.as_string()?)?))
 				.transpose()?
 				.map(|v| v.trim().escape_default().to_string());
 
@@ -283,7 +284,7 @@ pub fn get_from_url_parser(url: &str, parser: &MatchParser) -> Result<Vec<FoundI
 }
 
 
-pub fn request_feed(feed: &WatchingModel, conn: &SqliteConnection) -> WatcherResult {
+pub async fn request_feed(feed: &WatchingModel, req_client: &Client, conn: &SqliteConnection) -> WatcherResult {
 	info!(" - Requesting: {}", feed.url);
 
 	let mut feed_res = RequestItemResults {
@@ -300,7 +301,7 @@ pub fn request_feed(feed: &WatchingModel, conn: &SqliteConnection) -> WatcherRes
 		get_watch_parser_from_url(Url::parse(&feed.url).unwrap(), conn)?
 	};
 
-	let new_items = get_from_url_parser(&feed.url, &parser.match_opts)?;
+	let new_items = get_from_url_parser(req_client, &feed.url, &parser.match_opts).await?;
 
 	if let Some(last_item) = get_last_watch_history(feed.id, conn)? {
 		// Anything in the new_items is not in the last_items?

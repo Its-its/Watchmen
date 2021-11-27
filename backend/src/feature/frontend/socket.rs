@@ -6,7 +6,7 @@ use serde_json::{Value, to_string, json};
 
 use actix::prelude::*;
 use actix_web::{web, Error as ActixError, HttpRequest, HttpResponse};
-use actix_web_actors::ws;
+use actix_web_actors::ws::{self, WebsocketContext};
 
 use crate::rpc::Object2CoreNotification;
 use crate::feature::ResponseWrapper;
@@ -22,6 +22,20 @@ const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
 pub async fn socket_index(weak_core: web::Data<WeakFeederCore>, r: HttpRequest, stream: web::Payload) -> Result<HttpResponse, ActixError> {
 	ws::start(WebSocket::new(weak_core.as_ref().clone()), &r, stream)
 }
+
+
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct Line(String);
+
+impl Handler<Line> for WebSocket {
+    type Result = ();
+
+    fn handle(&mut self, msg: Line, ctx: &mut Self::Context) {
+        ctx.text(msg.0);
+    }
+}
+
 
 
 pub struct WebSocket {
@@ -54,8 +68,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocket {
 			}
 
 			Ok(Message::Text(text)) => {
-				let mut wrapper = WebsocketWrapper::new(ctx);
-				if let Err(e) = handle_text(&mut wrapper, &mut self.weak_core, &text) {
+				if let Err(e) = self.handle_text(ctx, &text) {
 					match e {
 						Error::Json(e) => {
 							error!("handle_text JSON: {}", e);
@@ -75,8 +88,10 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocket {
 			}
 
 			Ok(Message::Binary(bin)) => {
-				let mut wrapper = WebsocketWrapper::new(ctx);
-				if let Err(e) = handle_binary(&mut wrapper, &mut self.weak_core, bin.as_ref()) {
+				let recipient = ctx.address().recipient();
+				let mut wrapper = WebsocketWrapper::new(recipient);
+
+				if let Err(e) = handle_binary(&mut wrapper, &self.weak_core, bin.as_ref()) {
 					error!("handle_binary: {}", e);
 				}
 			}
@@ -110,29 +125,37 @@ impl WebSocket {
 			ctx.ping(&[]);
 		});
 	}
-}
 
+	fn handle_text(
+		&self,
+		ctx: &mut WebsocketContext<WebSocket>,
+		text: &str
+	) -> Result<(), Error> {
+		let derived = serde_json::from_str(text)?;
 
-fn handle_text(
-	ctx: &mut WebsocketWrapper<'_>,
-	weak_core: &mut WeakFeederCore,
-	text: &str
-) -> Result<(), Error> {
-	let derived = serde_json::from_str(text)?;
+		if let Object2CoreNotification::Frontend { message_id, command } = derived {
+			let recipient = ctx.address().recipient();
+			let mut wrap = WebsocketWrapper::new(recipient);
 
-	if let Object2CoreNotification::Frontend { message_id, command } = derived {
-		if let Err(e) = weak_core.handle_response(ctx, message_id, command) {
-			ctx.respond(message_id, Err(e));
+			let weak_core = self.weak_core.clone();
+
+			let future = async move {
+				if let Err(e) = weak_core.handle_response(&mut wrap, message_id, command).await {
+					wrap.respond(message_id, Err(e));
+				}
+			};
+
+			future.into_actor(self).spawn(ctx);
 		}
-	}
 
-	Ok(())
+		Ok(())
+	}
 }
 
 
 fn handle_binary(
-	_ctx: &mut WebsocketWrapper<'_>,
-	_weak_core: &mut WeakFeederCore,
+	_ctx: &mut WebsocketWrapper,
+	_weak_core: &WeakFeederCore,
 	binary: &[u8]
 ) -> Result<(), Error> {
 	info!("Binary: {:?}", binary);
@@ -143,20 +166,20 @@ fn handle_binary(
 
 pub type WebSocketContext = ws::WebsocketContext<WebSocket>;
 
-pub struct WebsocketWrapper<'a> {
-	ctx: &'a mut WebSocketContext
+pub struct WebsocketWrapper {
+	pub recipient: Recipient<Line>
 }
 
-impl<'a> WebsocketWrapper<'a> {
-	pub fn new(ctx: &'a mut WebSocketContext) -> Self {
-		Self { ctx }
+impl WebsocketWrapper {
+	pub fn new(recipient: Recipient<Line>) -> Self {
+		Self { recipient }
 	}
 }
 
-impl<'a> ResponseWrapper for WebsocketWrapper<'a> {
+impl ResponseWrapper for WebsocketWrapper {
 	fn respond(&mut self, message_id: Option<MessageId>, response: Result<Value, Error>) {
-		self.ctx.text(
-			to_string(
+		self.recipient.do_send(
+			Line(to_string(
 				&match response {
 					Ok(value) => {
 						json!({
@@ -172,7 +195,7 @@ impl<'a> ResponseWrapper for WebsocketWrapper<'a> {
 						})
 					}
 				}
-			).unwrap()
-		);
+			).unwrap())
+		).unwrap();
 	}
 }

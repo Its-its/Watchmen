@@ -23,14 +23,15 @@ pub mod request;
 pub use filter::{FilterType, RegexOpts};
 pub use error::{Result, Error};
 
-fn main() -> std::io::Result<()> {
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
 	feature::logging::configure();
 
 	let mut core = core::FeederCore::new();
 
 	core.init();
 
-	core.run_loop();
+	core.run_loop().await;
 
 	Ok(())
 }

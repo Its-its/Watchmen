@@ -5,7 +5,7 @@ use log::info;
 use actix_rt::System;
 use serde_json::json;
 use actix_files as fs;
-use actix_web::{get, web, App, HttpServer, HttpResponse};
+use actix_web::{get, web::{self, Data}, App, HttpServer, HttpResponse};
 
 use crate::core::WeakFeederCore;
 use super::{WeakFrontendCore, FrontendCore};
@@ -41,17 +41,17 @@ impl Web {
 		let core_ref = self.weak_core.as_ref().unwrap().clone();
 
 		self.thread_handle = Some(thread::spawn(move || {
-			let mut sys = System::new("HTTP Server");
+			let sys = System::new();
 
 			let server = HttpServer::new(move || {
 				App::new()
-				.data({
+				.app_data(Data::new({
 					let mut handlebars = Handlebars::new();
 					handlebars.register_templates_directory(".hbs", "../app/views").expect("register_templates_dirs");
 					handlebars
-				})
-				.data(frontend_ref.clone())
-				.data(core_ref.clone())
+				}))
+				.app_data(Data::new(frontend_ref.clone()))
+				.app_data(Data::new(core_ref.clone()))
 				// .service(index)
 				.service(scraper_editor)
 				// .service(fs::Files::new("/script", "../app/compiled/js"))
@@ -83,7 +83,7 @@ async fn index() -> HttpResponse {
 // Scaper
 
 #[get("/scraper/editor")]
-fn scraper_editor(hb: web::Data<Handlebars>) -> HttpResponse {
+fn scraper_editor(hb: web::Data<Handlebars<'_>>) -> HttpResponse {
 	let data = json!({});
 
 	let body = hb.render("scraper_editor", &data).unwrap();
