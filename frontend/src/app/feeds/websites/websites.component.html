@@ -1,6 +1,20 @@
 <mat-drawer-container class="feeder-main-container">
 	<mat-drawer mode="side" opened>
 		<h2>Watchmen</h2>
+
+		<form class="search-field">
+			<mat-form-field appearance="fill">
+				<mat-label>Website URL</mat-label>
+				<input
+					#websiteInput
+					matInput
+					placeholder="URL"
+					name="url"
+				>
+			</mat-form-field>
+		</form>
+
+		<button mat-raised-button color="accent" (click)="addWebsite(websiteInput.value)">Add Website</button>
 	</mat-drawer>
 	<mat-drawer-content>
 		<mat-list>
@@ -50,8 +64,6 @@
 								{{ item.filter.title }}
 							</mat-option>
 						</mat-autocomplete>
-
-						<!--  -->
 					</mat-form-field>
 
 					<div>
@@ -64,6 +76,9 @@
 								<input matInput [value]="feed.sec_interval" placeholder="Interval (seconds)" type="number" (input)="updateInterval(feed.id, $any($event.target).valueAsNumber)">
 							</mat-form-field>
 						</form>
+
+						<button mat-raised-button color="warn" (click) = "deleteWebsite(feed.id, deleteFound.checked)">Delete</button>
+						<mat-checkbox style="margin-left: 10px;" #deleteFound>Delete stored items?</mat-checkbox>
 					</div>
 				</mat-list>
 			</mat-list-item>

@@ -5,6 +5,7 @@ import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { BackgroundService } from '../../background.service';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { WebsocketService } from 'src/app/websocket.service';
+import { FeedListener } from 'src/app/item/feed-listener';
 
 
 export interface Fruit {
@@ -66,5 +67,29 @@ export class WebsitesComponent {
 	_filter(value: string): string[] {
 		const filterValue = value.toLowerCase();
 		return this.background.filter_list.map(v => v.filter.title).filter(item => item.toLowerCase().includes(filterValue));
+	}
+
+
+	addWebsite(value: string) {
+		this.websocket.send_create_listener(value, null)
+		.then(
+			resp => {
+				console.log(resp);
+				this.background.feed_list.push(new FeedListener(resp.listener));
+			},
+			console.error
+		);
+	}
+
+	deleteWebsite(id: number, rem_stored: boolean) {
+		console.log(id, rem_stored);
+		this.websocket.send_remove_listener(id, rem_stored)
+		.then(
+			resp => {
+				console.log(resp);
+				this.background.feed_list.splice(this.background.feed_list.findIndex(v => v.id == id), 1);
+			},
+			console.error
+		);
 	}
 }
