@@ -1,5 +1,7 @@
 use std::time::{Duration, SystemTime};
 
+use reqwest::header::HeaderMap;
+
 use crate::feature::models::{
 	FeedModel, NewFeedItemModel,
 	WatchingModel, NewWatchHistoryModel
@@ -42,4 +44,13 @@ pub struct RequestItemResults<I> {
 pub struct ItemResults<I, N> {
 	pub item: I,
 	pub results: Result<RequestItemResults<N>>
+}
+
+
+pub fn default_headers() -> HeaderMap {
+	let mut headers = HeaderMap::default();
+	headers.insert("User-Agent", "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0".parse().unwrap());
+	headers.insert("Accept-Language", "en-US,en;q=0.5".parse().unwrap());
+	headers.insert("Connection", "keep-alive".parse().unwrap());
+	headers
 }

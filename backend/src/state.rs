@@ -12,6 +12,7 @@ use crate::feature::TerminalCore;
 #[cfg(feature = "telegram")]
 use crate::feature::TelegramCore;
 
+use crate::request::default_headers;
 use crate::{config::Config, feature::Connection};
 
 use crate::core::WeakFeederCore;
@@ -79,6 +80,7 @@ impl CoreState {
 
 		// Reqwest Client
 		let req_client = Client::builder()
+			.default_headers(default_headers())
 			.timeout(Duration::from_secs(10))
 			.connection_verbose(true)
 			.build()

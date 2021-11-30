@@ -6,7 +6,7 @@ use url::Url;
 use log::info;
 
 use crate::state::CoreState;
-use crate::request::watcher;
+use crate::request::{watcher, default_headers};
 use crate::request::RequestResults;
 
 use crate::Result;
@@ -231,7 +231,7 @@ impl WeakFeederCore {
 				use diesel::RunQueryDsl;
 
 				// Reqwest Client
-				let req_client = Client::builder().connect_timeout(Duration::from_secs(10)).build().unwrap();
+				let req_client = Client::builder().default_headers(default_headers()).connect_timeout(Duration::from_secs(10)).build().unwrap();
 
 				let feed = inner.feed_requests.create_new_feed(url, custom_item_id, &req_client, conn).await?;
 
@@ -486,7 +486,7 @@ impl WeakFeederCore {
 					let new_watcher = objects::get_watcher_by_url(&watcher.url, conn)?;
 
 					// Reqwest Client
-					let req_client = Client::builder().connect_timeout(Duration::from_secs(10)).build().unwrap();
+					let req_client = Client::builder().default_headers(default_headers()).connect_timeout(Duration::from_secs(10)).build().unwrap();
 
 					// let new_item = watcher::get_from_url(&new_watcher.url, conn)?;
 					let new_items = watcher::get_from_url_parser(&req_client, &new_watcher.url, &parser.match_opts).await?;
@@ -576,7 +576,7 @@ impl WeakFeederCore {
 			Front2CoreNotification::TestWatcher { url, parser } => {
 				if let Some(parser) = parser {
 					// Reqwest Client
-					let req_client = Client::builder().connect_timeout(Duration::from_secs(10)).build().unwrap();
+					let req_client = Client::builder().default_headers(default_headers()).connect_timeout(Duration::from_secs(10)).build().unwrap();
 
 					let items = watcher::get_from_url_parser(&req_client, &url, &parser).await?;
 
