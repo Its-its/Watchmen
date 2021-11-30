@@ -319,9 +319,12 @@ impl WeakFeederCore {
 
 
 			Front2CoreNotification::GetWebpage { url } => {
-				let content = reqwest::get(&url).await?.text().await?;
+				// Reqwest Client
+				let req_client = Client::builder().default_headers(default_headers()).connect_timeout(Duration::from_secs(10)).build().unwrap();
 
-				ctx.respond_with(msg_id_opt, Core2FrontNotification::WebpageSource { html: content });
+				let html = req_client.get(&url).send().await?.text().await?;
+
+				ctx.respond_with(msg_id_opt, Core2FrontNotification::WebpageSource { html });
 			}
 
 
