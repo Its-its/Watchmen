@@ -18,7 +18,7 @@ export class BackgroundService {
 	public custom_items: ModelCustomItem[] = [];
 	public watch_parser: ModelWatchParser[] = [];
 
-	last_feed_item_timestamp: number = 0;
+	last_grabbed_timestamp: number = 0;
 
 	@Output() new_feed_items = new EventEmitter<ItemListResponse>();
 
@@ -39,9 +39,12 @@ export class BackgroundService {
 
 		let item_list = await this.websocket.send_get_item_list(null, null, 0, 1);
 
+
 		if (item_list.items.length != 0) {
-			this.last_feed_item_timestamp = item_list.items[0].date;
+			this.last_grabbed_timestamp = item_list.items[0].date;
 		}
+
+		this.watching_listeners.forEach(v => this.last_grabbed_timestamp = Math.max(this.last_grabbed_timestamp, v[1].date_added));
 	}
 
 	public init(): void {
@@ -54,15 +57,14 @@ export class BackgroundService {
 		// TODO: Remove. Actually utilize websockets.
 		setInterval(() => {
 			(async () => { // TODO: Error handling.
-				this.websocket.send_get_updates_since(this.last_feed_item_timestamp)
+				this.websocket.send_get_updates_since(this.last_grabbed_timestamp)
 				.then(update => {
 					if (update.new_feeds != 0) {
 						console.log('New feed items');
-						// TODO: Replace with feed item timestamp below.
-						this.last_feed_item_timestamp = Math.floor(Date.now() / 1000);
 
 						this.websocket.send_get_item_list(null, null, 0, update.new_feeds)
 						.then(resp => {
+							resp.items.forEach(v => this.last_grabbed_timestamp = Math.max(this.last_grabbed_timestamp, v.date_added));
 							console.log('[BG]: New Items:', resp);
 							this.new_feed_items.emit(resp);
 						})
@@ -76,6 +78,7 @@ export class BackgroundService {
 						.then(resp => {
 							console.log('[BG]: Watching:', resp);
 							this.watching_listeners = resp.items;
+							resp.items.forEach(v => this.last_grabbed_timestamp = Math.max(this.last_grabbed_timestamp, v[1].date_added));
 						})
 						.catch(e => console.error('[BG]: Grabbing Watcher List', e));
 					}
@@ -85,18 +88,6 @@ export class BackgroundService {
 			.catch(console.error);
 		}, 1000 * 30);
 	}
-
-	// get_newest_timestamp(): number {
-	// 	let timestamp = 0;
-
-	// 	this.feed_items.forEach(f => { if (f.date > timestamp) { timestamp = f.date; } });
-
-	// 	this.watching_listeners.forEach(f => {
-	// 		if (f[1] != null && f[1].date_added > timestamp) { timestamp = f[1].date_added; }
-	// 	});
-
-	// 	return timestamp;
-	// }
 
 	get_feed_by_id(id: number): Optional<ModelListener> {
 		return this.feed_list.find(f => f.id == id);
