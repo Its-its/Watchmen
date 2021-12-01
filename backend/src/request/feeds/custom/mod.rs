@@ -232,7 +232,7 @@ pub async fn get_from_url_parser(url: &str, parser: &SearchParser, req_client: &
 			let title = parser.title.evaluate(&doc, &node)?
 				.next()
 				.transpose()?
-				.map(|v| Result::Ok(parser.title.parse(v.as_string()?)?))
+				.map(|v| Result::Ok(parser.title.parse(&v.convert_to_string()?)?))
 				.transpose()?;
 
 			let author = parser.author.as_ref()
@@ -240,7 +240,7 @@ pub async fn get_from_url_parser(url: &str, parser: &SearchParser, req_client: &
 				.transpose()?
 				.and_then(|mut v| v.next())
 				.transpose()?
-				.map(|v| Result::Ok(parser.author.as_ref().unwrap().parse(v.as_string()?)?))
+				.map(|v| Result::Ok(parser.author.as_ref().unwrap().parse(&v.convert_to_string()?)?))
 				.transpose()?;
 
 			let content = parser.content.as_ref()
@@ -256,19 +256,19 @@ pub async fn get_from_url_parser(url: &str, parser: &SearchParser, req_client: &
 			let date = parser.date.evaluate(&doc, &node)?
 				.next()
 				.transpose()?
-				.map(|v| Result::Ok(parser.date.parse(v.as_string()?)?))
+				.map(|v| Result::Ok(parser.date.parse(&v.convert_to_string()?)?))
 				.transpose()?;
 
 			let guid = parser.guid.evaluate(&doc, &node)?
 				.next()
 				.transpose()?
-				.map(|v| Result::Ok(parser.guid.parse(v.as_string()?)?))
+				.map(|v| Result::Ok(parser.guid.parse(&v.convert_to_string()?)?))
 				.transpose()?;
 
 			let link = parser.link.evaluate(&doc, &node)?
 				.next()
 				.transpose()?
-				.map(|v| Result::Ok(parser.link.parse(v.as_string()?)?))
+				.map(|v| Result::Ok(parser.link.parse(&v.convert_to_string()?)?))
 				.transpose()?;
 
 			Ok(FoundItem {

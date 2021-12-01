@@ -230,7 +230,7 @@ pub async fn get_from_url_parser(req_client: &Client, url: &str, parser: &MatchP
 			let value = parser.value.evaluate(&doc, &node)?
 				.next()
 				.transpose()?
-				.map(|v| Result::Ok(parser.value.parse(v.as_string()?)?))
+				.map(|v| Result::Ok(parser.value.parse(&v.convert_to_string()?)?))
 				.transpose()?
 				.map(|v| v.trim().escape_default().to_string())
 				.ok_or_else(|| Error::Other("Missing Required Title.".into()))?;
@@ -241,7 +241,7 @@ pub async fn get_from_url_parser(req_client: &Client, url: &str, parser: &MatchP
 				.transpose()?
 				.and_then(|mut v| v.next())
 				.transpose()?
-				.map(|v| Result::Ok(parser.title.as_ref().unwrap().parse(v.as_string()?)?))
+				.map(|v| Result::Ok(parser.title.as_ref().unwrap().parse(&v.convert_to_string()?)?))
 				.transpose()?
 				.map(|v| v.trim().escape_default().to_string());
 
@@ -251,7 +251,7 @@ pub async fn get_from_url_parser(req_client: &Client, url: &str, parser: &MatchP
 				.transpose()?
 				.and_then(|mut v| v.next())
 				.transpose()?
-				.map(|v| Result::Ok(parser.link.as_ref().unwrap().parse(v.as_string()?)?))
+				.map(|v| Result::Ok(parser.link.as_ref().unwrap().parse(&v.convert_to_string()?)?))
 				.transpose()?
 				.map(|v| v.trim().escape_default().to_string());
 
@@ -261,7 +261,7 @@ pub async fn get_from_url_parser(req_client: &Client, url: &str, parser: &MatchP
 				.transpose()?
 				.and_then(|mut v| v.next())
 				.transpose()?
-				.map(|v| Result::Ok(parser.unique_id.as_ref().unwrap().parse(v.as_string()?)?))
+				.map(|v| Result::Ok(parser.unique_id.as_ref().unwrap().parse(&v.convert_to_string()?)?))
 				.transpose()?
 				.map(|v| v.trim().escape_default().to_string());
 
