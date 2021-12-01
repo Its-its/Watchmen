@@ -37,9 +37,9 @@ impl FeederCore {
 					break;
 				}
 
-				let reqs = inner.run_all_requests(false).await;
+				let resp = inner.run_all_requests(false).await;
 
-				for req in &reqs.results {
+				for req in &resp.results {
 					match req {
 						RequestResults::Feed(req) => {
 							if let Some(e) = req.general_error.as_ref() {
@@ -81,9 +81,12 @@ impl FeederCore {
 					}
 				}
 
-				if let Err(e) = objects::insert_request_history(reqs, inner.connection.connection()) {
+				if let Err(e) = objects::insert_request_history(&resp, inner.connection.connection()) {
 					eprintln!("Error inserting request history into database: {:?}", e);
 				}
+
+				#[cfg(feature = "website")]
+				let _ = crate::feature::frontend::socket::send_req_resp_to_clients(&resp);
 			}
 
 			// Sleep otherwise loop will make the process use lots of cpu power.

@@ -1,6 +1,12 @@
-import { Injectable } from "@angular/core";
+import { EventEmitter, Injectable } from "@angular/core";
 
 import { webSocket, WebSocketSubject } from "rxjs/webSocket";
+
+
+interface SocketUpdateResponse {
+	feed_items_count: number,
+	watch_items_count: number
+}
 
 
 @Injectable({
@@ -15,6 +21,8 @@ export class WebsocketService {
 	private last_message_id = 0;
 
 	private awaiting_response: any[] = [];
+
+	public socket_update_listener = new EventEmitter<SocketUpdateResponse>();
 
 	constructor() {
 		this.reconnect();
@@ -35,6 +43,8 @@ export class WebsocketService {
 
 				if (resp.message_id != null) {
 					return this.update_response(resp);
+				} else if (resp.result.method == 'websocket_update') {
+					this.socket_update_listener.emit(resp.result.params);
 				} else {
 					console.log('Default:', resp);
 				}

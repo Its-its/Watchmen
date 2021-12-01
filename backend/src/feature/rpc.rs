@@ -239,6 +239,12 @@ pub enum Front2CoreNotification {
 #[serde(rename_all = "snake_case")]
 #[serde(tag = "method", content = "params")]
 pub enum Core2FrontNotification {
+	// Web Socket
+	WebsocketUpdate {
+		watch_items_count: usize,
+		feed_items_count: usize
+	},
+
 	// Dashboard
 	RequestHistoryList {
 		groups: Vec<RequestHistoryGroupModel>,

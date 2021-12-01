@@ -14,11 +14,8 @@ export class BackgroundService {
 
 	public watching_listeners = <[ModelWatcher, ModelWatchHistory][]>[];
 
-	// Editor (TODO: Place in to respective files.)
 	public custom_items: ModelCustomItem[] = [];
 	public watch_parser: ModelWatchParser[] = [];
-
-	last_grabbed_timestamp: number = 0;
 
 	@Output() new_feed_items = new EventEmitter<ItemListResponse>();
 
@@ -36,15 +33,6 @@ export class BackgroundService {
 
 		let watcher_list_resp = await this.websocket.send_get_watcher_list();
 		this.watching_listeners = watcher_list_resp.items;
-
-		let item_list = await this.websocket.send_get_item_list(null, null, 0, 1);
-
-
-		if (item_list.items.length != 0) {
-			this.last_grabbed_timestamp = item_list.items[0].date;
-		}
-
-		this.watching_listeners.forEach(v => this.last_grabbed_timestamp = Math.max(this.last_grabbed_timestamp, v[1].date_added));
 	}
 
 	public init(): void {
@@ -54,39 +42,29 @@ export class BackgroundService {
 
 		console.log(this);
 
-		// TODO: Remove. Actually utilize websockets.
-		setInterval(() => {
-			(async () => { // TODO: Error handling.
-				this.websocket.send_get_updates_since(this.last_grabbed_timestamp)
-				.then(update => {
-					if (update.new_feeds != 0) {
-						console.log('New feed items');
+		this.websocket.socket_update_listener.subscribe(update => {
+			if (update.feed_items_count != 0) {
+				console.log('New feed items');
 
-						this.websocket.send_get_item_list(null, null, 0, update.new_feeds)
-						.then(resp => {
-							resp.items.forEach(v => this.last_grabbed_timestamp = Math.max(this.last_grabbed_timestamp, v.date_added));
-							console.log('[BG]: New Items:', resp);
-							this.new_feed_items.emit(resp);
-						})
-						.catch(e => console.error('[BG]: Grabbing Feed Items List', e));
-					}
-
-					if (update.new_watches != 0) {
-						new Notification(`Received ${update.new_watches} new watch update(s).`);
-
-						this.websocket.send_get_watcher_list()
-						.then(resp => {
-							console.log('[BG]: Watching:', resp);
-							this.watching_listeners = resp.items;
-							resp.items.forEach(v => this.last_grabbed_timestamp = Math.max(this.last_grabbed_timestamp, v[1].date_added));
-						})
-						.catch(e => console.error('[BG]: Grabbing Watcher List', e));
-					}
+				this.websocket.send_get_item_list(null, null, 0, update.feed_items_count)
+				.then(resp => {
+					console.log('[BG]: New Items:', resp);
+					this.new_feed_items.emit(resp);
 				})
-				.catch(e => console.error('[BG]: Getting Newest Updates', e));
-			})()
-			.catch(console.error);
-		}, 1000 * 30);
+				.catch(e => console.error('[BG]: Grabbing Feed Items List', e));
+			}
+
+			if (update.watch_items_count != 0) {
+				new Notification(`Received ${update.watch_items_count} new watch update(s).`);
+
+				this.websocket.send_get_watcher_list()
+				.then(resp => {
+					console.log('[BG]: Watching:', resp);
+					this.watching_listeners = resp.items;
+				})
+				.catch(e => console.error('[BG]: Grabbing Watcher List', e));
+			}
+		});
 	}
 
 	get_feed_by_id(id: number): Optional<ModelListener> {

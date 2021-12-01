@@ -878,7 +878,7 @@ pub fn create_last_watch_history(item: &NewWatchHistoryModel, conn: &SqliteConne
 
 // Request History
 
-pub fn insert_request_history(resp: RequestResponse, conn: &SqliteConnection) -> QueryResult<()> {
+pub fn insert_request_history(resp: &RequestResponse, conn: &SqliteConnection) -> QueryResult<()> {
 	// Join request batches together (ex. RSS Feed Watcher & Changes)
 	// TODO: Remove tuple.
 	let (req_history_group, items_found) = resp.results.iter()
@@ -931,12 +931,12 @@ pub fn insert_request_history(resp: RequestResponse, conn: &SqliteConnection) ->
 	create_request_history_group(&req_history_group, conn)?;
 	let group_id = get_request_history_group_by_start_time(req_history_group.start_time, conn)?.id;
 
-	for res in resp.results {
+	for res in &resp.results {
 		match res {
 			RequestResults::Feed(item) => {
-				let values = item.items.into_iter()
+				let values = item.items.iter()
 					.map(|v| {
-						match v.results {
+						match  &v.results {
 							Ok(res) => NewRequestHistoryItemModel {
 								group_id,
 								new_items: Some(res.new_item_count as i32),
@@ -965,9 +965,9 @@ pub fn insert_request_history(resp: RequestResponse, conn: &SqliteConnection) ->
 			}
 
 			RequestResults::Watcher(item) => {
-				let values = item.items.into_iter()
+				let values = item.items.iter()
 					.map(|v| {
-						match v.results {
+						match &v.results {
 							Ok(res) => NewRequestHistoryItemModel {
 								group_id,
 								new_items: Some(res.new_item_count as i32),

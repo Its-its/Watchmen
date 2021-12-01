@@ -1,5 +1,7 @@
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
+use lazy_static::lazy_static;
 use log::{info, error};
 
 use serde_json::{Value, to_string, json};
@@ -9,14 +11,59 @@ use actix_web::{web, Error as ActixError, HttpRequest, HttpResponse};
 use actix_web_actors::ws::{self, WebsocketContext};
 
 use crate::rpc::Object2CoreNotification;
-use crate::feature::ResponseWrapper;
+use crate::feature::{ResponseWrapper, Core2FrontNotification};
 use crate::core::WeakFeederCore;
 use crate::error::Error;
+use crate::state::RequestResponse;
 use crate::types::MessageId;
 
 
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(30);
+
+
+lazy_static! {
+	pub static ref SOCKET_CLIENTS: Mutex<Vec<Recipient<Line>>> = Mutex::new(Vec::new());
+}
+
+
+pub fn send_req_resp_to_clients(resp: &RequestResponse) -> crate::Result<()> {
+	let mut watch_items_count = 0;
+	let mut feed_items_count = 0;
+
+	resp.results.iter()
+	.for_each(|r| match r {
+		crate::request::RequestResults::Feed(v) => {
+			for item in v.items.iter() {
+				if let Ok(res) = &item.results {
+					feed_items_count += res.new_item_count;
+				}
+			}
+		}
+
+		crate::request::RequestResults::Watcher(v) => {
+			for item in v.items.iter() {
+				if let Ok(res) = &item.results {
+					watch_items_count += res.new_item_count;
+				}
+			}
+		}
+	});
+
+
+	let response = Core2FrontNotification::WebsocketUpdate {
+		watch_items_count,
+		feed_items_count
+	};
+
+	let lock = SOCKET_CLIENTS.lock().unwrap();
+
+	for recipient in lock.iter() {
+		WebsocketWrapper::new(recipient).respond_with(None, response.clone());
+	}
+
+	Ok(())
+}
 
 
 pub async fn socket_index(weak_core: web::Data<WeakFeederCore>, r: HttpRequest, stream: web::Payload) -> Result<HttpResponse, ActixError> {
@@ -50,6 +97,15 @@ impl Actor for WebSocket {
 		self.on_start(ctx);
 		self.hb(ctx);
 	}
+
+	fn stopped(&mut self, ctx: &mut Self::Context) {
+		let mut clients = SOCKET_CLIENTS.lock().unwrap();
+		let weak = ctx.address().recipient();
+
+		if let Some(index) = clients.iter().position(|x| x == &weak) {
+			clients.remove(index);
+		}
+	}
 }
 
 
@@ -80,7 +136,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocket {
 							}
 						}
 
-						e  => {
+						e => {
 							error!("handle_text: {}", e);
 						}
 					}
@@ -89,7 +145,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocket {
 
 			Ok(Message::Binary(bin)) => {
 				let recipient = ctx.address().recipient();
-				let mut wrapper = WebsocketWrapper::new(recipient);
+				let mut wrapper = WebsocketWrapper::new(&recipient);
 
 				if let Err(e) = handle_binary(&mut wrapper, &self.weak_core, bin.as_ref()) {
 					error!("handle_binary: {}", e);
@@ -107,9 +163,11 @@ impl WebSocket {
 		WebSocket { weak_core, hb: Instant::now() }
 	}
 
-	fn on_start(&self, _ctx: &mut <Self as Actor>::Context) {
+	fn on_start(&self, ctx: &mut <Self as Actor>::Context) {
 		// let init = Core2FrontNotification::Init{};
 		// ctx.text(serde_json::to_string(&init).unwrap());
+
+		SOCKET_CLIENTS.lock().unwrap().push(ctx.address().recipient());
 	}
 
 	fn hb(&self, ctx: &mut <Self as Actor>::Context) {
@@ -135,11 +193,13 @@ impl WebSocket {
 
 		if let Object2CoreNotification::Frontend { message_id, command } = derived {
 			let recipient = ctx.address().recipient();
-			let mut wrap = WebsocketWrapper::new(recipient);
 
 			let weak_core = self.weak_core.clone();
 
 			let future = async move {
+				let recipient = recipient;
+				let mut wrap = WebsocketWrapper::new(&recipient);
+
 				if let Err(e) = weak_core.handle_response(&mut wrap, message_id, command).await {
 					wrap.respond(message_id, Err(e));
 				}
@@ -153,8 +213,8 @@ impl WebSocket {
 }
 
 
-fn handle_binary(
-	_ctx: &mut WebsocketWrapper,
+fn handle_binary<'a>(
+	_ctx: &mut WebsocketWrapper<'a>,
 	_weak_core: &WeakFeederCore,
 	binary: &[u8]
 ) -> Result<(), Error> {
@@ -166,19 +226,19 @@ fn handle_binary(
 
 pub type WebSocketContext = ws::WebsocketContext<WebSocket>;
 
-pub struct WebsocketWrapper {
-	pub recipient: Recipient<Line>
+pub struct WebsocketWrapper<'a> {
+	pub recipient: &'a Recipient<Line>
 }
 
-impl WebsocketWrapper {
-	pub fn new(recipient: Recipient<Line>) -> Self {
+impl<'a> WebsocketWrapper<'a> {
+	pub fn new(recipient: &'a Recipient<Line>) -> Self {
 		Self { recipient }
 	}
 }
 
-impl ResponseWrapper for WebsocketWrapper {
+impl<'a> ResponseWrapper for WebsocketWrapper<'a> {
 	fn respond(&mut self, message_id: Option<MessageId>, response: Result<Value, Error>) {
-		self.recipient.do_send(
+		let _ = self.recipient.try_send(
 			Line(to_string(
 				&match response {
 					Ok(value) => {
@@ -196,6 +256,6 @@ impl ResponseWrapper for WebsocketWrapper {
 					}
 				}
 			).unwrap())
-		).unwrap();
+		);
 	}
 }
