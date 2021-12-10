@@ -1,0 +1,15 @@
+:host {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+.feed-website-container {
+	width: 100%;
+	background-color: rgb(41, 41, 41);
+	margin-bottom: 10px;
+}
+
+mat-list {
+	width: 100%;
+}

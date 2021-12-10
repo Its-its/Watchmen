@@ -46,6 +46,7 @@ import { WebsitesComponent } from './feeds/websites/websites.component';
 import { EditorComponent as FeedEditorComponent } from './feeds/editor/editor.component';
 import { ChangesListComponent } from './changes/list/list.component';
 import { ChangesEditorComponent } from './changes/editor/editor.component';
+import { ListenersComponent } from './changes/listeners/listeners.component';
 
 
 @NgModule({
@@ -60,6 +61,7 @@ import { ChangesEditorComponent } from './changes/editor/editor.component';
 		FeedEditorComponent,
 		ChangesListComponent,
 		ChangesEditorComponent,
+		ListenersComponent,
 
 		DateAgoPipe,
 		DateGroupSectioning

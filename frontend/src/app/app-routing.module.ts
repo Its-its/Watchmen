@@ -10,6 +10,7 @@ import { WebsitesComponent as FeedWebsitesComponent } from './feeds/websites/web
 
 import { ChangesListComponent } from './changes/list/list.component';
 import { ChangesEditorComponent } from './changes/editor/editor.component';
+import { ListenersComponent } from './changes/listeners/listeners.component';
 
 
 const routes: Routes = [
@@ -22,6 +23,7 @@ const routes: Routes = [
 
 	{ path: 'changes', component: ChangesListComponent },
 	{ path: 'changes/editor', component: ChangesEditorComponent },
+	{ path: 'changes/listeners', component: ListenersComponent },
 
 	{ path: '',   redirectTo: '/dashboard', pathMatch: 'full' }
 ];

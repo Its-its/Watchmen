@@ -16,7 +16,8 @@ export class ToolbarComponent {
 		["Feed Filter", "/feeds/filter"],
 		null,
 		["Change List", "/changes"],
-		["Change Editor", "/changes/editor"]
+		["Change Editor", "/changes/editor"],
+		["Change Listeners", "/changes/listeners"]
 	];
 
 	constructor() {}

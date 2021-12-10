@@ -1,0 +1,70 @@
+<mat-drawer-container class="feeder-main-container">
+	<mat-drawer mode="side" opened>
+		<h2>Watchmen</h2>
+
+		<form class="search-field">
+			<mat-form-field appearance="fill">
+				<mat-label>Website URL</mat-label>
+				<input
+					#websiteInput
+					matInput
+					placeholder="URL"
+					name="url"
+				>
+			</mat-form-field>
+			<mat-form-field appearance="fill">
+				<mat-label>Watch Parsers</mat-label>
+				<mat-select required="" #websiteSelect>
+					<mat-option *ngFor="let parser of background.watch_parser" [value]="parser.id">
+						{{ parser.title }}
+					</mat-option>
+				</mat-select>
+			</mat-form-field>
+		</form>
+
+		<button mat-raised-button color="accent" (click)="addListener(websiteInput.value, websiteSelect.value)">Add Listener</button>
+	</mat-drawer>
+	<mat-drawer-content>
+		<mat-list>
+			<mat-list-item *ngFor="let listener of background.watching_listeners" class="feed-website-container">
+				<mat-list>
+					<h1 matLine>{{ listener[0].title }}</h1>
+
+					<p matLine>{{ listener[0].description }}</p>
+					<p matLine>URL: {{ listener[0].url }}</p>
+					<p matLine>Interval: {{ listener[0].sec_interval | dateAgo:'sc' }}</p>
+
+					<p matLine *ngIf="listener[0].remove_after == 0; then thenRemBlock else elseRemBlock"></p>
+					<ng-template #thenRemBlock>Never removing old items</ng-template>
+					<ng-template #elseRemBlock>Removing feeds after {{ listener[0].remove_after }} seconds</ng-template>
+
+					<br><br>
+
+					<div>
+						<button mat-raised-button *ngIf="listener[0].enabled" (click) = "toggledListener(listener[0], false)">Enabled</button>
+						<button mat-raised-button color="warn" *ngIf="!listener[0].enabled" (click) = "toggledListener(listener[0], true)">Disabled</button>
+
+						<form>
+							<mat-form-field appearance="fill">
+								<mat-label>Interval (seconds)</mat-label>
+								<input matInput [value]="listener[0].sec_interval" placeholder="Interval (seconds)" type="number" (input)="updateInterval(listener[0], $any($event.target).valueAsNumber)">
+							</mat-form-field>
+
+							<mat-form-field appearance="fill">
+								<mat-label>Watch Parser</mat-label>
+								<mat-select [(value)] = "listener[0].parser_id">
+									<mat-option *ngFor="let parser of background.watch_parser" [value]="parser.id">
+										{{ parser.title }}
+									</mat-option>
+								</mat-select>
+							</mat-form-field>
+						</form>
+
+						<button mat-raised-button color="warn" (click) = "deleteListener(listener[0].id, deleteFound.checked)">Delete</button>
+						<mat-checkbox style="margin-left: 10px;" #deleteFound>Delete stored items?</mat-checkbox>
+					</div>
+				</mat-list>
+			</mat-list-item>
+		</mat-list>
+	</mat-drawer-content>
+</mat-drawer-container>
