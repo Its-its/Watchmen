@@ -1,9 +1,13 @@
 :host {
+	display: flex;
+	flex-direction: column;
 	flex-grow: 1;
+	overflow: hidden;
 }
 
 .search-field {
 	padding: 0 10px;
+
 	mat-form-field {
 		width: 100%;
 	}

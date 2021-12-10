@@ -8,11 +8,6 @@ import { WebsocketService } from 'src/app/websocket.service';
 import { FeedListener } from 'src/app/item/feed-listener';
 
 
-export interface Fruit {
-	name: string;
-}
-
-
 @Component({
 	selector: 'app-websites',
 	templateUrl: './websites.component.html',
@@ -21,8 +16,6 @@ export interface Fruit {
 
 export class WebsitesComponent {
 	constructor(public background: BackgroundService, private websocket: WebsocketService) {}
-
-	addOnBlur = true;
 
 	readonly separatorKeysCodes = [ENTER, COMMA] as const;
 
