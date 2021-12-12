@@ -1,6 +1,5 @@
 use std::time::{Duration, SystemTime};
 
-use log::{info};
 use diesel::{RunQueryDsl, SqliteConnection};
 use reqwest::Client;
 
@@ -32,7 +31,7 @@ impl FeedType {
 			Ok(c) => return FeedType::Rss(Ok(c)),
 
 			Err(e) => {
-				info!("rss: {:?}", e);
+				log::error!("rss: {:?}", e);
 				if let Error::Rss(e) = e {
 					use ::rss::Error::InvalidStartTag;
 
@@ -52,7 +51,7 @@ impl FeedType {
 			Ok(c) => return FeedType::Atom(Ok(c)),
 
 			Err(e) => {
-				info!("atom: {:?}", e);
+				log::error!("atom: {:?}", e);
 				if let Error::Atom(e) = e {
 					use atom_syndication::Error::InvalidStartTag;
 
@@ -72,7 +71,7 @@ impl FeedType {
 			Ok(i) => FeedType::Custom(Ok(i)),
 
 			Err(e) => {
-				info!("custom: {:?}", e);
+				log::error!("custom: {:?}", e);
 				FeedType::Custom(Err(e))
 			}
 		}
@@ -147,7 +146,7 @@ impl RequestManager {
 
 		self.is_idle = false;
 
-		info!("Starting Requests.. Found: {}", feeds.len());
+		log::debug!("Starting Requests.. Found: {}", feeds.len());
 
 
 		for feed in &feeds {
@@ -190,7 +189,7 @@ impl RequestManager {
 
 
 pub async fn request_feed(feed: &FeedModel, req_client: &Client, conn: &SqliteConnection) -> CollectedResult {
-	info!(" - Requesting: {}", feed.url);
+	log::debug!(" - Requesting: {}", feed.url);
 
 	let mut feed_res = RequestItemResults {
 		start_time: SystemTime::now(),

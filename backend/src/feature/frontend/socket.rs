@@ -2,7 +2,7 @@ use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use lazy_static::lazy_static;
-use log::{info, error};
+use log;
 
 use serde_json::{Value, to_string, json};
 
@@ -127,17 +127,17 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocket {
 				if let Err(e) = self.handle_text(ctx, &text) {
 					match e {
 						Error::Json(e) => {
-							error!("handle_text JSON: {}", e);
+							log::error!("handle_text JSON: {}", e);
 
 							let line = text.split('\n').nth(e.line() - 1);
 
 							if let Some(line) = line {
-								println!("Line: '{}'", line);
+								log::error!(" - Line: '{}'", line);
 							}
 						}
 
 						e => {
-							error!("handle_text: {}", e);
+							log::error!("handle_text: {}", e);
 						}
 					}
 				}
@@ -148,7 +148,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocket {
 				let mut wrapper = WebsocketWrapper::new(&recipient);
 
 				if let Err(e) = handle_binary(&mut wrapper, &self.weak_core, bin.as_ref()) {
-					error!("handle_binary: {}", e);
+					log::error!("handle_binary: {}", e);
 				}
 			}
 
@@ -173,7 +173,7 @@ impl WebSocket {
 	fn hb(&self, ctx: &mut <Self as Actor>::Context) {
 		ctx.run_interval(HEARTBEAT_INTERVAL, |act, ctx| {
 			if Instant::now().duration_since(act.hb) > CLIENT_TIMEOUT {
-				info!("Websocket Client heartbeat failed, disconnecting!");
+				log::debug!("Websocket Client heartbeat failed, disconnecting!");
 
 				ctx.stop();
 
@@ -218,7 +218,7 @@ fn handle_binary<'a>(
 	_weak_core: &WeakFeederCore,
 	binary: &[u8]
 ) -> Result<(), Error> {
-	info!("Binary: {:?}", binary);
+	log::debug!("Binary: {:?}", binary);
 
 	Ok(())
 }

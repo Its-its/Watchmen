@@ -2,7 +2,7 @@ use std::time::{Duration, SystemTime};
 use reqwest::Client;
 use serde::{Serialize, Deserialize};
 use url::Url;
-use log::info;
+use log;
 use diesel::SqliteConnection;
 
 
@@ -173,8 +173,7 @@ impl RequestManager {
 
 		self.is_idle = false;
 
-		info!("Starting Requests.. Found: {}", feeds.len());
-
+		log::debug!("Starting Requests.. Found: {}", feeds.len());
 
 		for feed in &feeds {
 			let feed_cloned = (*feed).clone();
@@ -274,7 +273,7 @@ pub async fn get_from_url_parser(req_client: &Client, url: &str, parser: &MatchP
 		})
 		.filter_map(|i| {
 			if i.is_err() {
-				println!("EVALUATION ERROR: {:?}", i);
+				log::error!("EVALUATION ERROR: {:?}", i);
 			}
 
 			i.ok()
@@ -285,7 +284,7 @@ pub async fn get_from_url_parser(req_client: &Client, url: &str, parser: &MatchP
 
 
 pub async fn request_feed(feed: &WatchingModel, req_client: &Client, conn: &SqliteConnection) -> WatcherResult {
-	info!(" - Requesting: {}", feed.url);
+	log::debug!(" - Requesting: {}", feed.url);
 
 	let mut feed_res = RequestItemResults {
 		start_time: SystemTime::now(),

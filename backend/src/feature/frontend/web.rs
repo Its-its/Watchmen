@@ -1,7 +1,5 @@
 use std::{io, thread::{self, JoinHandle}};
 
-use log::info;
-
 use actix_rt::System;
 use serde_json::json;
 use actix_files as fs;
@@ -35,7 +33,7 @@ impl Web {
 		self.weak_frontend = Some(weak_frontend);
 		self.weak_core = Some(weak_core);
 
-		info!("Running HTTP + WS Server");
+		log::info!("Running HTTP + WS Server");
 
 		let frontend_ref = self.weak_frontend.as_ref().unwrap().clone();
 		let core_ref = self.weak_core.as_ref().unwrap().clone();

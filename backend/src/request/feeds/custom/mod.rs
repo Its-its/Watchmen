@@ -283,7 +283,7 @@ pub async fn get_from_url_parser(url: &str, parser: &SearchParser, req_client: &
 		})
 		.filter_map(|i| {
 			if i.is_err() {
-				println!("EVALUATION ERROR: {:?}", i);
+				log::error!("EVALUATION ERROR: {:?}", i);
 			}
 
 			i.ok()

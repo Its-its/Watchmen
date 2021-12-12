@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use reqwest::Client;
 use url::Url;
-use log::info;
+use log;
 
 use crate::state::CoreState;
 use crate::request::{watcher, default_headers};
@@ -33,7 +33,7 @@ impl FeederCore {
 
 				// Requests aren't enabled? Break out of loop.
 				if !inner.get_config().request.enabled {
-					info!("Requests disabled.");
+					log::info!("Requests disabled.");
 					break;
 				}
 
@@ -43,38 +43,38 @@ impl FeederCore {
 					match req {
 						RequestResults::Feed(req) => {
 							if let Some(e) = req.general_error.as_ref() {
-								info!("Feed Request Error: {:?}", e);
+								log::error!("Feed Request Error: {:?}", e);
 							} else {
 								let mut encountered_error = false;
 
 								for feed in &req.items {
 									if let Err(e) = feed.results.as_ref() {
-										info!("Feed \"{}\" Error: {:#?}", feed.item.title, e);
+										log::error!("Feed \"{}\" Error: {:#?}", feed.item.title, e);
 										encountered_error = true;
 									}
 								}
 
 								if !encountered_error && !req.items.is_empty() {
-									info!("Feeds ran without error. Took: {:?}", req.duration);
+									log::info!("Feeds ran without error. Took: {:?}", req.duration);
 								}
 							}
 						}
 
 						RequestResults::Watcher(req) => {
 							if let Some(e) = req.general_error.as_ref() {
-								info!("Watcher Request Error: {:?}", e);
+								log::error!("Watcher Request Error: {:?}", e);
 							} else {
 								let mut encountered_error = false;
 
 								for feed in &req.items {
 									if let Err(e) = feed.results.as_ref() {
-										info!("Watcher \"{}\" Error: {:#?}", feed.item.title, e);
+										log::error!("Watcher \"{}\" Error: {:#?}", feed.item.title, e);
 										encountered_error = true;
 									}
 								}
 
 								if !encountered_error && !req.items.is_empty() {
-									info!("Watchers ran without error. Took: {:?}", req.duration);
+									log::info!("Watchers ran without error. Took: {:?}", req.duration);
 								}
 							}
 						}
@@ -82,7 +82,7 @@ impl FeederCore {
 				}
 
 				if let Err(e) = objects::insert_request_history(&resp, inner.connection.connection()) {
-					eprintln!("Error inserting request history into database: {:?}", e);
+					log::error!("Error inserting request history into database: {:?}", e);
 				}
 
 				#[cfg(feature = "website")]
@@ -343,14 +343,11 @@ impl WeakFeederCore {
 			}
 
 			Front2CoreNotification::UpdateCustomItem { id, item } => {
-				println!("UpdateCustomItem: {:?}", id);
-				println!("{:#?}", item);
+				log::info!("UpdateCustomItem: {:?}", id);
+				log::info!("{:#?}", item);
 			}
 
 			Front2CoreNotification::NewCustomItem { item } => {
-				println!("NewCustomItem");
-				println!("{:#?}", item);
-
 				let model = item.clone().into();
 
 				let affected = objects::create_custom_item(&model, conn)?;
@@ -592,7 +589,6 @@ impl WeakFeederCore {
 					ctx.respond_with(msg_id_opt, Core2FrontNotification::TestWatcher { success: true, items });
 				} else {
 					// TODO: Get parser based on url.
-					println!("No parser...");
 					ctx.respond_with(msg_id_opt, Core2FrontNotification::TestWatcher { success: false, items: Vec::new() });
 				}
 			}

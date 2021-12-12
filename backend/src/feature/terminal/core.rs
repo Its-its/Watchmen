@@ -90,7 +90,7 @@ pub fn display() -> Result<(), crossterm::ErrorKind> {
 
 	loop {
 		terminal.draw(|mut f| {
-			// println!("draw");
+			// log::info!("draw");
 
 			let chunks = Layout::default()
                 .direction(Direction::Horizontal)

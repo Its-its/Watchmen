@@ -157,7 +157,7 @@ fn start_output(bot: Bot, config: Config, mut receiver: Receiver<RequestResponse
 									).send().await;
 
 									if let Err(e) = send {
-										eprintln!("{:?}", e);
+										log::error!("{:?}", e);
 									}
 								}
 							}
@@ -191,7 +191,7 @@ fn start_output(bot: Bot, config: Config, mut receiver: Receiver<RequestResponse
 								).send().await;
 
 								if let Err(e) = send {
-									eprintln!("{:?}", e);
+									log::error!("{:?}", e);
 								}
 							}
 						}
@@ -200,6 +200,6 @@ fn start_output(bot: Bot, config: Config, mut receiver: Receiver<RequestResponse
 			}
 		});
 
-		println!("Stopped running telegram thread.");
+		log::info!("Stopped running telegram thread.");
 	});
 }
