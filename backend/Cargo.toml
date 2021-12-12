@@ -39,7 +39,7 @@ diesel = { version = "1.4.8", features = ["sqlite", "extras"] }
 libsqlite3-sys = { version = "0.9.1", features = ["bundled"] }
 
 #Telegram
-telegram-bot = { git = "https://github.com/telegram-rs/telegram-bot", optional = true }
+teloxide = { version = "0.5", features = ["macros", "auto-send"], optional = true }
 
 # Website
 actix = { version = "0.12.0", optional = true }
@@ -66,7 +66,7 @@ optional = true
 default = ["website", "telegram"]
 
 # Telegram
-telegram = ["telegram-bot"]
+telegram = ["teloxide"]
 # Fully interactive webpage.
 website = ["actix", "actix-web", "actix-web-actors", "actix-files", "actix-rt", "handlebars"]
 # Fully intervative terminal

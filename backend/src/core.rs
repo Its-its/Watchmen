@@ -87,6 +87,9 @@ impl FeederCore {
 
 				#[cfg(feature = "website")]
 				let _ = crate::feature::frontend::socket::send_req_resp_to_clients(&resp);
+
+				#[cfg(feature = "telegram")]
+				inner.telegram.send(resp).await;
 			}
 
 			// Sleep otherwise loop will make the process use lots of cpu power.

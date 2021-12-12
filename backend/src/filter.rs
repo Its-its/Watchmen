@@ -5,8 +5,8 @@ use regex::RegexBuilder;
 use diesel::SqliteConnection;
 
 use crate::Result;
-use crate::feature::models::FeedItemModel;
-use crate::feature::objects::{get_filters, get_feed_filters};
+use crate::feature::models::{NewFeedItemModel, FeedItemModel, FeedFilterModel};
+use crate::feature::objects::{get_filters, get_feed_filters, Filter};
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -63,7 +63,7 @@ impl FilterType {
 	}
 
 
-	pub fn matches(&self, item: &FeedItemModel) -> bool {
+	pub fn matches(&self, item: &dyn FilterableItem) -> bool {
 		match self {
 			FilterType::Regex(regex, opts) => {
 				let mut builder = RegexBuilder::new(regex);
@@ -78,30 +78,30 @@ impl FilterType {
 
 				let build = builder.build().unwrap();
 
-				build.is_match(&item.title)
+				build.is_match(item.get_value())
 			}
 
 			FilterType::Contains(value, case_sensitive) => {
 				if *case_sensitive {
-					item.title.contains(value.as_str())
+					item.get_value().contains(value.as_str())
 				} else {
-					item.title.to_lowercase().contains(value.to_lowercase().as_str())
+					item.get_value().to_lowercase().contains(value.to_lowercase().as_str())
 				}
 			}
 
 			FilterType::StartsWith(value, case_sensitive) => {
 				if *case_sensitive {
-					item.title.starts_with(value.as_str())
+					item.get_value().starts_with(value.as_str())
 				} else {
-					item.title.to_lowercase().starts_with(value.to_lowercase().as_str())
+					item.get_value().to_lowercase().starts_with(value.to_lowercase().as_str())
 				}
 			}
 
 			FilterType::EndsWith(value, case_sensitive) => {
 				if *case_sensitive {
-					item.title.ends_with(value.as_str())
+					item.get_value().ends_with(value.as_str())
 				} else {
-					item.title.to_lowercase().ends_with(value.to_lowercase().as_str())
+					item.get_value().to_lowercase().ends_with(value.to_lowercase().as_str())
 				}
 			}
 
@@ -110,7 +110,7 @@ impl FilterType {
 		}
 	}
 
-	pub fn find(&self, item: &FeedItemModel) -> Option<Range<usize>> {
+	pub fn find(&self, item: &impl FilterableItem) -> Option<Range<usize>> {
 		match self {
 			FilterType::Regex(regex, opts) => {
 				let mut builder = RegexBuilder::new(regex);
@@ -125,16 +125,16 @@ impl FilterType {
 
 				let build = builder.build().unwrap();
 
-				build.find(&item.title).map(|m| m.range())
+				build.find(item.get_value()).map(|m| m.range())
 			}
 
 			FilterType::Contains(value, case_sensitive) => {
 				if *case_sensitive {
-					item.title
+					item.get_value()
 						.find(value.as_str())
 						.map(|s| s..value.len())
 				} else {
-					item.title.to_lowercase()
+					item.get_value().to_lowercase()
 						.find(value.to_lowercase().as_str())
 						.map(|s| s..value.len())
 				}
@@ -142,9 +142,9 @@ impl FilterType {
 
 			FilterType::StartsWith(value, case_sensitive) => {
 				let contains = if *case_sensitive {
-					item.title.starts_with(value.as_str())
+					item.get_value().starts_with(value.as_str())
 				} else {
-					item.title.to_lowercase().starts_with(value.to_lowercase().as_str())
+					item.get_value().to_lowercase().starts_with(value.to_lowercase().as_str())
 				};
 
 				Some(0..value.len()).filter(|_| contains)
@@ -152,15 +152,15 @@ impl FilterType {
 
 			FilterType::EndsWith(value, case_sensitive) => {
 				let contains = if *case_sensitive {
-					item.title.ends_with(value.as_str())
+					item.get_value().ends_with(value.as_str())
 				} else {
-					item.title.to_lowercase().ends_with(value.to_lowercase().as_str())
+					item.get_value().to_lowercase().ends_with(value.to_lowercase().as_str())
 				};
 
-				Some(item.title.len() - value.len()..item.title.len()).filter(|_| contains)
+				Some(item.get_value().len() - value.len()..item.get_value().len()).filter(|_| contains)
 			}
 
-			FilterType::And(filters) => filters.iter().filter_map(|f| f.find(item)).next(),
+			FilterType::And(filters) => filters.iter().filter_map(|f| f.find(item)).next(), // TODO: Ensure correct.
 			FilterType::Or(filters) => filters.iter().find_map(|f| f.find(item)),
 		};
 
@@ -216,7 +216,36 @@ impl FilterType {
 }
 
 
-pub fn filter_items<'a>(items: &'a [FeedItemModel], conn: &SqliteConnection) -> Result<Vec<&'a FeedItemModel>> {
+
+
+pub trait FilterableItem {
+	fn get_value(&self) -> &str;
+	fn get_feed_id(&self) -> i32;
+}
+
+
+impl FilterableItem for NewFeedItemModel {
+	fn get_value(&self) -> &str {
+		&self.title
+	}
+
+	fn get_feed_id(&self) -> i32 {
+		self.feed_id
+	}
+}
+
+impl FilterableItem for FeedItemModel {
+	fn get_value(&self) -> &str {
+		&self.title
+	}
+
+	fn get_feed_id(&self) -> i32 {
+		self.feed_id
+	}
+}
+
+
+pub fn filter_items<'a, F: FilterableItem>(items: &'a [F], conn: &SqliteConnection) -> Result<Vec<&'a F>> {
 	let feed_filters = get_feed_filters(conn)?;
 	let filter_models = get_filters(conn)?;
 
@@ -225,16 +254,19 @@ pub fn filter_items<'a>(items: &'a [FeedItemModel], conn: &SqliteConnection) -> 
 	} else {
 		Ok(
 			items.iter()
-			.filter(|item| {
-				for feed_filter_model in &feed_filters {
-					if feed_filter_model.feed_id == item.feed_id && filter_models.iter().any(|filter_cont| feed_filter_model.filter_id == filter_cont.id && filter_cont.filter.matches(*item)) {
-						return true;
-					}
-				}
-
-				false
-			})
+			.filter(|item| filter_item(*item, &filter_models, &feed_filters, conn))
 			.collect()
 		)
 	}
+}
+
+pub fn filter_item<F: FilterableItem>(item: &F, filter_models: &[Filter], feed_filters: &[FeedFilterModel], conn: &SqliteConnection) -> bool {
+	for feed_filter_model in feed_filters {
+		if feed_filter_model.feed_id == item.get_feed_id() &&
+			filter_models.iter().any(|filter_cont| feed_filter_model.filter_id == filter_cont.id && filter_cont.filter.matches(item)) {
+			return true;
+		}
+	}
+
+	false
 }
