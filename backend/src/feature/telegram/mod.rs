@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex, MutexGuard, Weak};
 use std::thread;
 
-use tokio::sync::mpsc;
+use tokio::sync::mpsc::{self, Receiver};
 use tokio::{runtime::Runtime};
 
 use teloxide::prelude::*;
@@ -70,88 +70,91 @@ impl TelegramState {
 	}
 
 	pub fn init(&mut self, config: Config, weak_core: WeakFeederCore, _weak_telegram: WeakTelegramCore) {
-		if config.telegram.chat_id.is_none() {
-			for _ in 0..5 {
-				println!(r#"TELEGRAM NOTIFICATIONS DISABLED!\nPLEASE PUT THE CHAT ID IN THE CONFIG FILE AFTER api_key as "chat_id" = XXXX"#);
-			}
+		let receiver = self.receiver.take().unwrap();
 
-			return;
+		let bot = Bot::new(config.telegram.api_key.clone());
+
+		if config.telegram.chat_id.is_none() || config.telegram.chat_id == Some(0) {
+			start_listener(bot, config, weak_core);
+		} else {
+			start_output(bot, config, receiver, weak_core);
 		}
+	}
+}
 
-		let mut receiver = self.receiver.take().unwrap();
+fn start_listener(bot: Bot, config: Config, weak_core: WeakFeederCore) {
+	for _ in 0..5 {
+		log::info!(r#"TELEGRAM NOTIFICATIONS DISABLED!\nPLEASE SEND A MESSAGE TO YOUR BOT!"#);
+	}
 
-		thread::spawn(move || {
-			let rt = Runtime::new().expect("runtime");
+	thread::spawn(move || {
+		let rt = Runtime::new().expect("runtime");
 
-			rt.block_on(async move {
-				let chat_id = config.telegram.chat_id.unwrap();
+		rt.block_on(async move {
+			teloxide::repl(bot, move |cx| {
+				{
+					let mut config = config.clone();
 
-				// Telegram API Listener
-				let bot = Bot::new(config.telegram.api_key).auto_send();
-
-				// Backend Listener
-				while let Some(resp) = receiver.recv().await {
 					let core = weak_core.upgrade().unwrap();
 					let inner = core.to_inner();
 
-					let conn = inner.connection.connection();
+					config.telegram.chat_id = Some(cx.chat_id());
 
-					for item in resp.results {
-						match item {
-							RequestResults::Feed(v) => {
-								let items = v.items.into_iter()
-									.filter_map(|v| v.results.ok())
-									.map(|v| v.to_insert)
-									.flatten();
+					let mut cfg = inner.config.write().unwrap();
+					cfg.set_config(config);
+					let _ = cfg.save();
+				}
 
-								let feed_filters = objects::get_feed_filters(conn).unwrap();
-								let filter_models = objects::get_filters(conn).unwrap();
+				for _ in 0..5 {
+					log::info!(r#"Bot Received Your Message! Please restart your client!"#);
+				}
 
-								for item in items {
-									// Filter
-									if filter::filter_item(&item, &filter_models, &feed_filters, conn) {
-										let send = bot.send_message(
-											chat_id,
-											format!(
-												"{}\n{}",
-												item.title,
-												item.link
-											)
-										).await;
+				log::info!(r#"(If you did not do this please set telegram chat_id to 0 in the config and try messaging again. A bad actor messages your bot.)"#);
 
-										if let Err(e) = send {
-											eprintln!("{:?}", e);
-										}
-									}
-								}
-							}
+				async move {
+					let _ = cx.requester.close().send().await;
+					respond(())
+				}
+			}).await;
+		});
+	});
+}
 
-							RequestResults::Watcher(v) => {
-								let items = v.items.into_iter()
-									.filter_map(|v| v.results.ok())
-									.map(|v| v.to_insert)
-									.flatten();
+fn start_output(bot: Bot, config: Config, mut receiver: Receiver<RequestResponse>, weak_core: WeakFeederCore) {
+	thread::spawn(move || {
+		let rt = Runtime::new().expect("runtime");
 
-								for item in items {
-									let watcher = objects::get_watcher_by_id(item.watch_id, conn).unwrap();
+		rt.block_on(async move {
+			let chat_id = config.telegram.chat_id.unwrap();
 
-									let watcher_items: Vec<FoundItem> = serde_json::from_str(&item.items).unwrap();
+			// Backend Listener
+			while let Some(resp) = receiver.recv().await {
+				let core = weak_core.upgrade().unwrap();
+				let inner = core.to_inner();
 
+				let conn = inner.connection.connection();
+
+				for item in resp.results {
+					match item {
+						RequestResults::Feed(v) => {
+							let items = v.items.into_iter()
+								.filter_map(|v| v.results.ok())
+								.map(|v| v.to_insert)
+								.flatten();
+
+							let feed_filters = objects::get_feed_filters(conn).unwrap();
+							let filter_models = objects::get_filters(conn).unwrap();
+
+							for item in items {
+								if filter::filter_item(&item, &filter_models, &feed_filters, conn) {
 									let send = bot.send_message(
 										chat_id,
 										format!(
-											"{}\n{}\n{}",
-											watcher.title,
-											if watcher_items.len() == 1 {
-												watcher_items.first()
-												.map(|i| i.value.clone())
-												.unwrap_or_default()
-											} else {
-												format!("{} items", watcher_items.len())
-											},
-											watcher.url
+											"{}\n{}",
+											item.title,
+											item.link
 										)
-									).await;
+									).send().await;
 
 									if let Err(e) = send {
 										eprintln!("{:?}", e);
@@ -159,11 +162,44 @@ impl TelegramState {
 								}
 							}
 						}
+
+						RequestResults::Watcher(v) => {
+							let items = v.items.into_iter()
+								.filter_map(|v| v.results.ok())
+								.map(|v| v.to_insert)
+								.flatten();
+
+							for item in items {
+								let watcher = objects::get_watcher_by_id(item.watch_id, conn).unwrap();
+
+								let watcher_items: Vec<FoundItem> = serde_json::from_str(&item.items).unwrap();
+
+								let send = bot.send_message(
+									chat_id,
+									format!(
+										"{}\n{}\n{}",
+										watcher.title,
+										if watcher_items.len() == 1 {
+											watcher_items.first()
+											.map(|i| i.value.clone())
+											.unwrap_or_default()
+										} else {
+											format!("{} items", watcher_items.len())
+										},
+										watcher.url
+									)
+								).send().await;
+
+								if let Err(e) = send {
+									eprintln!("{:?}", e);
+								}
+							}
+						}
 					}
 				}
-			});
-
-			println!("Stopped running telegram thread.");
+			}
 		});
-	}
+
+		println!("Stopped running telegram thread.");
+	});
 }
