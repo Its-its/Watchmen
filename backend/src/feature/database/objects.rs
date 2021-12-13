@@ -379,7 +379,7 @@ pub fn get_items_in_range(search_query: Option<&str>, category_id: Option<QueryI
 
 pub fn get_item_count_since(since: i64, conn: &SqliteConnection) -> QueryResult<i64> {
 	self::items::table
-		.filter(self::items::dsl::date.gt(since))
+		.filter(self::items::dsl::date_added.gt(since))
 		.count()
 		.get_result(conn)
 }
@@ -898,9 +898,7 @@ pub fn insert_request_history(resp: &RequestResponse, conn: &SqliteConnection) -
 						let start_time = item.start_time.duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as i64;
 						model.duration += item.duration.as_millis() as i32;
 
-						if start_time < model.start_time {
-							model.start_time = start_time;
-						}
+						model.start_time = model.start_time.min(start_time);
 
 						items_found += item.items.len();
 					}
@@ -912,9 +910,7 @@ pub fn insert_request_history(resp: &RequestResponse, conn: &SqliteConnection) -
 						let start_time = item.start_time.duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as i64;
 						model.duration += item.duration.as_millis() as i32;
 
-						if start_time < model.start_time {
-							model.start_time = start_time;
-						}
+						model.start_time = model.start_time.min(start_time);
 
 						items_found += item.items.len();
 					}

@@ -1,5 +1,5 @@
 use std::sync::RwLock;
-use std::time::{Duration, Instant};
+use std::time::{Duration, SystemTime};
 
 
 
@@ -76,7 +76,7 @@ impl CoreState {
 
 	//
 	pub async fn run_all_requests(&mut self, is_manual: bool) -> RequestResponse {
-		let now = Instant::now();
+		let now = SystemTime::now();
 
 		// Reqwest Client
 		let req_client = Client::builder()
@@ -101,7 +101,7 @@ impl CoreState {
 
 		RequestResponse {
 			start_time: now,
-			duration: now.elapsed(),
+			duration: now.elapsed().unwrap(),
 			concurrency: 1,
 			is_manual,
 			results,
@@ -115,7 +115,7 @@ impl CoreState {
 
 
 pub struct RequestResponse {
-	pub start_time: Instant,
+	pub start_time: SystemTime,
 	pub duration: Duration,
 	pub concurrency: usize,
 	pub is_manual: bool,

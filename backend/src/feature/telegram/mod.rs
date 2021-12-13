@@ -134,19 +134,23 @@ fn start_output(bot: Bot, config: Config, mut receiver: Receiver<RequestResponse
 
 				let conn = inner.connection.connection();
 
+				let started_at = resp.start_time.duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64;
+
 				for item in resp.results {
 					match item {
 						RequestResults::Feed(v) => {
-							let items = v.items.into_iter()
+							let mut new_item_count = 0;
+
+							// Get New items count.
+							v.items.into_iter()
 								.filter_map(|v| v.results.ok())
-								.map(|v| v.to_insert)
-								.flatten();
+								.for_each(|v| new_item_count += v.new_item_count);
 
 							let feed_filters = objects::get_feed_filters(conn).unwrap();
 							let filter_models = objects::get_filters(conn).unwrap();
 
-							for item in items {
-								if filter::filter_item(&item, &filter_models, &feed_filters, conn) {
+							for item in objects::get_items_in_range(None, None, new_item_count as i64, 0, conn).unwrap() {
+								if item.date_added > started_at && filter::filter_item(&item, &filter_models, &feed_filters) {
 									let send = bot.send_message(
 										chat_id,
 										format!(
@@ -170,28 +174,30 @@ fn start_output(bot: Bot, config: Config, mut receiver: Receiver<RequestResponse
 								.flatten();
 
 							for item in items {
-								let watcher = objects::get_watcher_by_id(item.watch_id, conn).unwrap();
+								if item.date_added > started_at {
+									let watcher = objects::get_watcher_by_id(item.watch_id, conn).unwrap();
 
-								let watcher_items: Vec<FoundItem> = serde_json::from_str(&item.items).unwrap();
+									let watcher_items: Vec<FoundItem> = serde_json::from_str(&item.items).unwrap();
 
-								let send = bot.send_message(
-									chat_id,
-									format!(
-										"{}\n{}\n{}",
-										watcher.title,
-										if watcher_items.len() == 1 {
-											watcher_items.first()
-											.map(|i| i.value.clone())
-											.unwrap_or_default()
-										} else {
-											format!("{} items", watcher_items.len())
-										},
-										watcher.url
-									)
-								).send().await;
+									let send = bot.send_message(
+										chat_id,
+										format!(
+											"{}\n{}\n{}",
+											watcher.title,
+											if watcher_items.len() == 1 {
+												watcher_items.first()
+												.map(|i| i.value.clone())
+												.unwrap_or_default()
+											} else {
+												format!("{} items", watcher_items.len())
+											},
+											watcher.url
+										)
+									).send().await;
 
-								if let Err(e) = send {
-									log::error!("{:?}", e);
+									if let Err(e) = send {
+										log::error!("{:?}", e);
+									}
 								}
 							}
 						}

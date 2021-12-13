@@ -286,13 +286,13 @@ pub fn filter_items<'a, F: FilterableItem>(items: &'a [F], conn: &SqliteConnecti
 	} else {
 		Ok(
 			items.iter()
-			.filter(|item| filter_item(*item, &filter_models, &feed_filters, conn))
+			.filter(|item| filter_item(*item, &filter_models, &feed_filters))
 			.collect()
 		)
 	}
 }
 
-pub fn filter_item<F: FilterableItem>(item: &F, filter_models: &[Filter], feed_filters: &[FeedFilterModel], conn: &SqliteConnection) -> bool {
+pub fn filter_item<F: FilterableItem>(item: &F, filter_models: &[Filter], feed_filters: &[FeedFilterModel]) -> bool {
 	for feed_filter_model in feed_filters {
 		if feed_filter_model.feed_id == item.get_feed_id() &&
 			filter_models.iter().any(|filter_cont| feed_filter_model.filter_id == filter_cont.id && filter_cont.filter.matches(item)) {
