@@ -45,17 +45,21 @@ impl FeederCore {
 							if let Some(e) = req.general_error.as_ref() {
 								log::error!("Feed Request Error: {:?}", e);
 							} else {
-								let mut encountered_error = false;
+								let mut encountered_error = 0;
 
 								for feed in &req.items {
 									if let Err(e) = feed.results.as_ref() {
-										log::error!("Feed \"{}\" Error: {:#?}", feed.item.title, e);
-										encountered_error = true;
+										log::error!(r#"Feed "{}" Error: {:#?}"#, feed.item.title, e);
+										encountered_error += 1;
 									}
 								}
 
-								if !encountered_error && !req.items.is_empty() {
-									log::info!("Feeds ran without error. Took: {:?}", req.duration);
+								if !req.items.is_empty() {
+									if encountered_error == 0 {
+										log::info!("Feeds ran without error. Took: {:?}", req.duration);
+									} else {
+										log::info!("Feeds ran with {} error(s). Took: {:?}", encountered_error, req.duration);
+									}
 								}
 							}
 						}
@@ -64,17 +68,21 @@ impl FeederCore {
 							if let Some(e) = req.general_error.as_ref() {
 								log::error!("Watcher Request Error: {:?}", e);
 							} else {
-								let mut encountered_error = false;
+								let mut encountered_error = 0;
 
 								for feed in &req.items {
 									if let Err(e) = feed.results.as_ref() {
-										log::error!("Watcher \"{}\" Error: {:#?}", feed.item.title, e);
-										encountered_error = true;
+										log::error!(r#"Watchers "{}" Error: {:#?}"#, feed.item.title, e);
+										encountered_error += 1;
 									}
 								}
 
-								if !encountered_error && !req.items.is_empty() {
-									log::info!("Watchers ran without error. Took: {:?}", req.duration);
+								if !req.items.is_empty() {
+									if encountered_error == 0 {
+										log::info!("Watchers ran without error. Took: {:?}", req.duration);
+									} else {
+										log::info!("Watchers ran with {} error(s). Took: {:?}", encountered_error, req.duration);
+									}
 								}
 							}
 						}
