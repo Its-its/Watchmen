@@ -110,7 +110,7 @@ impl FilterType {
 		}
 	}
 
-	pub fn find(&self, item: &impl FilterableItem) -> Option<Range<usize>> {
+	pub fn find_ranges(&self, item: &impl FilterableItem) -> Option<FilterRange> {
 		match self {
 			FilterType::Regex(regex, opts) => {
 				let mut builder = RegexBuilder::new(regex);
@@ -125,18 +125,18 @@ impl FilterType {
 
 				let build = builder.build().unwrap();
 
-				build.find(item.get_value()).map(|m| m.range())
+				build.find(item.get_value()).map(|m| FilterRange::Single(m.range()))
 			}
 
 			FilterType::Contains(value, case_sensitive) => {
 				if *case_sensitive {
 					item.get_value()
 						.find(value.as_str())
-						.map(|s| s..value.len())
+						.map(|s| FilterRange::Single(s..value.len()))
 				} else {
 					item.get_value().to_lowercase()
 						.find(value.to_lowercase().as_str())
-						.map(|s| s..value.len())
+						.map(|s| FilterRange::Single(s..value.len()))
 				}
 			}
 
@@ -147,7 +147,7 @@ impl FilterType {
 					item.get_value().to_lowercase().starts_with(value.to_lowercase().as_str())
 				};
 
-				Some(0..value.len()).filter(|_| contains)
+				Some(FilterRange::Single(0..value.len())).filter(|_| contains)
 			}
 
 			FilterType::EndsWith(value, case_sensitive) => {
@@ -157,11 +157,20 @@ impl FilterType {
 					item.get_value().to_lowercase().ends_with(value.to_lowercase().as_str())
 				};
 
-				Some(item.get_value().len() - value.len()..item.get_value().len()).filter(|_| contains)
+				Some(FilterRange::Single(item.get_value().len() - value.len()..item.get_value().len())).filter(|_| contains)
 			}
 
-			FilterType::And(filters) => filters.iter().filter_map(|f| f.find(item)).next(), // TODO: Ensure correct.
-			FilterType::Or(filters) => filters.iter().find_map(|f| f.find(item)),
+			FilterType::And(filters) => {
+				let mut items = FilterRange::Multiple(Vec::new());
+
+				for filter in filters {
+					items = items.append(filter.find_ranges(item)?);
+				}
+
+				Some(items)
+			}
+
+			FilterType::Or(filters) => filters.iter().find_map(|f| f.find_ranges(item)),
 		};
 
 		None
@@ -216,6 +225,29 @@ impl FilterType {
 }
 
 
+pub enum FilterRange {
+	Single(Range<usize>),
+	Multiple(Vec<Range<usize>>)
+}
+
+impl FilterRange {
+	pub fn append(self, other: Self) -> Self {
+		match (self, other) {
+			(Self::Single(v1), Self::Single(v2)) => Self::Multiple(vec![v1, v2]),
+
+			(Self::Single(single), Self::Multiple(mut multi)) |
+			(Self::Multiple(mut multi), Self::Single(single)) => {
+				multi.push(single);
+				Self::Multiple(multi)
+			}
+
+			(Self::Multiple(mut v1), Self::Multiple(v2)) => {
+				v1.extend(v2);
+				Self::Multiple(v1)
+			}
+		}
+	}
+}
 
 
 pub trait FilterableItem {
