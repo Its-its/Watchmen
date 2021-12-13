@@ -8,7 +8,7 @@ use diesel::SqliteConnection;
 
 use crate::feature::schema::{watching as WatchingSchema};
 use crate::feature::models::{EditWatchParserItemModel, NewWatchHistoryModel, NewWatchParserItemModel, NewWatchingModel, QueryId, WatchingModel};
-use crate::{Result, Error};
+use crate::{Result, Error, xpath};
 use super::feeds::custom::ParseOpts;
 use super::{RequestResults, ItemResults, RequestItemResults, InnerRequestResults};
 
@@ -224,7 +224,7 @@ pub async fn get_from_url_parser(req_client: &Client, url: &str, parser: &MatchP
 	Ok(doc.evaluate(&parser.items)?
 		.collect_nodes()?
 		.into_iter()
-		.map::<Result<FoundItem>, _>(|node| { // TODO: Remove transpose.
+		.map::<Result<FoundItem>, _>(|node| {
 			// Find value.
 			let value = parser.value.evaluate(&doc, &node)?
 				.next()
@@ -235,33 +235,15 @@ pub async fn get_from_url_parser(req_client: &Client, url: &str, parser: &MatchP
 				.ok_or_else(|| Error::Other("Missing Required Title.".into()))?;
 
 			// Find title.
-			let title = parser.title.as_ref()
-				.map(|i| i.evaluate(&doc, &node))
-				.transpose()?
-				.and_then(|mut v| v.next())
-				.transpose()?
-				.map(|v| Result::Ok(parser.title.as_ref().unwrap().parse(&v.convert_to_string()?)?))
-				.transpose()?
+			let title = xpath::get_optional_string(parser.title.as_ref(), &doc, &node)?
 				.map(|v| v.trim().escape_default().to_string());
 
 			// Find link.
-			let link = parser.link.as_ref()
-				.map(|i| i.evaluate(&doc, &node))
-				.transpose()?
-				.and_then(|mut v| v.next())
-				.transpose()?
-				.map(|v| Result::Ok(parser.link.as_ref().unwrap().parse(&v.convert_to_string()?)?))
-				.transpose()?
+			let link = xpath::get_optional_string(parser.link.as_ref(), &doc, &node)?
 				.map(|v| v.trim().escape_default().to_string());
 
 			// Unique ID
-			let unique_id = parser.unique_id.as_ref()
-				.map(|i| i.evaluate(&doc, &node))
-				.transpose()?
-				.and_then(|mut v| v.next())
-				.transpose()?
-				.map(|v| Result::Ok(parser.unique_id.as_ref().unwrap().parse(&v.convert_to_string()?)?))
-				.transpose()?
+			let unique_id = xpath::get_optional_string(parser.unique_id.as_ref(), &doc, &node)?
 				.map(|v| v.trim().escape_default().to_string());
 
 			Ok(FoundItem {

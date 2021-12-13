@@ -8,6 +8,7 @@
 
 pub mod feature;
 
+mod util;
 pub mod rpc;
 pub mod types;
 pub mod error;
@@ -19,7 +20,7 @@ pub mod core;
 pub mod state;
 pub mod request;
 
-
+pub use util::*;
 pub use filter::{FilterType, RegexOpts};
 pub use error::{Result, Error};
 

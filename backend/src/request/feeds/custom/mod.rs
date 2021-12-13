@@ -8,7 +8,7 @@ use xpather::Document;
 use chrono::{DateTime, FixedOffset};
 
 use crate::feature::models::QueryId;
-use crate::{Result, Error};
+use crate::{Result, Error, xpath};
 use super::NewFeedModel;
 
 use crate::feature::objects::{get_custom_item_from_url, get_custom_item_by_id};
@@ -229,19 +229,8 @@ pub async fn get_from_url_parser(url: &str, parser: &SearchParser, req_client: &
 		.collect_nodes()?
 		.into_iter()
 		.map::<Result<FoundItem>, _>(|node| {
-			let title = parser.title.evaluate(&doc, &node)?
-				.next()
-				.transpose()?
-				.map(|v| Result::Ok(parser.title.parse(&v.convert_to_string()?)?))
-				.transpose()?;
-
-			let author = parser.author.as_ref()
-				.map(|i| i.evaluate(&doc, &node))
-				.transpose()?
-				.and_then(|mut v| v.next())
-				.transpose()?
-				.map(|v| Result::Ok(parser.author.as_ref().unwrap().parse(&v.convert_to_string()?)?))
-				.transpose()?;
+			let title = xpath::get_optional_string(Some(&parser.title), &doc, &node)?;
+			let author = xpath::get_optional_string(parser.author.as_ref(), &doc, &node)?;
 
 			let content = parser.content.as_ref()
 				.map(|i| i.evaluate(&doc, &node))
@@ -253,23 +242,9 @@ pub async fn get_from_url_parser(url: &str, parser: &SearchParser, req_client: &
 				.map(|v| Result::Ok(parser.content.as_ref().unwrap().parse(&v)?))
 				.transpose()?;
 
-			let date = parser.date.evaluate(&doc, &node)?
-				.next()
-				.transpose()?
-				.map(|v| Result::Ok(parser.date.parse(&v.convert_to_string()?)?))
-				.transpose()?;
-
-			let guid = parser.guid.evaluate(&doc, &node)?
-				.next()
-				.transpose()?
-				.map(|v| Result::Ok(parser.guid.parse(&v.convert_to_string()?)?))
-				.transpose()?;
-
-			let link = parser.link.evaluate(&doc, &node)?
-				.next()
-				.transpose()?
-				.map(|v| Result::Ok(parser.link.parse(&v.convert_to_string()?)?))
-				.transpose()?;
+			let date = xpath::get_optional_string(Some(&parser.date), &doc, &node)?;
+			let guid = xpath::get_optional_string(Some(&parser.guid), &doc, &node)?;
+			let link = xpath::get_optional_string(Some(&parser.link), &doc, &node)?;
 
 			Ok(FoundItem {
 				title: title.ok_or_else(|| Error::Other("Missing Required Title.".into()))?,
