@@ -341,7 +341,7 @@ pub enum Core2FrontNotification {
 	},
 
 	NewFilter {
-		filter: NewFilter,
+		filter: Option<NewFilter>,
 		affected: usize
 	},
 

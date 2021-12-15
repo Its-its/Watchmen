@@ -392,15 +392,21 @@ impl WeakFeederCore {
 			}
 
 			Front2CoreNotification::NewFilter { title , filter } => {
-				let new_filter = objects::NewFilter {
-					title,
-					filter
-				};
+				let (new_filter, affected) = if filter.validate() {
+					let new_filter = objects::NewFilter {
+						title,
+						filter
+					};
 
-				let affected = objects::create_filter(
-					new_filter.clone(),
-					conn
-				)?;
+					let affected = objects::create_filter(
+						new_filter.clone(),
+						conn
+					)?;
+
+					(Some(new_filter), affected)
+				} else {
+					(None, 0)
+				};
 
 				ctx.respond_with(
 					msg_id_opt,
@@ -412,14 +418,18 @@ impl WeakFeederCore {
 			}
 
 			Front2CoreNotification::UpdateFilter { id, title , filter } => {
-				let affected = objects::update_filter(
-					id,
-					objects::EditFilter {
-						title: Some(title),
-						filter: Some(filter)
-					},
-					conn
-				)?;
+				let affected = if filter.validate() {
+					objects::update_filter(
+						id,
+						objects::EditFilter {
+							title: Some(title),
+							filter: Some(filter)
+						},
+						conn
+					)?
+				} else {
+					0
+				};
 
 				ctx.respond_with(
 					msg_id_opt,

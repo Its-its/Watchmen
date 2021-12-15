@@ -176,6 +176,31 @@ impl FilterType {
 		None
 	}
 
+	pub fn validate(&self) -> bool {
+		match self {
+			FilterType::Regex(regex, opts) => {
+				let mut builder = RegexBuilder::new(regex);
+
+				builder.case_insensitive(opts.case_insensitive);
+				builder.multi_line(opts.multi_line);
+				builder.dot_matches_new_line(opts.dot_matches_new_line);
+				builder.swap_greed(opts.swap_greed);
+				builder.ignore_whitespace(opts.ignore_whitespace);
+				builder.unicode(opts.unicode);
+				builder.octal(opts.octal);
+
+				builder.build().is_ok()
+			}
+
+			FilterType::Contains(..) |
+			FilterType::StartsWith(..) |
+			FilterType::EndsWith(..) => true,
+
+			FilterType::And(filters) |
+			FilterType::Or(filters) => filters.iter().all(|v| v.validate())
+		}
+	}
+
 
 	pub fn add(&mut self, filter: FilterType) {
 		match self {
