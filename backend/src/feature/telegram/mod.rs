@@ -72,12 +72,14 @@ impl TelegramState {
 	pub fn init(&mut self, config: Config, weak_core: WeakFeederCore, _weak_telegram: WeakTelegramCore) {
 		let receiver = self.receiver.take().unwrap();
 
-		let bot = Bot::new(config.telegram.api_key.clone());
+		if config.telegram.enabled {
+			let bot = Bot::new(config.telegram.api_key.clone());
 
-		if config.telegram.chat_id.is_none() || config.telegram.chat_id == Some(0) {
-			start_listener(bot, config, weak_core);
-		} else {
-			start_output(bot, config, receiver, weak_core);
+			if config.telegram.chat_id.is_none() || config.telegram.chat_id == Some(0) {
+				start_listener(bot, config, weak_core);
+			} else {
+				start_output(bot, config, receiver, weak_core);
+			}
 		}
 	}
 }

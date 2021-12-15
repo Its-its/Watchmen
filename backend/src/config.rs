@@ -103,6 +103,8 @@ mod opts {
 
 	#[derive(Default, Clone, Serialize, Deserialize)]
 	pub struct ConfigTelegram {
+		#[serde(default = "default_true")]
+		pub enabled: bool,
 		pub api_key: String,
 		pub chat_id: Option<i64>
 	}

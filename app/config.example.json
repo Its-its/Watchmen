@@ -4,6 +4,7 @@
     "concurrency": 2
   },
   "telegram": {
+    "enabled": false,
     "api_key": "",
     "chat_id": 0
   }
