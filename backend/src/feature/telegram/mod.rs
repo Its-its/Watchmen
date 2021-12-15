@@ -32,8 +32,10 @@ impl TelegramCore {
 
 
 	pub async fn send(&self, value: RequestResponse) {
-		if let Err(e) = self.1.send(value).await {
-			log::error!("{}", e);
+		if !self.1.is_closed() {
+			if let Err(e) = self.1.send(value).await {
+				log::error!("{}", e);
+			}
 		}
 	}
 
